@@ -125,7 +125,7 @@ func (self *sSenderManager) getSendFunc(args *SSendArgs) (sSendFunc, error) {
 }
 
 func (self *sSenderManager) getContent(torc, topic, msg string) (string, error) {
-	key := topic + "." + msg
+	key := topic + "." + torc
 	self.templateLock.RLock()
 	tem, ok := self.templateCache[key]
 	self.templateLock.RUnlock()
@@ -135,12 +135,7 @@ func (self *sSenderManager) getContent(torc, topic, msg string) (string, error) 
 		}
 		return msg, nil
 	}
-	var content string
-	if torc == "title" {
-		content = topic
-	} else {
-		content = msg
-	}
+	content := msg
 
 	tmpMap := make(map[string]interface{})
 	err := json.Unmarshal([]byte(content), &tmpMap)

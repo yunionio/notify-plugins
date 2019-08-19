@@ -18,7 +18,8 @@ import (
 "fmt"
 "net"
 "net/rpc"
-"os"
+	"notify-plugin/utils"
+	"os"
 "os/signal"
 "syscall"
 
@@ -33,6 +34,16 @@ func StartService() {
 	// init sender manager
 	senderManager = newSSenderManager(&config)
 	senderManager.updateTemplateCache()
+
+	// check template and socket dir
+	err := utils.CheckDir(config.TemplateDir)
+	if err != nil {
+		log.Fatalf("Dir %s not exist and create failed.", config.TemplateDir)
+	}
+	err = utils.CheckDir(config.SockFileDir)
+	if err != nil {
+		log.Fatalf("Dir %s not exist and create failed.", config.SockFileDir)
+	}
 
 	// init rpc Server
 	rpcServer := rpc.NewServer()

@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"net"
 	"net/rpc"
+	"notify-plugin/utils"
 	"os"
 	"os/signal"
 	"syscall"
@@ -31,6 +32,16 @@ func StartService() {
 	// config parse:
 	var config SRegularConfig
 	ParseOptions(&config, os.Args, "smsaliyun.conf")
+
+	// check template and socket dir
+	err := utils.CheckDir(config.TemplateDir)
+	if err != nil {
+		log.Fatalf("Dir %s not exist and create failed.", config.TemplateDir)
+	}
+	err = utils.CheckDir(config.SockFileDir)
+	if err != nil {
+		log.Fatalf("Dir %s not exist and create failed.", config.SockFileDir)
+	}
 
 	// init sender manager
 	senderManager = newSSenderManager(&config)

@@ -16,6 +16,7 @@ package websocket
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -102,7 +103,7 @@ func (self *sSenderManager) updateTemplate(torc string) {
 }
 
 func (self *sSenderManager) getContent(torc, topic, msg string) (string, error) {
-	key := topic + "." + msg
+	key := topic + "." + torc
 	self.templateLock.RLock()
 	tem, ok := self.templateCache[key]
 	self.templateLock.RUnlock()
@@ -112,12 +113,7 @@ func (self *sSenderManager) getContent(torc, topic, msg string) (string, error) 
 		}
 		return msg, nil
 	}
-	var content string
-	if torc == "title" {
-		content = topic
-	} else {
-		content = msg
-	}
+	content := msg
 
 	tmpMap := make(map[string]interface{})
 	err := json.Unmarshal([]byte(content), &tmpMap)
@@ -154,9 +150,9 @@ func (self *sSenderManager) initClient() {
 
 	self.clientLock.Lock()
 	defer self.clientLock.Unlock()
-	a := auth.NewAuthInfo(authUri, "", adminUser, adminPassword, adminTenantName)
+	a := auth.NewAuthInfo(authUri, "", adminUser, adminPassword, adminTenantName, "")
 	auth.Init(a, false, true, "", "")
-	self.session = auth.GetAdminSession(self.region, "")
+	self.session = auth.GetAdminSession(context.Background(), self.region, "")
 }
 
 func (self *sSenderManager) send(args *SSendArgs, reply *SSendReply) {

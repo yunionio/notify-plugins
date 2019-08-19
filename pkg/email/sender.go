@@ -55,7 +55,7 @@ type sSenderManager struct {
 	templateLock  sync.RWMutex
 }
 
-func newSSenderManager(config *SRegularConfig) *sSenderManager {
+func newSSenderManager(config *SEmailConfig) *sSenderManager {
 	return &sSenderManager{
 		senders:     make([]sSender, config.SenderNum),
 		senderNum:   config.SenderNum,
@@ -229,10 +229,10 @@ Loop:
 				}
 				self.open = true
 				if err := gomail.Send(self.sender, msg.message); err != nil {
-					log.Errorf("No.%d sender example email failed because that %s.", self.number, err.Error())
+					log.Errorf("No.%d sender send email failed because that %s.", self.number, err.Error())
 					self.open = false
 				}
-				log.Debugf("No.%d sender example email successfully.", self.number)
+				log.Debugf("No.%d sender send email successfully.", self.number)
 				msg.result <- true
 			}
 		case <-self.stopC:
@@ -241,7 +241,6 @@ Loop:
 			if self.open {
 				if err = self.sender.Close(); err != nil {
 					log.Errorf("No.%d sender has be idle for 30 seconds and closed failed because that %s.", self.number, err.Error())
-					break Loop
 				}
 				self.open = false
 				log.Infof("No.%d sender has be idle for 30 seconds so that closed temporarily.", self.number)

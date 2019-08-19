@@ -30,8 +30,10 @@ var senderManager *sSenderManager
 
 func StartService() {
 	// config parse:
-	var config SRegularConfig
-	ParseOptions(&config, os.Args, "smsaliyun.conf")
+	var config utils.SBaseOptions
+	utils.ParseOptions(&config, os.Args, "smsaliyun.conf")
+	log.SetLogLevelByString(log.Logger(), config.LogLevel)
+	log.SetLogLevelByString(log.Logger(), config.LogLevel)
 
 	// check template and socket dir
 	err := utils.CheckDir(config.TemplateDir)
@@ -75,7 +77,6 @@ func StartService() {
 	//	la.Close()
 	case <-sigs:
 		log.Println("Receive stop signal, stopping....")
-		senderManager.client.Shutdown()
 		la.Close()
 		log.Println("Stopped")
 	}

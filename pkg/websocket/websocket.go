@@ -18,15 +18,6 @@ import (
 	"yunion.io/x/jsonutils"
 )
 
-//type SWebsocketManager struct {
-//	modules.ResourceManager
-//}
-//
-//var (
-//	websocket SWebsocketManager
-//
-//)
-
 var params *jsonutils.JSONDict
 
 func init() {

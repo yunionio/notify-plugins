@@ -28,15 +28,12 @@ import (
 
 func StartService() {
 	// config parse:
-	var config SRegularConfig
-	ParseOptions(&config, os.Args, "websocket.conf")
-
-	// init sender manager
-	senderManager = newSSenderManager(&config)
-	senderManager.updateTemplateCache()
+	var config SWebsocketConfig
+	utils.ParseOptions(&config, os.Args, "websocket.conf")
+	log.SetLogLevelByString(log.Logger(), config.LogLevel)
 
 	// check template and socket dir
-	err := utils.CheckDir(config.TemplateDir)
+	err := utils.CheckDir(config.TemplateDir, "content", "title")
 	if err != nil {
 		log.Fatalf("Dir %s not exist and create failed.", config.TemplateDir)
 	}
@@ -45,13 +42,17 @@ func StartService() {
 		log.Fatalf("Dir %s not exist and create failed.", config.SockFileDir)
 	}
 
+	// init sender manager
+	senderManager = newSSenderManager(&config)
+	senderManager.updateTemplateCache()
+
 	// init rpc Server
 	rpcServer := rpc.NewServer()
 	server := &Server{
 		name: "websocket",
 	}
 	rpcServer.Register(server)
-	la, e := net.Listen("unix", fmt.Sprintf("%s/%s.sock", config.SockFileDir, "websocket"))
+	la, e := net.Listen("unix", fmt.Sprintf("%s/%s.sock", config.SockFileDir, "webconsole"))
 	if e != nil {
 		log.Errorf("rpc server start failed because that %s.", e.Error())
 		return

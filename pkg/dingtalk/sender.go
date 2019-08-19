@@ -18,6 +18,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"io/ioutil"
+	"notify-plugin/utils"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -56,7 +57,7 @@ type sSenderManager struct {
 	templateLock  sync.RWMutex   // lock to protect template cache
 }
 
-func newSSenderManager(config *SRegularConfig) *sSenderManager {
+func newSSenderManager(config *utils.SBaseOptions) *sSenderManager {
 	return &sSenderManager{
 		workerChan:  make(chan struct{}, config.SenderNum),
 		templateDir: config.TemplateDir,
@@ -109,7 +110,11 @@ func (self *sSenderManager) getSendFunc(args *SSendArgs) (sSendFunc, error) {
 			manager.clientLock.RLock()
 			client := manager.client
 			manager.clientLock.RUnlock()
-			return client.SendAppMessage(agentID, args.Contact, content)
+			err := client.SendAppMessage(agentID, args.Contact, content)
+			if err != nil {
+				return errors.Wrapf(err, "UserIDs: %s", args.Contact)
+			}
+			return nil
 		}, nil
 	}
 	message := godingtalk.OAMessage{}
@@ -120,7 +125,11 @@ func (self *sSenderManager) getSendFunc(args *SSendArgs) (sSendFunc, error) {
 		manager.clientLock.RLock()
 		client := manager.client
 		manager.clientLock.RUnlock()
-		return client.SendAppOAMessage(agentID, args.Contact, message)
+		err := client.SendAppOAMessage(agentID, args.Contact, message)
+		if err != nil {
+			return errors.Wrapf(err, "UserIDs: %s", args.Contact)
+		}
+		return nil
 	}, nil
 }
 
@@ -190,7 +199,7 @@ func (self *sSenderManager) send(reply *SSendReply, sendFunc sSendFunc) {
 	// example message
 	err := sendFunc(self, agentID)
 	if err == nil {
-		log.Debugf("example message successfully.")
+		log.Debugf("send message successfully.")
 		reply.Success = true
 		return
 	}
@@ -205,7 +214,7 @@ func (self *sSenderManager) send(reply *SSendReply, sendFunc sSendFunc) {
 			return
 		}
 		reply.Success = true
-		log.Debugf("example message successfully.")
+		log.Debugf("send message successfully.")
 		return
 	}
 	dealError(reply, err)
@@ -215,5 +224,5 @@ func (self *sSenderManager) send(reply *SSendReply, sendFunc sSendFunc) {
 func dealError(reply *SSendReply, err error) {
 	reply.Success = false
 	reply.Msg = err.Error()
-	log.Errorf("Send message failed because that %s.", err.Error())
+	log.Errorf("Send message failed because that %s", err.Error())
 }

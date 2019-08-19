@@ -28,15 +28,15 @@ import (
 
 func StartService() {
 	// config parse:
-	var config SRegularConfig
-	ParseOptions(&config, os.Args, "dingtalk.conf")
+	var config utils.SBaseOptions
+	utils.ParseOptions(&config, os.Args, "dingtalk.conf")
 
 	// init sender manager
 	senderManager = newSSenderManager(&config)
 	senderManager.updateTemplateCache()
 
 	// check template and socket dir
-	err := utils.CheckDir(config.TemplateDir)
+	err := utils.CheckDir(config.TemplateDir, "content", "title")
 	if err != nil {
 		log.Fatalf("Dir %s not exist and create failed.", config.TemplateDir)
 	}

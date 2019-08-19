@@ -17,6 +17,9 @@ package smsaliyun
 const (
 	ACCESS_KEY_ID     = "access_key_id"
 	ACCESS_KEY_SECRET = "access_key_secret"
+
+	ACESS_KEY_ID_BP = "accessKeyId"
+	ACESS_KEY_SECRET_BP = "accessKeySecret"
 	SIGNATURE         = "signature"
 
 	NOTINIT = "Send service hasn't been init"

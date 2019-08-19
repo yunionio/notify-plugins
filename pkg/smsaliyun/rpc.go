@@ -68,6 +68,12 @@ func (s *Server) UpdateConfig(args *SUpdateConfigArgs, reply *SSendReply) error 
 	senderManager.configLock.Lock()
 	shouldInit := false
 	for key, value := range args.Config {
+		if key == ACESS_KEY_SECRET_BP {
+			key = ACCESS_KEY_SECRET
+		}
+		if key == ACESS_KEY_ID_BP {
+			key = ACCESS_KEY_ID
+		}
 		if key == ACCESS_KEY_SECRET || key == ACCESS_KEY_ID {
 			shouldInit = true
 		}

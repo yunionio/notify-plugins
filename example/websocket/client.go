@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package websocket
+package main
 
 import (
 	"log"
@@ -22,13 +22,13 @@ import (
 )
 
 const (
-	auth_uri          = ""
-	admin_user        = ""
-	admin_password    = ""
-	admin_tenant_name = ""
+	auth_uri = "https://10.168.222.238:35357/v3"
+	admin_user = "notifydr"
+	admin_password = "rUUsajSnYF7fOCJb"
+	admin_tenant_name = "system"
 
-	userID = ""
-	socket_file = ""
+	userID = "c21e38af4869442a8dc5ad1a0efcee85"
+	socket_file = "/Users/rain/etc/yunion/notify/webconsole.sock"
 )
 
 func main() {

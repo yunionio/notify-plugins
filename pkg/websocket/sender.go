@@ -47,8 +47,6 @@ func newSConfigCache() sConfigCache {
 	return make(map[string]string)
 }
 
-type sSendFunc func(*sSenderManager, string) error
-
 type sSenderManager struct {
 	workerChan  chan struct{}
 	templateDir string
@@ -62,7 +60,7 @@ type sSenderManager struct {
 	templateLock  sync.RWMutex   // lock to protect template cache
 }
 
-func newSSenderManager(config *SRegularConfig) *sSenderManager {
+func newSSenderManager(config *SWebsocketConfig) *sSenderManager {
 	return &sSenderManager{
 		workerChan:  make(chan struct{}, config.SenderNum),
 		templateDir: config.TemplateDir,

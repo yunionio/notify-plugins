@@ -18,23 +18,25 @@ import (
 	"fmt"
 	"net"
 	"net/rpc"
-	"notify-plugin/utils"
 	"os"
 	"os/signal"
 	"syscall"
 
 	"yunion.io/x/log"
+
+	"notify-plugin/utils"
 )
 
 var senderManager *sSenderManager
 
 func StartService() {
 	// config parse:
-	var config SRegularConfig
-	ParseOptions(&config, os.Args, "email.conf")
+	var config SEmailConfig
+	utils.ParseOptions(&config, os.Args, "email.conf")
+	log.SetLogLevelByString(log.Logger(), config.LogLevel)
 
 	// check template and socket dir
-	err := utils.CheckDir(config.TemplateDir)
+	err := utils.CheckDir(config.TemplateDir, "content", "title")
 	if err != nil {
 		log.Fatalf("Dir %s not exist and create failed.", config.TemplateDir)
 	}
@@ -62,16 +64,7 @@ func StartService() {
 	go rpcServer.Accept(la)
 	log.Infoln("Service start successfully")
 
-	//tmp := make(chan struct{})
-	//go func(){
-	//	wg.Wait()
-	//	close(tmp)
-	//}()
-
 	select {
-	//case <-tmp:
-	//	log.Errorln("All sender quit.")
-	//	la.Close()
 	case <-sigs:
 		log.Println("Receive stop signal, stopping....")
 		la.Close()

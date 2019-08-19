@@ -14,6 +14,8 @@
 
 package dingtalk
 
+import "github.com/prometheus/common/log"
+
 type Server struct {
 	name string
 }
@@ -43,6 +45,7 @@ func (s *Server) UpdateConfig(args *SUpdateConfigArgs, reply *SSendReply) error 
 		reply.Msg = "Config shouldn't be nil."
 		return nil
 	}
+	log.Debug("update config...")
 	senderManager.configLock.Lock()
 	shouldInit := false
 	for key, value := range args.Config {

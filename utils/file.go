@@ -1,14 +1,26 @@
 package utils
 
-import "os"
+import (
+	"os"
+	"path/filepath"
 
-func CheckDir(dir string) error {
+	"yunion.io/x/pkg/errors"
+)
+
+func CheckDir(dir string, subDirs ...string) error {
 	if IsExist(dir) {
 		return nil
 	}
 	err := os.Mkdir(dir, 0770)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "Create dir %s failed", dir)
+	}
+	for _, subDir := range subDirs {
+		dirPath := filepath.Join(dir, subDir)
+		err := os.Mkdir(dirPath, 0770)
+		if err != nil {
+			return errors.Wrapf(err, "Create dir %s failed", dirPath)
+		}
 	}
 	return nil
 }

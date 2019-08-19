@@ -16,6 +16,7 @@ package smsaliyun
 
 import (
 	"io/ioutil"
+	"notify-plugin/utils"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -49,7 +50,7 @@ type sSenderManager struct {
 	templateLock  sync.RWMutex   // lock to protect template cache
 }
 
-func newSSenderManager(config *SRegularConfig) *sSenderManager {
+func newSSenderManager(config *utils.SBaseOptions) *sSenderManager {
 	return &sSenderManager{
 		workerChan:  make(chan struct{}, config.SenderNum),
 		templateDir: config.TemplateDir,
@@ -115,7 +116,7 @@ func (self *sSenderManager) send(req *requests.CommonRequest, reply *SSendReply)
 	reponse, err := client.ProcessCommonRequest(req)
 	if err == nil {
 		if reponse.IsSuccess() {
-			log.Debugf("example message successfully")
+			log.Debugf("Sender successfully")
 			reply.Success = true
 			return
 		}

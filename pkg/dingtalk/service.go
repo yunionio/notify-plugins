@@ -15,15 +15,17 @@
 package dingtalk
 
 import (
-"fmt"
-"net"
-"net/rpc"
-	"notify-plugin/utils"
+	"fmt"
+	"net"
 	"os"
-"os/signal"
-"syscall"
+	"os/signal"
+	"syscall"
 
-"yunion.io/x/log"
+	"google.golang.org/grpc"
+	"yunion.io/x/log"
+
+	"notify-plugin/pkg/apis"
+	"notify-plugin/utils"
 )
 
 func StartService() {
@@ -46,26 +48,18 @@ func StartService() {
 	}
 
 	// init rpc Server
-	rpcServer := rpc.NewServer()
-	server := &Server{
-		name: "dingtalk",
-	}
-	rpcServer.Register(server)
-	la, e := net.Listen("unix", fmt.Sprintf("%s/%s.sock", config.SockFileDir, "dingtalk"))
-	if e != nil {
-		log.Errorf("rpc server start failed because that %s.", e.Error())
-		return
-	}
-	sigs := make(chan os.Signal, 1)
-	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
-	go rpcServer.Accept(la)
-	log.Infoln("Service start successfully")
+	grpcServer := grpc.NewServer()
+	apis.RegisterSendAgentServer(grpcServer, &Server{"dingtalk"})
 
-	//tmp := make(chan struct{})
-	//go func(){
-	//	wg.Wait()
-	//	close(tmp)
-	//}()
+	la, err := net.Listen("unix", fmt.Sprintf("%s/%s.sock", config.SockFileDir, "dingtalk"))
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	sigs := make(chan os.Signal, 1)
+	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
+	go grpcServer.Serve(la)
+	log.Infoln("Service start successfully")
 
 	select {
 	//case <-tmp:

@@ -14,8 +14,8 @@
 
 package main
 
-import "notify-plugin/pkg/email"
+import "notify-plugin/pkg/dingtalk"
 
 func main() {
-	email.StartService()
+	dingtalk.StartService()
 }

@@ -12,10 +12,34 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+syntax = "proto3";
 
-import "notify-plugin/pkg/email"
+package apis;
 
-func main() {
-	email.StartService()
+message SendParams {
+    string contact = 1;
+    string topic = 2;
+    string message = 3;
+    string Priority = 4;
+}
+
+message UpdateConfigParams {
+    map<string, string> configs = 1;
+}
+
+message UseridByMobileParams {
+   string mobile = 1;
+}
+
+message Empty {
+}
+
+message UseridByMobileReply {
+    string userid = 1;
+}
+
+service SendAgent {
+    rpc Send(SendParams) returns (Empty);
+    rpc UpdateConfig(UpdateConfigParams) returns (Empty);
+    rpc UseridByMobile(UseridByMobileParams) returns (UseridByMobileReply);
 }

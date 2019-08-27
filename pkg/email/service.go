@@ -17,13 +17,14 @@ package email
 import (
 	"fmt"
 	"net"
-	"net/rpc"
 	"os"
 	"os/signal"
 	"syscall"
 
+	"google.golang.org/grpc"
 	"yunion.io/x/log"
 
+	"notify-plugin/pkg/apis"
 	"notify-plugin/utils"
 )
 
@@ -49,19 +50,17 @@ func StartService() {
 	senderManager.updateTemplateCache()
 
 	// init rpc Server
-	rpcServer := rpc.NewServer()
-	server := &Server{
-		name: "email",
+	grpcServer := grpc.NewServer()
+	apis.RegisterSendAgentServer(grpcServer, &Server{apis.UnimplementedSendAgentServer{}, "email"})
+
+	la, err := net.Listen("unix", fmt.Sprintf("%s/%s.sock", config.SockFileDir, "email"))
+	if err != nil {
+		log.Fatalln(err)
 	}
-	rpcServer.Register(server)
-	la, e := net.Listen("unix", fmt.Sprintf("%s/%s.sock", config.SockFileDir, "email"))
-	if e != nil {
-		log.Errorf("rpc server start failed because that %s.", e.Error())
-		return
-	}
+
 	sigs := make(chan os.Signal, 1)
-	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
-	go rpcServer.Accept(la)
+	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
+	go grpcServer.Serve(la)
 	log.Infoln("Service start successfully")
 
 	select {

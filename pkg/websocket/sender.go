@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"notify-plugin/pkg/apis"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -153,7 +154,7 @@ func (self *sSenderManager) initClient() {
 	self.session = auth.GetAdminSession(context.Background(), self.region, "")
 }
 
-func (self *sSenderManager) send(args *SSendArgs, reply *SSendReply) {
+func (self *sSenderManager) send(args *apis.SendParams, reply *apis.BaseReply) {
 	var title, content string
 	title, err := self.getContent("title", args.Topic, args.Message)
 	if err != nil {
@@ -193,7 +194,7 @@ func (self *sSenderManager) send(args *SSendArgs, reply *SSendReply) {
 	reply.Success = true
 }
 
-func dealError(reply *SSendReply, err error) {
+func dealError(reply *apis.BaseReply, err error) {
 	reply.Success = false
 	reply.Msg = err.Error()
 	log.Errorf("Send message failed because that %s.", err.Error())

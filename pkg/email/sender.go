@@ -18,6 +18,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"io/ioutil"
+	"notify-plugin/pkg/apis"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -96,7 +97,7 @@ func (self *sSenderManager) updateTemplate(torc string) {
 	}
 }
 
-func (self *sSenderManager) send(args *SSendArgs, reply *SSendReply) {
+func (self *sSenderManager) send(args *apis.SendParams, reply *apis.BaseReply) {
 	gmsg := gomail.NewMessage()
 	username := senderManager.configCache[USERNAME]
 	gmsg.SetHeader("From", username)

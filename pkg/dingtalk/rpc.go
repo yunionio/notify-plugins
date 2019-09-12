@@ -14,41 +14,47 @@
 
 package dingtalk
 
-import "yunion.io/x/log"
+import (
+	"context"
+	"notify-plugin/pkg/apis"
+	"yunion.io/x/log"
+)
 
 type Server struct {
 	name string
 }
 
-func (s *Server) Send(args *SSendArgs, reply *SSendReply) error {
+func (s *Server) Send(ctx context.Context, req *apis.SendParams) (*apis.BaseReply, error) {
+	response := apis.BaseReply{}
 	if senderManager.client == nil {
-		reply.Success = false
-		reply.Msg = NOTINIT
-		return nil
+		response.Success = false
+		response.Msg = NOTINIT
+		return &response, nil
 	}
-	sendFunc, err := senderManager.getSendFunc(args)
+	sendFunc, err := senderManager.getSendFunc(req)
 	if err != nil {
-		reply.Success = false
-		reply.Msg = err.Error()
-		return nil
+		response.Success = false
+		response.Msg = err.Error()
+		return &response, nil
 	}
 
 	senderManager.workerChan <- struct{}{}
-	senderManager.send(reply, sendFunc)
+	senderManager.send(&response, sendFunc)
 	<-senderManager.workerChan
-	return nil
+	return &response, nil
 }
 
-func (s *Server) UpdateConfig(args *SUpdateConfigArgs, reply *SSendReply) error {
-	if args.Config == nil {
+func (s *Server) UpdateConfig(ctx context.Context, req *apis.UpdateConfigParams) (*apis.BaseReply, error) {
+	reply := apis.BaseReply{}
+	if req.Configs == nil {
 		reply.Success = false
 		reply.Msg = "Config shouldn't be nil."
-		return nil
+		return &reply, nil
 	}
 	log.Debugf("update config...")
 	senderManager.configLock.Lock()
 	shouldInit := false
-	for key, value := range args.Config {
+	for key, value := range req.Configs {
 		if key == APP_KEY || key == APP_SECRET {
 			shouldInit = true
 		}
@@ -59,20 +65,14 @@ func (s *Server) UpdateConfig(args *SUpdateConfigArgs, reply *SSendReply) error 
 		senderManager.initClient()
 	}
 	reply.Success = true
-	return nil
+	return &reply, nil
 }
 
-type SSendArgs struct {
-	Contact string
-	Topic   string
-	Message string
-}
+func (s *Server) UseridByMobile(ctx context.Context, req *apis.UseridByMobileParams) (*apis.UseridByMobileReply,
+	error) {
 
-type SSendReply struct {
-	Success bool
-	Msg     string
-}
-
-type SUpdateConfigArgs struct {
-	Config map[string]string
+	userId, err := senderManager.client.UseridByMobile(req.Mobile)
+	reply := apis.UseridByMobileReply{}
+	reply.Userid = userId
+	return &reply, err
 }

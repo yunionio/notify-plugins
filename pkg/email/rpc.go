@@ -14,63 +14,42 @@
 
 package email
 
-import "yunion.io/x/log"
+import (
+	"context"
+	"notify-plugin/pkg/apis"
+	"yunion.io/x/log"
+)
 
 type Server struct {
+	apis.UnimplementedSendAgentServer
 	name string
 }
 
-func (s *Server) Send(args *SSendArgs, reply *SSendReply) error {
+func (s *Server) Send(ctx context.Context, req *apis.SendParams) (*apis.BaseReply, error) {
+	reply := &apis.BaseReply{}
 	if senderManager.msgChan == nil {
 		reply.Success = false
 		reply.Msg = NOTINIT
-		return nil
+		return reply, nil
 	}
-	log.Debugf("reviced msg for %s: %s", args.Contact, args.Message)
-	senderManager.send(args, reply)
-	return nil
+	log.Debugf("reviced msg for %s: %s", req.Contact, req.Message)
+	senderManager.send(req, reply)
+	return reply, nil
 }
 
-func (s *Server) UpdateConfig(args *SUpdateConfigArgs, reply *SSendReply) error {
-	if args.Config == nil {
+func (s *Server) UpdateConfig(ctx context.Context, req *apis.UpdateConfigParams) (*apis.BaseReply, error) {
+	reply := &apis.BaseReply{}
+	if req.Configs == nil {
 		reply.Success = false
 		reply.Msg = "Config shouldn't be nil."
-		return nil
+		return reply, nil
 	}
 	senderManager.configLock.Lock()
-	for key, value := range args.Config {
+	for key, value := range req.Configs {
 		senderManager.configCache[key] = value
 	}
 	senderManager.configLock.Unlock()
 	senderManager.restartSender()
 	reply.Success = true
-	return nil
-}
-
-func (s *Server) PullContact(args *SPullContactArgs, reply *SPullContactReply) error {
-
-	return nil
-}
-
-type SSendArgs struct {
-	Contact string
-	Topic   string
-	Message string
-}
-
-type SPullContactArgs struct {
-	Mobile string
-}
-
-type SPullContactReply struct {
-	Uid string
-}
-
-type SSendReply struct {
-	Success bool
-	Msg     string
-}
-
-type SUpdateConfigArgs struct {
-	Config map[string]string
+	return reply, nil
 }

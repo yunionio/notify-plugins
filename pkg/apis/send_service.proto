@@ -6,6 +6,7 @@ message SendParams {
     string contact = 1;
     string topic = 2;
     string message = 3;
+    string Priority = 4;
 }
 
 message UpdateConfigParams {
@@ -26,7 +27,7 @@ message UseridByMobileReply {
 }
 
 service SendAgent {
-    rpc Send(SendParams) returns (BaseReply)
-    rpc UpdateConfig(UpdateConfigParams) returns (BaseReply)
-    rpc UseridByMobile(UseridByMobileParams) returns (UseridByMobileReply)
+    rpc Send(SendParams) returns (BaseReply);
+    rpc UpdateConfig(UpdateConfigParams) returns (BaseReply);
+    rpc UseridByMobile(UseridByMobileParams) returns (UseridByMobileReply);
 }

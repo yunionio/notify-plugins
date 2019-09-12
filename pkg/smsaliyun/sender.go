@@ -16,6 +16,7 @@ package smsaliyun
 
 import (
 	"io/ioutil"
+	"notify-plugin/pkg/apis"
 	"notify-plugin/utils"
 	"path/filepath"
 	"strings"
@@ -109,7 +110,7 @@ func (self *sSenderManager) initClient() {
 	log.Printf("Total %d workers.", cap(self.workerChan))
 }
 
-func (self *sSenderManager) send(req *requests.CommonRequest, reply *SSendReply) {
+func (self *sSenderManager) send(req *requests.CommonRequest, reply *apis.BaseReply) {
 	self.clientLock.RLock()
 	client := self.client
 	self.clientLock.RUnlock()
@@ -143,7 +144,7 @@ func (self *sSenderManager) send(req *requests.CommonRequest, reply *SSendReply)
 	}
 }
 
-func dealError(reply *SSendReply, err error) {
+func dealError(reply *apis.BaseReply, err error) {
 	reply.Success = false
 	reply.Msg = err.Error()
 	log.Errorf("Send message failed because that %s.", err.Error())

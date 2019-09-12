@@ -18,6 +18,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"io/ioutil"
+	"notify-plugin/pkg/apis"
 	"notify-plugin/utils"
 	"path/filepath"
 	"strings"
@@ -96,7 +97,7 @@ func (self *sSenderManager) updateTemplate(torc string) {
 	}
 }
 
-func (self *sSenderManager) getSendFunc(args *SSendArgs) (sSendFunc, error) {
+func (self *sSenderManager) getSendFunc(args *apis.SendParams) (sSendFunc, error) {
 	title, err := self.getContent("title", args.Topic, args.Message)
 	if err != nil {
 		return nil, err
@@ -189,7 +190,7 @@ func (self *sSenderManager) initClient() {
 	self.client = client
 }
 
-func (self *sSenderManager) send(reply *SSendReply, sendFunc sSendFunc) {
+func (self *sSenderManager) send(reply *apis.BaseReply, sendFunc sSendFunc) {
 	// get agentID
 	self.configLock.RLock()
 	agentID, ok := self.configCache[AGENT_ID]
@@ -225,7 +226,7 @@ func (self *sSenderManager) send(reply *SSendReply, sendFunc sSendFunc) {
 	return
 }
 
-func dealError(reply *SSendReply, err error) {
+func dealError(reply *apis.BaseReply, err error) {
 	reply.Success = false
 	reply.Msg = err.Error()
 	log.Errorf("Send message failed because that %s", err.Error())

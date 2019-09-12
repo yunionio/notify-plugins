@@ -225,6 +225,7 @@ Loop:
 				if self.sender, err = self.dialer.Dial(); err != nil {
 					log.Errorf("No.%d sender connect to email serve failed because that %s.", self.number, err.Error())
 					msg.result <- false
+					continue Loop
 				}
 				self.open = true
 				if err := gomail.Send(self.sender, msg.message); err != nil {

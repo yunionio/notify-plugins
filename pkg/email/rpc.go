@@ -14,6 +14,8 @@
 
 package email
 
+import "yunion.io/x/log"
+
 type Server struct {
 	name string
 }
@@ -24,6 +26,7 @@ func (s *Server) Send(args *SSendArgs, reply *SSendReply) error {
 		reply.Msg = NOTINIT
 		return nil
 	}
+	log.Debugf("reviced msg for %s: %s", args.Contact, args.Message)
 	senderManager.send(args, reply)
 	return nil
 }
@@ -44,10 +47,23 @@ func (s *Server) UpdateConfig(args *SUpdateConfigArgs, reply *SSendReply) error 
 	return nil
 }
 
+func (s *Server) PullContact(args *SPullContactArgs, reply *SPullContactReply) error {
+
+	return nil
+}
+
 type SSendArgs struct {
 	Contact string
 	Topic   string
 	Message string
+}
+
+type SPullContactArgs struct {
+	Mobile string
+}
+
+type SPullContactReply struct {
+	Uid string
 }
 
 type SSendReply struct {

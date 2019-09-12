@@ -159,6 +159,10 @@ func (self *sSenderManager) getContent(torc, topic, msg string) (string, error) 
 	return buffer.String(), nil
 }
 
+func (self *sSenderManager) getUseridByMobile(mobile string) (string, error) {
+	return self.client.UseridByMobile(mobile)
+}
+
 func (self *sSenderManager) initClient() {
 	self.configLock.RLock()
 	appKey, ok := self.configCache[APP_KEY]

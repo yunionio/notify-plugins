@@ -17,16 +17,19 @@ package dingtalk
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
-	"notify-plugin/utils"
 	"path/filepath"
 	"strings"
 	"sync"
 	"text/template"
+	"errors"
 
 	"github.com/hugozhu/godingtalk"
 	"yunion.io/x/log"
-	"yunion.io/x/pkg/errors"
+
+	"notify-plugin/pkg/apis"
+	"notify-plugin/utils"
 )
 
 var senderManager *sSenderManager
@@ -96,7 +99,7 @@ func (self *sSenderManager) updateTemplate(torc string) {
 	}
 }
 
-func (self *sSenderManager) getSendFunc(args *SSendArgs) (sSendFunc, error) {
+func (self *sSenderManager) getSendFunc(args *apis.SendParams) (sSendFunc, error) {
 	title, err := self.getContent("title", args.Topic, args.Message)
 	if err != nil {
 		return nil, err
@@ -112,7 +115,7 @@ func (self *sSenderManager) getSendFunc(args *SSendArgs) (sSendFunc, error) {
 			manager.clientLock.RUnlock()
 			err := client.SendAppMessage(agentID, args.Contact, content)
 			if err != nil {
-				return errors.Wrapf(err, "UserIDs: %s", args.Contact)
+				return fmt.Errorf("UserIDs: %s: %w", args.Contact, err)
 			}
 			return nil
 		}, nil
@@ -127,7 +130,7 @@ func (self *sSenderManager) getSendFunc(args *SSendArgs) (sSendFunc, error) {
 		manager.clientLock.RUnlock()
 		err := client.SendAppOAMessage(agentID, args.Contact, message)
 		if err != nil {
-			return errors.Wrapf(err, "UserIDs: %s", args.Contact)
+			return fmt.Errorf("UserIDs: %s: %w", args.Contact, err)
 		}
 		return nil
 	}, nil
@@ -149,12 +152,12 @@ func (self *sSenderManager) getContent(torc, topic, msg string) (string, error) 
 	tmpMap := make(map[string]interface{})
 	err := json.Unmarshal([]byte(content), &tmpMap)
 	if err != nil {
-		return "", errors.Error("Message should be a canonical JSON")
+		return "", errors.New("Message should be a canonical JSON")
 	}
 	buffer := new(bytes.Buffer)
 	err = tem.Execute(buffer, tmpMap)
 	if err != nil {
-		return "", errors.Error("Message content and template do not match")
+		return "", errors.New("Message content and template do not match")
 	}
 	return buffer.String(), nil
 }
@@ -189,23 +192,20 @@ func (self *sSenderManager) initClient() {
 	self.client = client
 }
 
-func (self *sSenderManager) send(reply *SSendReply, sendFunc sSendFunc) {
+func (self *sSenderManager) send(sendFunc sSendFunc) error {
 	// get agentID
 	self.configLock.RLock()
 	agentID, ok := self.configCache[AGENT_ID]
 	self.configLock.RUnlock()
 	if !ok {
-		reply.Success = false
-		reply.Msg = "AgentID has not been init"
-		return
+		return ErrAgentIDNotInit
 	}
 
 	// example message
 	err := sendFunc(self, agentID)
 	if err == nil {
 		log.Debugf("send message successfully.")
-		reply.Success = true
-		return
+		return nil
 	}
 
 	// access_token maybe be expired
@@ -214,19 +214,10 @@ func (self *sSenderManager) send(reply *SSendReply, sendFunc sSendFunc) {
 		// try again
 		err = sendFunc(self, agentID)
 		if err != nil {
-			dealError(reply, err)
-			return
+			fmt.Errorf("send failed after fetch access_token again: %w", err)
 		}
-		reply.Success = true
 		log.Debugf("send message successfully.")
-		return
+		return nil
 	}
-	dealError(reply, err)
-	return
-}
-
-func dealError(reply *SSendReply, err error) {
-	reply.Success = false
-	reply.Msg = err.Error()
-	log.Errorf("Send message failed because that %s", err.Error())
+	return fmt.Errorf("send failed even if access_token is not expired: %w", err)
 }

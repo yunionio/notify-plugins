@@ -14,41 +14,53 @@
 
 package dingtalk
 
-import "yunion.io/x/log"
+import (
+	"context"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+
+	"yunion.io/x/log"
+
+	"notify-plugin/pkg/apis"
+)
 
 type Server struct {
 	name string
 }
 
-func (s *Server) Send(args *SSendArgs, reply *SSendReply) error {
+func (s *Server) Send(ctx context.Context, req *apis.SendParams) (*apis.Empty, error) {
+	empty := &apis.Empty{}
 	if senderManager.client == nil {
-		reply.Success = false
-		reply.Msg = NOTINIT
-		return nil
+		err := status.Error(codes.FailedPrecondition, NOTINIT)
+		return empty, err
 	}
-	sendFunc, err := senderManager.getSendFunc(args)
+	sendFunc, err := senderManager.getSendFunc(req)
 	if err != nil {
-		reply.Success = false
-		reply.Msg = err.Error()
-		return nil
+		return empty, status.Error(codes.Unavailable, err.Error())
 	}
 
 	senderManager.workerChan <- struct{}{}
-	senderManager.send(reply, sendFunc)
+	err = senderManager.send(sendFunc)
 	<-senderManager.workerChan
-	return nil
+	if err == ErrAgentIDNotInit {
+		return empty, status.Error(codes.FailedPrecondition, err.Error())
+	}
+	if err != nil {
+		log.Errorf(err.Error())
+		return empty, status.Error(codes.Unavailable, err.Error())
+	}
+	return empty, nil
 }
 
-func (s *Server) UpdateConfig(args *SUpdateConfigArgs, reply *SSendReply) error {
-	if args.Config == nil {
-		reply.Success = false
-		reply.Msg = "Config shouldn't be nil."
-		return nil
+func (s *Server) UpdateConfig(ctx context.Context, req *apis.UpdateConfigParams) (*apis.Empty, error) {
+	empty := &apis.Empty{}
+	if req.Configs == nil {
+		return empty, status.Error(codes.InvalidArgument, "Config shouldn't be nil")
 	}
 	log.Debugf("update config...")
 	senderManager.configLock.Lock()
 	shouldInit := false
-	for key, value := range args.Config {
+	for key, value := range req.Configs {
 		if key == APP_KEY || key == APP_SECRET {
 			shouldInit = true
 		}
@@ -58,21 +70,18 @@ func (s *Server) UpdateConfig(args *SUpdateConfigArgs, reply *SSendReply) error 
 	if shouldInit {
 		senderManager.initClient()
 	}
-	reply.Success = true
-	return nil
+	return empty, nil
 }
 
-type SSendArgs struct {
-	Contact string
-	Topic   string
-	Message string
-}
+func (s *Server) UseridByMobile(ctx context.Context, req *apis.UseridByMobileParams) (*apis.UseridByMobileReply, error) {
+	reply := &apis.UseridByMobileReply{}
 
-type SSendReply struct {
-	Success bool
-	Msg     string
-}
+	if senderManager.client == nil {
+		err := status.Error(codes.FailedPrecondition, NOTINIT)
+		return reply, err
+	}
 
-type SUpdateConfigArgs struct {
-	Config map[string]string
+	userId, err := senderManager.client.UseridByMobile(req.Mobile)
+	reply.Userid = userId
+	return reply, status.Error(codes.Unavailable, err.Error())
 }

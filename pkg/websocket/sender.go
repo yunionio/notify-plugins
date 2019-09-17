@@ -24,13 +24,15 @@ import (
 	"strings"
 	"sync"
 	"text/template"
+	"errors"
 
 	"yunion.io/x/jsonutils"
 	"yunion.io/x/log"
 	"yunion.io/x/onecloud/pkg/mcclient"
 	"yunion.io/x/onecloud/pkg/mcclient/auth"
 	"yunion.io/x/onecloud/pkg/mcclient/modules"
-	"yunion.io/x/pkg/errors"
+
+	"notify-plugin/pkg/apis"
 )
 
 var senderManager *sSenderManager
@@ -116,12 +118,12 @@ func (self *sSenderManager) getContent(torc, topic, msg string) (string, error) 
 	tmpMap := make(map[string]interface{})
 	err := json.Unmarshal([]byte(content), &tmpMap)
 	if err != nil {
-		return "", errors.Error("Message should be a canonical JSON")
+		return "", errors.New("Message should be a canonical JSON")
 	}
 	buffer := new(bytes.Buffer)
 	err = tem.Execute(buffer, tmpMap)
 	if err != nil {
-		return "", errors.Error("Message content and template do not match")
+		return "", errors.New("Message content and template do not match")
 	}
 	return buffer.String(), nil
 }
@@ -153,17 +155,17 @@ func (self *sSenderManager) initClient() {
 	self.session = auth.GetAdminSession(context.Background(), self.region, "")
 }
 
-func (self *sSenderManager) send(args *SSendArgs, reply *SSendReply) {
+func (self *sSenderManager) send(args *apis.SendParams) error {
 	var title, content string
 	title, err := self.getContent("title", args.Topic, args.Message)
 	if err != nil {
-		dealError(reply, err)
-		return
+		log.Errorf(err.Error())
+		return ErrTemplate
 	}
 	content, err = self.getContent("content", args.Topic, args.Message)
 	if err != nil {
-		dealError(reply, err)
-		return
+		log.Errorf(err.Error())
+		return ErrTemplate
 	}
 	// component request body
 	body := jsonutils.DeepCopy(params).(*jsonutils.JSONDict)
@@ -185,16 +187,8 @@ func (self *sSenderManager) send(args *SSendArgs, reply *SSendReply) {
 		session = self.session
 		self.clientLock.RUnlock()
 		_, err = modules.Websockets.Create(session, body)
-		if err != nil {
-			dealError(reply, err)
-			return
-		}
-	}
-	reply.Success = true
-}
 
-func dealError(reply *SSendReply, err error) {
-	reply.Success = false
-	reply.Msg = err.Error()
-	log.Errorf("Send message failed because that %s.", err.Error())
+		return err
+	}
+	return nil
 }

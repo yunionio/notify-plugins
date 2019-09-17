@@ -14,63 +14,49 @@
 
 package email
 
-import "yunion.io/x/log"
+import (
+	"context"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+
+	"yunion.io/x/log"
+
+	"notify-plugin/pkg/apis"
+)
 
 type Server struct {
+	apis.UnimplementedSendAgentServer
 	name string
 }
 
-func (s *Server) Send(args *SSendArgs, reply *SSendReply) error {
+func (s *Server) Send(ctx context.Context, req *apis.SendParams) (*apis.Empty, error) {
+	empty := &apis.Empty{}
 	if senderManager.msgChan == nil {
-		reply.Success = false
-		reply.Msg = NOTINIT
-		return nil
+		err := status.Error(codes.FailedPrecondition, NOTINIT)
+		return empty, err
 	}
-	log.Debugf("reviced msg for %s: %s", args.Contact, args.Message)
-	senderManager.send(args, reply)
-	return nil
+	log.Debugf("reviced msg for %s: %s", req.Contact, req.Message)
+	err := senderManager.send(req)
+	if err == ErrTemplate {
+		return empty, status.Error(codes.Internal, err.Error())
+	}
+	if err != nil {
+		log.Errorf(err.Error())
+		return empty, status.Error(codes.Unavailable, err.Error())
+	}
+	return empty, nil
 }
 
-func (s *Server) UpdateConfig(args *SUpdateConfigArgs, reply *SSendReply) error {
-	if args.Config == nil {
-		reply.Success = false
-		reply.Msg = "Config shouldn't be nil."
-		return nil
+func (s *Server) UpdateConfig(ctx context.Context, req *apis.UpdateConfigParams) (*apis.Empty, error) {
+	empty := &apis.Empty{}
+	if req.Configs == nil {
+		return empty, status.Error(codes.InvalidArgument, "Config shouldn't be nil")
 	}
 	senderManager.configLock.Lock()
-	for key, value := range args.Config {
+	for key, value := range req.Configs {
 		senderManager.configCache[key] = value
 	}
 	senderManager.configLock.Unlock()
 	senderManager.restartSender()
-	reply.Success = true
-	return nil
-}
-
-func (s *Server) PullContact(args *SPullContactArgs, reply *SPullContactReply) error {
-
-	return nil
-}
-
-type SSendArgs struct {
-	Contact string
-	Topic   string
-	Message string
-}
-
-type SPullContactArgs struct {
-	Mobile string
-}
-
-type SPullContactReply struct {
-	Uid string
-}
-
-type SSendReply struct {
-	Success bool
-	Msg     string
-}
-
-type SUpdateConfigArgs struct {
-	Config map[string]string
+	return empty, nil
 }

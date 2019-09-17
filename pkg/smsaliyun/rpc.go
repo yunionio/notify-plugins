@@ -15,18 +15,24 @@
 package smsaliyun
 
 import (
+	"context"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+	"yunion.io/x/log"
+
+	"notify-plugin/pkg/apis"
 )
 
 type Server struct {
+	apis.UnimplementedSendAgentServer
 	name string
 }
 
-func (s *Server) Send(args *SSendArgs, reply *SSendReply) error {
+func (s *Server) Send(ctx context.Context, req *apis.SendParams) (*apis.Empty, error) {
+	empty := &apis.Empty{}
 	if senderManager.client == nil {
-		reply.Success = false
-		reply.Msg = NOTINIT
-		return nil
+		return empty, status.Error(codes.FailedPrecondition, NOTINIT)
 	}
 	request := requests.NewCommonRequest()
 	request.Method = "POST"
@@ -35,39 +41,41 @@ func (s *Server) Send(args *SSendArgs, reply *SSendReply) error {
 	request.Version = "2017-05-25"
 	request.ApiName = "SendSms"
 	request.QueryParams["RegionId"] = "default"
-	request.QueryParams["PhoneNumbers"] = args.Contact
+	request.QueryParams["PhoneNumbers"] = req.Contact
 
 	// Do not need to lock because that do not need signature when re-connect.
 	if signature, ok := senderManager.configCache[SIGNATURE]; ok {
 		request.QueryParams["SignName"] = signature
 	}
 	senderManager.templateLock.RLock()
-	tem, ok := senderManager.templateCache[args.Topic]
+	tem, ok := senderManager.templateCache[req.Topic]
 	senderManager.templateLock.RUnlock()
 	if !ok {
-		reply.Success = false
-		reply.Msg = "Corresponding template not found."
+		err := status.Error(codes.Internal, "Corresponding template not found")
 		go senderManager.updateTemplateCache()
-		return nil
+		return empty, err
 	}
 	request.QueryParams["TemplateCode"] = tem
-	request.QueryParams["TemplateParam"] = args.Message
+	request.QueryParams["TemplateParam"] = req.Message
 	// 控制和smsaliyun的最大并发数
 	senderManager.workerChan <- struct{}{}
-	senderManager.send(request, reply)
+	err := senderManager.send(request)
 	<-senderManager.workerChan
-	return nil
+	if err != nil {
+		log.Errorf(err.Error())
+		return empty, status.Error(codes.Unavailable, err.Error())
+	}
+	return empty, nil
 }
 
-func (s *Server) UpdateConfig(args *SUpdateConfigArgs, reply *SSendReply) error {
-	if args.Config == nil {
-		reply.Success = false
-		reply.Msg = "Config shouldn't be nil."
-		return nil
+func (s *Server) UpdateConfig(ctx context.Context, req *apis.UpdateConfigParams) (*apis.Empty, error) {
+	empty := &apis.Empty{}
+	if req.Configs == nil {
+		return empty, status.Error(codes.InvalidArgument, "Config shouldn't be nil")
 	}
 	senderManager.configLock.Lock()
 	shouldInit := false
-	for key, value := range args.Config {
+	for key, value := range req.Configs {
 		if key == ACESS_KEY_SECRET_BP {
 			key = ACCESS_KEY_SECRET
 		}
@@ -83,21 +91,5 @@ func (s *Server) UpdateConfig(args *SUpdateConfigArgs, reply *SSendReply) error 
 	if shouldInit {
 		senderManager.initClient()
 	}
-	reply.Success = true
-	return nil
-}
-
-type SSendArgs struct {
-	Contact string
-	Topic   string
-	Message string
-}
-
-type SSendReply struct {
-	Success bool
-	Msg     string
-}
-
-type SUpdateConfigArgs struct {
-	Config map[string]string
+	return empty, nil
 }

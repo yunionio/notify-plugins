@@ -8,11 +8,11 @@
 
 ### 代码结构
 
-apis：基于proto buffer的grpc 接口
-
 cmd：主函数入口
 
 pkg：各个模块的主要代码
+
+pkg/apis：基于proto buffer的grpc 接口
 
 utils：工具包
 

@@ -15,8 +15,8 @@
 package smsaliyun
 
 import (
+	"errors"
 	"io/ioutil"
-	"notify-plugin/utils"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -24,6 +24,8 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"yunion.io/x/log"
+
+	"notify-plugin/utils"
 )
 
 type sTemplateCache map[string]string
@@ -109,7 +111,7 @@ func (self *sSenderManager) initClient() {
 	log.Printf("Total %d workers.", cap(self.workerChan))
 }
 
-func (self *sSenderManager) send(req *requests.CommonRequest, reply *SSendReply) {
+func (self *sSenderManager) send(req *requests.CommonRequest) error {
 	self.clientLock.RLock()
 	client := self.client
 	self.clientLock.RUnlock()
@@ -117,14 +119,11 @@ func (self *sSenderManager) send(req *requests.CommonRequest, reply *SSendReply)
 	if err == nil {
 		if reponse.IsSuccess() {
 			log.Debugf("Sender successfully")
-			reply.Success = true
-			return
+			return nil
 		}
-		log.Debugf(reponse.GetHttpContentString())
-		reply.Success = false
 		log.Errorf("Send message failed because that %s.", err.Error())
 		//todo There may be detailed processing for different errors.
-		return
+		return errors.New("send error")
 	}
 	//todo
 	self.initClient()
@@ -135,16 +134,7 @@ func (self *sSenderManager) send(req *requests.CommonRequest, reply *SSendReply)
 	reponse, err = client.ProcessCommonRequest(req)
 	if err != nil {
 		//todo There may be detailed processing for different errors.
-		dealError(reply, err)
-		return
+		return err
 	}
-	if reponse.IsSuccess() {
-		reply.Success = true
-	}
-}
-
-func dealError(reply *SSendReply, err error) {
-	reply.Success = false
-	reply.Msg = err.Error()
-	log.Errorf("Send message failed because that %s.", err.Error())
+	return nil
 }

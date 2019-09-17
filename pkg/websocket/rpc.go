@@ -14,31 +14,43 @@
 
 package websocket
 
+import (
+	"context"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+	"yunion.io/x/log"
+
+	"notify-plugin/pkg/apis"
+)
+
 type Server struct {
+	apis.UnimplementedSendAgentServer
 	name string
 }
 
-func (s *Server) Send(args *SSendArgs, reply *SSendReply) error {
+func (s *Server) Send(ctx context.Context, req *apis.SendParams) (*apis.Empty, error) {
+	empty := &apis.Empty{}
 	if senderManager.session == nil {
-		reply.Success = false
-		reply.Msg = NOTINIT
-		return nil
+		return empty, status.Error(codes.FailedPrecondition, NOTINIT)
 	}
 	senderManager.workerChan <- struct{}{}
-	senderManager.send(args, reply)
+	err := senderManager.send(req)
 	<-senderManager.workerChan
-	return nil
+	if err != nil {
+		log.Errorf(err.Error())
+		return empty, status.Error(codes.Unavailable, err.Error())
+	}
+	return empty, nil
 }
 
-func (s *Server) UpdateConfig(args *SUpdateConfigArgs, reply *SSendReply) error {
-	if args.Config == nil {
-		reply.Success = false
-		reply.Msg = "Config shouldn't be nil."
-		return nil
+func (s *Server) UpdateConfig(ctx context.Context, req *apis.UpdateConfigParams) (*apis.Empty, error) {
+	empty := &apis.Empty{}
+	if req.Configs == nil {
+		return empty, status.Error(codes.InvalidArgument, "Config shouldn't be nil")
 	}
 	senderManager.configLock.Lock()
 	shouldInit := false
-	for key, value := range args.Config {
+	for key, value := range req.Configs {
 		if key == AUTH_URI || key == ADMIN_USER || key == ADMIN_PASSWORD {
 			shouldInit = true
 		}
@@ -48,22 +60,5 @@ func (s *Server) UpdateConfig(args *SUpdateConfigArgs, reply *SSendReply) error 
 	if shouldInit {
 		senderManager.initClient()
 	}
-	reply.Success = true
-	return nil
-}
-
-type SSendArgs struct {
-	Contact  string
-	Topic    string
-	Message  string
-	Priority string
-}
-
-type SSendReply struct {
-	Success bool
-	Msg     string
-}
-
-type SUpdateConfigArgs struct {
-	Config map[string]string
+	return empty, nil
 }

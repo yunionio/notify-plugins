@@ -19,6 +19,6 @@ import (
 )
 
 type SWebsocketConfig struct {
-	Region string `hekp:"region"`
 	utils.SBaseOptions
+	Region string `hekp:"region"`
 }

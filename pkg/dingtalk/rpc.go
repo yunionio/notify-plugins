@@ -16,40 +16,46 @@ package dingtalk
 
 import (
 	"context"
-	"notify-plugin/pkg/apis"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+
 	"yunion.io/x/log"
+
+	"notify-plugin/pkg/apis"
 )
 
 type Server struct {
 	name string
 }
 
-func (s *Server) Send(ctx context.Context, req *apis.SendParams) (*apis.BaseReply, error) {
-	response := apis.BaseReply{}
+func (s *Server) Send(ctx context.Context, req *apis.SendParams) (*apis.Empty, error) {
+	empty := &apis.Empty{}
 	if senderManager.client == nil {
-		response.Success = false
-		response.Msg = NOTINIT
-		return &response, nil
+		err := status.Error(codes.FailedPrecondition, NOTINIT)
+		return empty, err
 	}
 	sendFunc, err := senderManager.getSendFunc(req)
 	if err != nil {
-		response.Success = false
-		response.Msg = err.Error()
-		return &response, nil
+		return empty, status.Error(codes.Unavailable, err.Error())
 	}
 
 	senderManager.workerChan <- struct{}{}
-	senderManager.send(&response, sendFunc)
+	err = senderManager.send(sendFunc)
 	<-senderManager.workerChan
-	return &response, nil
+	if err == ErrAgentIDNotInit {
+		return empty, status.Error(codes.FailedPrecondition, err.Error())
+	}
+	if err != nil {
+		log.Errorf(err.Error())
+		return empty, status.Error(codes.Unavailable, err.Error())
+	}
+	return empty, nil
 }
 
-func (s *Server) UpdateConfig(ctx context.Context, req *apis.UpdateConfigParams) (*apis.BaseReply, error) {
-	reply := apis.BaseReply{}
+func (s *Server) UpdateConfig(ctx context.Context, req *apis.UpdateConfigParams) (*apis.Empty, error) {
+	empty := &apis.Empty{}
 	if req.Configs == nil {
-		reply.Success = false
-		reply.Msg = "Config shouldn't be nil."
-		return &reply, nil
+		return empty, status.Error(codes.InvalidArgument, "Config shouldn't be nil")
 	}
 	log.Debugf("update config...")
 	senderManager.configLock.Lock()
@@ -64,15 +70,18 @@ func (s *Server) UpdateConfig(ctx context.Context, req *apis.UpdateConfigParams)
 	if shouldInit {
 		senderManager.initClient()
 	}
-	reply.Success = true
-	return &reply, nil
+	return empty, nil
 }
 
-func (s *Server) UseridByMobile(ctx context.Context, req *apis.UseridByMobileParams) (*apis.UseridByMobileReply,
-	error) {
+func (s *Server) UseridByMobile(ctx context.Context, req *apis.UseridByMobileParams) (*apis.UseridByMobileReply, error) {
+	reply := &apis.UseridByMobileReply{}
+
+	if senderManager.client == nil {
+		err := status.Error(codes.FailedPrecondition, NOTINIT)
+		return reply, err
+	}
 
 	userId, err := senderManager.client.UseridByMobile(req.Mobile)
-	reply := apis.UseridByMobileReply{}
 	reply.Userid = userId
-	return &reply, err
+	return reply, status.Error(codes.Unavailable, err.Error())
 }

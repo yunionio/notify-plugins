@@ -16,8 +16,12 @@ package email
 
 import (
 	"context"
-	"notify-plugin/pkg/apis"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+
 	"yunion.io/x/log"
+
+	"notify-plugin/pkg/apis"
 )
 
 type Server struct {
@@ -25,24 +29,28 @@ type Server struct {
 	name string
 }
 
-func (s *Server) Send(ctx context.Context, req *apis.SendParams) (*apis.BaseReply, error) {
-	reply := &apis.BaseReply{}
+func (s *Server) Send(ctx context.Context, req *apis.SendParams) (*apis.Empty, error) {
+	empty := &apis.Empty{}
 	if senderManager.msgChan == nil {
-		reply.Success = false
-		reply.Msg = NOTINIT
-		return reply, nil
+		err := status.Error(codes.FailedPrecondition, NOTINIT)
+		return empty, err
 	}
 	log.Debugf("reviced msg for %s: %s", req.Contact, req.Message)
-	senderManager.send(req, reply)
-	return reply, nil
+	err := senderManager.send(req)
+	if err == ErrTemplate {
+		return empty, status.Error(codes.Internal, err.Error())
+	}
+	if err != nil {
+		log.Errorf(err.Error())
+		return empty, status.Error(codes.Unavailable, err.Error())
+	}
+	return empty, nil
 }
 
-func (s *Server) UpdateConfig(ctx context.Context, req *apis.UpdateConfigParams) (*apis.BaseReply, error) {
-	reply := &apis.BaseReply{}
+func (s *Server) UpdateConfig(ctx context.Context, req *apis.UpdateConfigParams) (*apis.Empty, error) {
+	empty := &apis.Empty{}
 	if req.Configs == nil {
-		reply.Success = false
-		reply.Msg = "Config shouldn't be nil."
-		return reply, nil
+		return empty, status.Error(codes.InvalidArgument, "Config shouldn't be nil")
 	}
 	senderManager.configLock.Lock()
 	for key, value := range req.Configs {
@@ -50,6 +58,5 @@ func (s *Server) UpdateConfig(ctx context.Context, req *apis.UpdateConfigParams)
 	}
 	senderManager.configLock.Unlock()
 	senderManager.restartSender()
-	reply.Success = true
-	return reply, nil
+	return empty, nil
 }

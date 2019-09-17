@@ -18,17 +18,18 @@ import (
 	"bytes"
 	"encoding/json"
 	"io/ioutil"
-	"notify-plugin/pkg/apis"
 	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
 	"text/template"
 	"time"
+	"errors"
 
 	"gopkg.in/gomail.v2"
 	"yunion.io/x/log"
-	"yunion.io/x/pkg/errors"
+
+	"notify-plugin/pkg/apis"
 )
 
 type sTemplateCache map[string]*template.Template
@@ -97,7 +98,7 @@ func (self *sSenderManager) updateTemplate(torc string) {
 	}
 }
 
-func (self *sSenderManager) send(args *apis.SendParams, reply *apis.BaseReply) {
+func (self *sSenderManager) send(args *apis.SendParams) error {
 	gmsg := gomail.NewMessage()
 	username := senderManager.configCache[USERNAME]
 	gmsg.SetHeader("From", username)
@@ -105,27 +106,26 @@ func (self *sSenderManager) send(args *apis.SendParams, reply *apis.BaseReply) {
 	gmsg.SetHeader("Subject", args.Topic)
 	title, err := self.getContent("title", args.Topic, args.Message)
 	if err != nil {
-		reply.Success = false
-		reply.Msg = err.Error()
-		return
+		log.Errorf(err.Error())
+		return ErrTemplate
 	}
 	gmsg.SetHeader("Subject", title)
 	content, err := self.getContent("content", args.Topic, args.Message)
 	if err != nil {
-		reply.Success = false
-		reply.Msg = err.Error()
-		return
+		log.Errorf(err.Error())
+		return ErrTemplate
 	}
 	gmsg.SetBody("text/html", content)
 	ret := make(chan bool)
 	senderManager.msgChan <- &sSendUnit{gmsg, ret}
-	reply.Success = <-ret
-	// try again
-	if !reply.Success {
+	if suc := <-ret; !suc {
+		// try again
 		senderManager.msgChan <- &sSendUnit{gmsg, ret}
-		reply.Success = <-ret
-		reply.Msg = "example failed."
+		if suc = <-ret; !suc {
+			return errors.New("send error")
+		}
 	}
+	return nil
 }
 
 func (self *sSenderManager) getContent(torc, topic, msg string) (string, error) {
@@ -144,12 +144,12 @@ func (self *sSenderManager) getContent(torc, topic, msg string) (string, error) 
 	tmpMap := make(map[string]interface{})
 	err := json.Unmarshal([]byte(content), &tmpMap)
 	if err != nil {
-		return "", errors.Error("Message should be a canonical JSON")
+		return "", errors.New("Message should be a canonical JSON")
 	}
 	buffer := new(bytes.Buffer)
 	err = tem.Execute(buffer, tmpMap)
 	if err != nil {
-		return "", errors.Error("Message content and template do not match")
+		return "", errors.New("Message content and template do not match")
 	}
 	return buffer.String(), nil
 }

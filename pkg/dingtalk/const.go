@@ -14,6 +14,8 @@
 
 package dingtalk
 
+import "errors"
+
 const (
 	APP_KEY = "app_key"
 	//APP_KEY = "appKey"
@@ -21,4 +23,8 @@ const (
 	AGENT_ID   = "agent_id"
 
 	NOTINIT = "Send service hasn't been init"
+)
+
+var (
+	ErrAgentIDNotInit = errors.New("AgentID has not been init")
 )

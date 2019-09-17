@@ -16,15 +16,16 @@ package websocket
 
 import (
 	"fmt"
-	"google.golang.org/grpc"
 	"net"
-	"notify-plugin/pkg/apis"
-	"notify-plugin/utils"
 	"os"
 	"os/signal"
 	"syscall"
 
+	"google.golang.org/grpc"
 	"yunion.io/x/log"
+
+	"notify-plugin/pkg/apis"
+	"notify-plugin/utils"
 )
 
 func StartService() {
@@ -49,7 +50,7 @@ func StartService() {
 
 	// init rpc Server
 	grpcServer := grpc.NewServer()
-	apis.RegisterSendAgentServer(grpcServer, &Server{apis.UnimplementedSendAgentServer{},"webconsole"})
+	apis.RegisterSendAgentServer(grpcServer, &Server{apis.UnimplementedSendAgentServer{}, "webconsole"})
 
 	la, err := net.Listen("unix", fmt.Sprintf("%s/%s.sock", config.SockFileDir, "webconsole"))
 	if err != nil {
@@ -57,7 +58,7 @@ func StartService() {
 	}
 
 	sigs := make(chan os.Signal, 1)
-	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
+	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
 	go grpcServer.Serve(la)
 	log.Infoln("Service start successfully")
 

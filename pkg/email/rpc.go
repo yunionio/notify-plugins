@@ -42,7 +42,7 @@ func (s *Server) Send(ctx context.Context, req *apis.SendParams) (*apis.Empty, e
 	}
 	if err != nil {
 		log.Errorf(err.Error())
-		return empty, status.Error(codes.Unavailable, err.Error())
+		return empty, status.Error(codes.Internal, err.Error())
 	}
 	return empty, nil
 }

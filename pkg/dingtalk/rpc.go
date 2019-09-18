@@ -36,7 +36,7 @@ func (s *Server) Send(ctx context.Context, req *apis.SendParams) (*apis.Empty, e
 	}
 	sendFunc, err := senderManager.getSendFunc(req)
 	if err != nil {
-		return empty, status.Error(codes.Unavailable, err.Error())
+		return empty, status.Error(codes.Internal, err.Error())
 	}
 
 	senderManager.workerChan <- struct{}{}
@@ -47,7 +47,7 @@ func (s *Server) Send(ctx context.Context, req *apis.SendParams) (*apis.Empty, e
 	}
 	if err != nil {
 		log.Errorf(err.Error())
-		return empty, status.Error(codes.Unavailable, err.Error())
+		return empty, status.Error(codes.Internal, err.Error())
 	}
 	return empty, nil
 }
@@ -83,5 +83,5 @@ func (s *Server) UseridByMobile(ctx context.Context, req *apis.UseridByMobilePar
 
 	userId, err := senderManager.client.UseridByMobile(req.Mobile)
 	reply.Userid = userId
-	return reply, status.Error(codes.Unavailable, err.Error())
+	return reply, status.Error(codes.Internal, err.Error())
 }

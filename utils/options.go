@@ -55,7 +55,7 @@ func ParseOptions(optStruct interface{}, args []string, configFileName string) {
 
 type SBaseOptions struct {
 	SockFileDir   string `help:"socket file directory" default:"/etc/yunion/notify"`
-	SenderNum     int    `help:"number of sender" default:5`
+	SenderNum     int    `help:"number of sender" default:"5"`
 	TemplateDir   string `help:"template directory"`
 	LogLevel      string `help:"log level" default:"info" choices:"debug|info|warn|error"`
 	LogFilePrefix string `help:"prefix of log files"`

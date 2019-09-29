@@ -17,13 +17,13 @@ package dingtalk
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"path/filepath"
 	"strings"
 	"sync"
 	"text/template"
-	"errors"
 
 	"github.com/hugozhu/godingtalk"
 	"yunion.io/x/log"
@@ -163,7 +163,32 @@ func (self *sSenderManager) getContent(torc, topic, msg string) (string, error) 
 }
 
 func (self *sSenderManager) getUseridByMobile(mobile string) (string, error) {
-	return self.client.UseridByMobile(mobile)
+	// get department list
+	departmentList, err := senderManager.client.DepartmentList()
+	if err != nil {
+		return "", fmt.Errorf("fetch department list failed")
+	}
+	limit := 100
+	for _, de := range departmentList.Departments {
+		offset := 0
+		for {
+			userList, err := senderManager.client.UserList(de.Id, offset, limit)
+			if err != nil {
+				return "", fmt.Errorf("fetch userList of department failed")
+			}
+			for _, user := range userList.Userlist {
+				if user.Mobile == mobile {
+					return user.Userid, nil
+				}
+			}
+			if !userList.HasMore {
+				break
+			}
+			offset += limit
+		}
+	}
+
+	return "", ErrNoSuchUser
 }
 
 func (self *sSenderManager) initClient() {

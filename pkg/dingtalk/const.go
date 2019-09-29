@@ -27,4 +27,5 @@ const (
 
 var (
 	ErrAgentIDNotInit = errors.New("AgentID has not been init")
+	ErrNoSuchUser     = errors.New("No such user")
 )

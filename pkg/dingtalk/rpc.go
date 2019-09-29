@@ -80,8 +80,13 @@ func (s *Server) UseridByMobile(ctx context.Context, req *apis.UseridByMobilePar
 		err := status.Error(codes.FailedPrecondition, NOTINIT)
 		return reply, err
 	}
-
-	userId, err := senderManager.client.UseridByMobile(req.Mobile)
+	userId, err := senderManager.getUseridByMobile(req.Mobile)
+	if err == ErrNoSuchUser {
+		return reply, status.Error(codes.NotFound, err.Error())
+	}
+	if err != nil {
+		return reply, status.Error(codes.Internal, err.Error())
+	}
 	reply.Userid = userId
-	return reply, status.Error(codes.Internal, err.Error())
+	return reply, nil
 }

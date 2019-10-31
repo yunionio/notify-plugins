@@ -18,7 +18,7 @@ all: cmd/email cmd/websocket cmd/smsaliyun cmd/dingtalk
 
 fmt:
 cmd/%: fmt
-	$(ENV) go build $(GO_BUILD_FLAGS) -o $(BIN_DIR)/$(shell basename $@) $(ROOT_DIR)/$@
+	$(ENV) go build $(GO_BUILD_FLAGS) -o $(BIN_DIR)/$(shell basename $@) notify-plugin/$@
 
 image: all
 	docker build -f Dockerfile -t $(REGISTRY)/notify-plugins:$(VERSION) .

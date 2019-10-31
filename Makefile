@@ -1,6 +1,7 @@
 ROOT_DIR := $(CURDIR)
 BUILD_DIR := $(ROOT_DIR)/_output
 BIN_DIR := $(BUILD_DIR)/bin
+BUILD_SCRIPT := $(ROOT_DIR)/build/build.sh
 
 REGISTRY ?= "registry.cn-beijing.aliyuncs.com/yunionio"
 VERSION ?= $(shell git describe --exact-match 2> /dev/null || \
@@ -13,10 +14,15 @@ GO_BUILD_FLAGS+=-mod vendor
 
 export GO111MODULE=on
 
-all: cmd/email cmd/websocket cmd/smsaliyun cmd/dingtalk
+cmdTargets:=$(filter-out ,$(wildcard cmd/*))
+rpmTargets:=$(foreach b,$(patsubst cmd/%,%,$(cmdTargets)),$(if $(shell [ -f "$(CURDIR)/build/$(b)/vars" ] && echo 1),rpm/$(b)))
+
+all: 
+	$(MAKE) $(cmdTargets)
 #.PHONY: cmd/*
 
 fmt:
+
 cmd/%: fmt
 	go build $(GO_BUILD_FLAGS) -o $(BIN_DIR)/$(shell basename $@) notify-plugin/$@
 
@@ -25,3 +31,13 @@ image: all
 
 image-push: image
 	docker push $(REGISTRY)/notify-plugins:$(VERSION)
+
+rpm/%: cmd/%
+	$(BUILD_SCRIPT) $*
+
+rpm:
+	$(MAKE) $(rpmTargets)
+
+rpmclean:
+	rm -fr $(BUILD_DIR)/rpms
+

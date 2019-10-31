@@ -11,14 +11,14 @@ ifneq ($(DLV),)
 endif
 GO_BUILD_FLAGS+=-mod vendor
 
-GO111MODULE=on
+export GO111MODULE=on
 
 all: cmd/email cmd/websocket cmd/smsaliyun cmd/dingtalk
 #.PHONY: cmd/*
 
 fmt:
 cmd/%: fmt
-	$(ENV) go build $(GO_BUILD_FLAGS) -o $(BIN_DIR)/$(shell basename $@) notify-plugin/$@
+	go build $(GO_BUILD_FLAGS) -o $(BIN_DIR)/$(shell basename $@) notify-plugin/$@
 
 image: all
 	docker build -f Dockerfile -t $(REGISTRY)/notify-plugins:$(VERSION) .

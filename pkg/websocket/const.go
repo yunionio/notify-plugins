@@ -14,8 +14,6 @@
 
 package websocket
 
-import "errors"
-
 const (
 	AUTH_URI          = "auth_uri"
 	ADMIN_USER        = "admin_user"
@@ -23,8 +21,4 @@ const (
 	ADMIN_TENANT_NAME = "admin_tenant_name"
 
 	NOTINIT = "Send service hasn't been init"
-)
-
-var (
-	ErrTemplate = errors.New("template error")
 )

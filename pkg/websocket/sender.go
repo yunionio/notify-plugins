@@ -15,19 +15,11 @@
 package websocket
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
-	"path/filepath"
-	"strings"
 	"sync"
-	"text/template"
-	"errors"
 
 	"yunion.io/x/jsonutils"
-	"yunion.io/x/log"
 	"yunion.io/x/onecloud/pkg/mcclient"
 	"yunion.io/x/onecloud/pkg/mcclient/auth"
 	"yunion.io/x/onecloud/pkg/mcclient/modules"
@@ -36,12 +28,6 @@ import (
 )
 
 var senderManager *sSenderManager
-
-type sTemplateCache map[string]*template.Template
-
-func newSTemplateCache() sTemplateCache {
-	return make(map[string]*template.Template)
-}
 
 type sConfigCache map[string]string
 
@@ -58,74 +44,15 @@ type sSenderManager struct {
 
 	configCache   sConfigCache   // config cache
 	configLock    sync.RWMutex   // lock to protect config cache
-	templateCache sTemplateCache // template cache
-	templateLock  sync.RWMutex   // lock to protect template cache
 }
 
 func newSSenderManager(config *SWebsocketConfig) *sSenderManager {
 	return &sSenderManager{
 		workerChan:  make(chan struct{}, config.SenderNum),
-		templateDir: config.TemplateDir,
 		region:      config.Region,
 
 		configCache:   newSConfigCache(),
-		templateCache: newSTemplateCache(),
 	}
-}
-
-func (self *sSenderManager) updateTemplateCache() {
-	self.updateTemplate("title")
-	self.updateTemplate("content")
-}
-
-func (self *sSenderManager) updateTemplate(torc string) {
-	templateDir := filepath.Join(self.templateDir, torc)
-	files, err := ioutil.ReadDir(templateDir)
-	if err != nil {
-		log.Errorf("Incorrect template directory '%s': %s", self.templateDir, err.Error())
-		return
-	}
-	for _, file := range files {
-		if file.IsDir() {
-			continue
-		}
-		templatePath := filepath.Join(templateDir, file.Name())
-		tem, err := template.ParseFiles(templatePath)
-		if err != nil {
-			log.Errorf("Parse file '%s' to template failed.", templatePath)
-			continue
-		}
-		key := strings.ToLower(file.Name()) + "." + torc
-		self.templateLock.Lock()
-		self.templateCache[key] = tem
-		self.templateLock.Unlock()
-	}
-}
-
-func (self *sSenderManager) getContent(torc, topic, msg string) (string, error) {
-	key := topic + "." + torc
-	self.templateLock.RLock()
-	tem, ok := self.templateCache[key]
-	self.templateLock.RUnlock()
-	if !ok {
-		if torc == "title" {
-			return topic, nil
-		}
-		return msg, nil
-	}
-	content := msg
-
-	tmpMap := make(map[string]interface{})
-	err := json.Unmarshal([]byte(content), &tmpMap)
-	if err != nil {
-		return "", errors.New("Message should be a canonical JSON")
-	}
-	buffer := new(bytes.Buffer)
-	err = tem.Execute(buffer, tmpMap)
-	if err != nil {
-		return "", errors.New("Message content and template do not match")
-	}
-	return buffer.String(), nil
 }
 
 func (self *sSenderManager) initClient() {
@@ -156,21 +83,10 @@ func (self *sSenderManager) initClient() {
 }
 
 func (self *sSenderManager) send(args *apis.SendParams) error {
-	var title, content string
-	title, err := self.getContent("title", args.Topic, args.Message)
-	if err != nil {
-		log.Errorf(err.Error())
-		return ErrTemplate
-	}
-	content, err = self.getContent("content", args.Topic, args.Message)
-	if err != nil {
-		log.Errorf(err.Error())
-		return ErrTemplate
-	}
 	// component request body
 	body := jsonutils.DeepCopy(params).(*jsonutils.JSONDict)
-	body.Add(jsonutils.NewString(title), "action")
-	body.Add(jsonutils.NewString(fmt.Sprintf("priority=%s; content=%s", args.Priority, content)), "notes")
+	body.Add(jsonutils.NewString(args.Title), "action")
+	body.Add(jsonutils.NewString(fmt.Sprintf("priority=%s; content=%s", args.Priority, args.Message)), "notes")
 	body.Add(jsonutils.NewString(args.Contact), "user_id")
 	body.Add(jsonutils.NewString(args.Contact), "user")
 	if len(args.Contact) == 0 {
@@ -179,7 +95,7 @@ func (self *sSenderManager) send(args *apis.SendParams) error {
 	self.clientLock.RLock()
 	session := self.session
 	self.clientLock.RUnlock()
-	_, err = modules.Websockets.Create(session, body)
+	_, err := modules.Websockets.Create(session, body)
 	if err != nil {
 		// failed
 		self.initClient()

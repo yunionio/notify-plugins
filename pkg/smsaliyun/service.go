@@ -37,19 +37,14 @@ func StartService() {
 	log.SetLogLevelByString(log.Logger(), config.LogLevel)
 	log.SetLogLevelByString(log.Logger(), config.LogLevel)
 
-	// check template and socket dir
-	err := utils.CheckDir(config.TemplateDir)
-	if err != nil {
-		log.Fatalf("Dir %s not exist and create failed.", config.TemplateDir)
-	}
-	err = utils.CheckDir(config.SockFileDir)
+	// check socket dir
+	err := utils.CheckDir(config.SockFileDir)
 	if err != nil {
 		log.Fatalf("Dir %s not exist and create failed.", config.SockFileDir)
 	}
 
 	// init sender manager
 	senderManager = newSSenderManager(&config)
-	senderManager.updateTemplateCache()
 
 	// init rpc Server
 	grpcServer := grpc.NewServer()

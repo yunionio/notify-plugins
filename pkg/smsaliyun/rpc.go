@@ -16,6 +16,7 @@ package smsaliyun
 
 import (
 	"context"
+
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -47,15 +48,10 @@ func (s *Server) Send(ctx context.Context, req *apis.SendParams) (*apis.Empty, e
 	if signature, ok := senderManager.configCache[SIGNATURE]; ok {
 		request.QueryParams["SignName"] = signature
 	}
-	senderManager.templateLock.RLock()
-	tem, ok := senderManager.templateCache[req.Topic]
-	senderManager.templateLock.RUnlock()
-	if !ok {
-		err := status.Error(codes.Internal, "Corresponding template not found")
-		go senderManager.updateTemplateCache()
-		return empty, err
+	if len(req.RemoteTemplate) == 0 {
+		return empty, status.Error(codes.InvalidArgument, NEED_REMOTE_TEMPLATE)
 	}
-	request.QueryParams["TemplateCode"] = tem
+	request.QueryParams["TemplateCode"] = req.RemoteTemplate
 	request.QueryParams["TemplateParam"] = req.Message
 	// 控制和smsaliyun的最大并发数
 	senderManager.workerChan <- struct{}{}

@@ -16,9 +16,6 @@ package smsaliyun
 
 import (
 	"errors"
-	"io/ioutil"
-	"path/filepath"
-	"strings"
 	"sync"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk"
@@ -27,12 +24,6 @@ import (
 
 	"notify-plugin/utils"
 )
-
-type sTemplateCache map[string]string
-
-func newSTemplateCache() sTemplateCache {
-	return make(map[string]string)
-}
 
 type sConfigCache map[string]string
 
@@ -48,41 +39,13 @@ type sSenderManager struct {
 
 	configCache   sConfigCache   // config cache
 	configLock    sync.RWMutex   // lock to protect config cache
-	templateCache sTemplateCache // template cache
-	templateLock  sync.RWMutex   // lock to protect template cache
 }
 
 func newSSenderManager(config *utils.SBaseOptions) *sSenderManager {
 	return &sSenderManager{
 		workerChan:  make(chan struct{}, config.SenderNum),
-		templateDir: config.TemplateDir,
 
 		configCache:   newSConfigCache(),
-		templateCache: newSTemplateCache(),
-	}
-}
-
-func (self *sSenderManager) updateTemplateCache() {
-	files, err := ioutil.ReadDir(self.templateDir)
-	if err != nil {
-		log.Errorf("Incorrect template directory '%s': %s", self.templateDir, err.Error())
-		return
-	}
-	for _, file := range files {
-		if file.IsDir() {
-			continue
-		}
-		path := filepath.Join(self.templateDir, file.Name())
-		content, err := ioutil.ReadFile(path)
-		if err != nil {
-			log.Errorf("can't read content of such file '%s' because that %s", path, err.Error())
-			return
-		}
-		templateName := strings.TrimSpace(string(content))
-		//templateName := filepath.Base(file[0].Name())
-		self.templateLock.Lock()
-		self.templateCache[strings.ToLower(file.Name())] = templateName
-		self.templateLock.Unlock()
 	}
 }
 

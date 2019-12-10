@@ -35,14 +35,9 @@ func StartService() {
 
 	// init sender manager
 	senderManager = newSSenderManager(&config)
-	senderManager.updateTemplateCache()
 
-	// check template and socket dir
-	err := utils.CheckDir(config.TemplateDir, "content", "title")
-	if err != nil {
-		log.Fatalf("Dir %s not exist and create failed.", config.TemplateDir)
-	}
-	err = utils.CheckDir(config.SockFileDir)
+	// check socket dir
+	err := utils.CheckDir(config.SockFileDir)
 	if err != nil {
 		log.Fatalf("Dir %s not exist and create failed.", config.SockFileDir)
 	}

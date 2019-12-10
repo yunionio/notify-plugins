@@ -15,15 +15,9 @@
 package dingtalk
 
 import (
-	"bytes"
-	"encoding/json"
-	"errors"
 	"fmt"
-	"io/ioutil"
-	"path/filepath"
 	"strings"
 	"sync"
-	"text/template"
 
 	"github.com/hugozhu/godingtalk"
 	"yunion.io/x/log"
@@ -33,12 +27,6 @@ import (
 )
 
 var senderManager *sSenderManager
-
-type sTemplateCache map[string]*template.Template
-
-func newSTemplateCache() sTemplateCache {
-	return make(map[string]*template.Template)
-}
 
 type sConfigCache map[string]string
 
@@ -54,66 +42,24 @@ type sSenderManager struct {
 	client      *godingtalk.DingTalkClient // client to example sms
 	clientLock  sync.RWMutex               // lock to protect client
 
-	configCache   sConfigCache   // config cache
-	configLock    sync.RWMutex   // lock to protect config cache
-	templateCache sTemplateCache // template cache
-	templateLock  sync.RWMutex   // lock to protect template cache
+	configCache sConfigCache // config cache
+	configLock  sync.RWMutex // lock to protect config cache
 }
 
 func newSSenderManager(config *utils.SBaseOptions) *sSenderManager {
 	return &sSenderManager{
-		workerChan:  make(chan struct{}, config.SenderNum),
-		templateDir: config.TemplateDir,
-
-		configCache:   newSConfigCache(),
-		templateCache: newSTemplateCache(),
-	}
-}
-
-func (self *sSenderManager) updateTemplateCache() {
-	self.updateTemplate("title")
-	self.updateTemplate("content")
-}
-
-func (self *sSenderManager) updateTemplate(torc string) {
-	templateDir := filepath.Join(self.templateDir, torc)
-	files, err := ioutil.ReadDir(templateDir)
-	if err != nil {
-		log.Errorf("Incorrect template directory '%s': %s", self.templateDir, err.Error())
-		return
-	}
-	for _, file := range files {
-		if file.IsDir() {
-			continue
-		}
-		templatePath := filepath.Join(templateDir, file.Name())
-		tem, err := template.ParseFiles(templatePath)
-		if err != nil {
-			log.Errorf("Parse file '%s' to template failed.", templatePath)
-			continue
-		}
-		key := strings.ToLower(file.Name()) + "." + torc
-		self.templateLock.Lock()
-		self.templateCache[key] = tem
-		self.templateLock.Unlock()
+		workerChan: make(chan struct{}, config.SenderNum),
+		configCache: newSConfigCache(),
 	}
 }
 
 func (self *sSenderManager) getSendFunc(args *apis.SendParams) (sSendFunc, error) {
-	title, err := self.getContent("title", args.Topic, args.Message)
-	if err != nil {
-		return nil, err
-	}
-	content, err := self.getContent("content", args.Topic, args.Message)
-	if err != nil {
-		return nil, err
-	}
-	if title == args.Topic && content == args.Message {
+	if args.Title == args.Topic {
 		return func(manager *sSenderManager, agentID string) error {
 			manager.clientLock.RLock()
 			client := manager.client
 			manager.clientLock.RUnlock()
-			err := client.SendAppMessage(agentID, args.Contact, content)
+			err := client.SendAppMessage(agentID, args.Contact, args.Message)
 			if err != nil {
 				return fmt.Errorf("UserIDs: %s: %w", args.Contact, err)
 			}
@@ -122,8 +68,8 @@ func (self *sSenderManager) getSendFunc(args *apis.SendParams) (sSendFunc, error
 	}
 	message := godingtalk.OAMessage{}
 	message.Head.Text = args.Topic
-	message.Body.Title = title
-	message.Body.Content = content
+	message.Body.Title = args.Title
+	message.Body.Content = args.Message
 	return func(manager *sSenderManager, agentID string) error {
 		manager.clientLock.RLock()
 		client := manager.client
@@ -134,32 +80,6 @@ func (self *sSenderManager) getSendFunc(args *apis.SendParams) (sSendFunc, error
 		}
 		return nil
 	}, nil
-}
-
-func (self *sSenderManager) getContent(torc, topic, msg string) (string, error) {
-	key := topic + "." + torc
-	self.templateLock.RLock()
-	tem, ok := self.templateCache[key]
-	self.templateLock.RUnlock()
-	if !ok {
-		if torc == "title" {
-			return topic, nil
-		}
-		return msg, nil
-	}
-	content := msg
-
-	tmpMap := make(map[string]interface{})
-	err := json.Unmarshal([]byte(content), &tmpMap)
-	if err != nil {
-		return "", errors.New("Message should be a canonical JSON")
-	}
-	buffer := new(bytes.Buffer)
-	err = tem.Execute(buffer, tmpMap)
-	if err != nil {
-		return "", errors.New("Message content and template do not match")
-	}
-	return buffer.String(), nil
 }
 
 func (self *sSenderManager) getUseridByMobile(mobile string) (string, error) {

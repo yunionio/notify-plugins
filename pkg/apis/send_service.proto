@@ -17,10 +17,12 @@ syntax = "proto3";
 package apis;
 
 message SendParams {
-    string contact = 1;
-    string topic = 2;
-    string message = 3;
-    string Priority = 4;
+    string Contact = 1;
+    string Topic = 2;
+    string Title = 3;
+    string Message = 4;
+    string Priority = 5;
+    string RemoteTemplate = 6;
 }
 
 message UpdateConfigParams {

@@ -23,4 +23,5 @@ const (
 	SIGNATURE           = "signature"
 
 	NOTINIT = "Send service hasn't been init"
+	NEED_REMOTE_TEMPLATE = "remote template is needed in aliyun sms"
 )

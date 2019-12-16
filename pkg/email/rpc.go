@@ -37,9 +37,6 @@ func (s *Server) Send(ctx context.Context, req *apis.SendParams) (*apis.Empty, e
 	}
 	log.Debugf("reviced msg for %s: %s", req.Contact, req.Message)
 	err := senderManager.send(req)
-	if err == ErrTemplate {
-		return empty, status.Error(codes.Internal, err.Error())
-	}
 	if err != nil {
 		log.Errorf(err.Error())
 		return empty, status.Error(codes.Internal, err.Error())

@@ -14,8 +14,6 @@
 
 package email
 
-import "errors"
-
 const (
 	USERNAME  = "mail.username"
 	PASSWORD  = "mail.password"
@@ -24,8 +22,4 @@ const (
 	GLOBALSSL = "mail.global.ssl"
 
 	NOTINIT = "Send service hasn't been init"
-)
-
-var (
-	ErrTemplate = errors.New("template error")
 )

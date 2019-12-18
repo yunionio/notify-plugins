@@ -20,6 +20,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+
 	"yunion.io/x/log"
 
 	"notify-plugin/pkg/apis"
@@ -81,6 +82,7 @@ func (s *Server) UpdateConfig(ctx context.Context, req *apis.UpdateConfigParams)
 		if key == ACCESS_KEY_SECRET || key == ACCESS_KEY_ID {
 			shouldInit = true
 		}
+		log.Debugf("update config: %s: %s", key, value)
 		senderManager.configCache[key] = value
 	}
 	senderManager.configLock.Unlock()

@@ -22,3 +22,7 @@ const (
 
 	NOTINIT = "Send service hasn't been init"
 )
+
+var (
+	FAIL_KEY = []string{"失败", "fail ", " failed"}
+)

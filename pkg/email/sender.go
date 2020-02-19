@@ -33,6 +33,13 @@ func newSConfigCache() sConfigCache {
 	return make(map[string]string)
 }
 
+type sConnectInfo struct {
+	Hostname string
+	Hostport int
+	Username string
+	Password string
+}
+
 type sSenderManager struct {
 	msgChan     chan *sSendUnit
 	senders     []sSender
@@ -79,6 +86,15 @@ func (self *sSenderManager) restartSender() {
 		sender.stop()
 	}
 	self.initSender()
+}
+
+func (self *sSenderManager) validateConfig(connInfo sConnectInfo) error {
+	sender, err := gomail.NewDialer(connInfo.Hostname, connInfo.Hostport, connInfo.Username, connInfo.Password).Dial()
+	if err != nil {
+		return err
+	}
+	sender.Close()
+	return nil
 }
 
 func (self *sSenderManager) initSender() {

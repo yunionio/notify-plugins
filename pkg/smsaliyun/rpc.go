@@ -16,7 +16,9 @@ package smsaliyun
 
 import (
 	"context"
+	"fmt"
 
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -45,10 +47,7 @@ func (s *Server) Send(ctx context.Context, req *apis.SendParams) (*apis.Empty, e
 	request.QueryParams["RegionId"] = "default"
 	request.QueryParams["PhoneNumbers"] = req.Contact
 
-	// Do not need to lock because that do not need signature when re-connect.
-	if signature, ok := senderManager.configCache[SIGNATURE]; ok {
-		request.QueryParams["SignName"] = signature
-	}
+	signature, _ := senderManager.configCache[SIGNATURE]
 	if len(req.RemoteTemplate) == 0 {
 		return empty, status.Error(codes.InvalidArgument, NEED_REMOTE_TEMPLATE)
 	}
@@ -56,7 +55,7 @@ func (s *Server) Send(ctx context.Context, req *apis.SendParams) (*apis.Empty, e
 	request.QueryParams["TemplateParam"] = req.Message
 	// 控制和smsaliyun的最大并发数
 	senderManager.workerChan <- struct{}{}
-	err := senderManager.send(request)
+	err := senderManager.send(nil, signature, req.RemoteTemplate, req.Message, req.Contact, true)
 	<-senderManager.workerChan
 	if err != nil {
 		log.Errorf(err.Error())
@@ -90,4 +89,32 @@ func (s *Server) UpdateConfig(ctx context.Context, req *apis.UpdateConfigParams)
 		senderManager.initClient()
 	}
 	return empty, nil
+}
+
+func (s *Server) ValidateConfig(ctx context.Context, config *apis.UpdateConfigParams) (*apis.ValidateConfigReply, error) {
+	accessKeyId, ok := config.Configs[ACCESS_KEY_ID]
+	if !ok {
+		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("require %s", ACCESS_KEY_ID))
+	}
+	accessKeySecret, ok := config.Configs[ACCESS_KEY_SECRET]
+	if !ok {
+		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("require %s", ACCESS_KEY_SECRET))
+	}
+	signature, ok := config.Configs[SIGNATURE]
+	if !ok {
+		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("require %s", SIGNATURE))
+	}
+
+	client, err := sdk.NewClientWithAccessKey("default", accessKeyId, accessKeySecret)
+	if err != nil {
+		return nil, status.Error(codes.Internal, fmt.Sprintf("NewClientWithAccessKey: %s", err.Error()))
+	}
+	rep := apis.ValidateConfigReply{IsValid: true}
+	err = senderManager.send(client, signature, "SMS_123456789", `{"code": "123456"}`, "12345678901", false)
+	if err == ErrSignnameInvalid || err == ErrSignatureDoesNotMatch || err == ErrAccessKeyIdNotFound {
+		rep.IsValid = false
+		rep.Msg = err.Error()
+		return &rep, nil
+	}
+	return &rep, nil
 }

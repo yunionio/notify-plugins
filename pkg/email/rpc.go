@@ -16,6 +16,9 @@ package email
 
 import (
 	"context"
+	"fmt"
+	"strconv"
+	"strings"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -57,4 +60,47 @@ func (s *Server) UpdateConfig(ctx context.Context, req *apis.UpdateConfigParams)
 	senderManager.configLock.Unlock()
 	senderManager.restartSender()
 	return empty, nil
+}
+
+func (s *Server) ValidateConfig(ctx context.Context, config *apis.UpdateConfigParams) (*apis.ValidateConfigReply, error) {
+	hostname, ok := config.Configs[HOSTNAME]
+	if !ok {
+		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("require %s", HOSTNAME))
+	}
+	hostport, ok := config.Configs[HOSTPORT]
+	if !ok {
+		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("require %s", HOSTPORT))
+	}
+	username, ok := config.Configs[USERNAME]
+	if !ok {
+		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("require %s", USERNAME))
+	}
+	password, ok := config.Configs[PASSWORD]
+	if !ok {
+		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("require %s", PASSWORD))
+	}
+	port, err := strconv.Atoi(hostport)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("invalid hostport %s", hostport))
+	}
+
+	err = senderManager.validateConfig(sConnectInfo{hostname, port, username, password})
+	if err == nil {
+		return &apis.ValidateConfigReply{IsValid: true, Msg: ""}, nil
+	}
+
+	reply := apis.ValidateConfigReply{IsValid: false}
+
+	switch {
+	case strings.Contains(err.Error(), "535 Error"):
+		reply.Msg = "Authentication failed"
+	case strings.Contains(err.Error(), "timeout"):
+		reply.Msg = "Connect timeout"
+	case strings.Contains(err.Error(), "no such host"):
+		reply.Msg = "No such host"
+	default:
+		reply.Msg = err.Error()
+	}
+
+	return &reply, nil
 }

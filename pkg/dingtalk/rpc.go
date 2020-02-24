@@ -26,6 +26,7 @@ import (
 )
 
 type Server struct {
+	apis.UnimplementedSendAgentServer
 	name string
 }
 

@@ -15,7 +15,6 @@
 package email
 
 import (
-	"errors"
 	"strconv"
 	"sync"
 	"time"
@@ -23,6 +22,7 @@ import (
 	"gopkg.in/gomail.v2"
 
 	"yunion.io/x/log"
+	"yunion.io/x/pkg/errors"
 
 	"notify-plugin/pkg/apis"
 )
@@ -47,17 +47,17 @@ type sSenderManager struct {
 	chanelSize  int
 	templateDir string
 
-	configCache   sConfigCache
-	configLock    sync.RWMutex
+	configCache sConfigCache
+	configLock  sync.RWMutex
 }
 
 func newSSenderManager(config *SEmailConfig) *sSenderManager {
 	return &sSenderManager{
-		senders:     make([]sSender, config.SenderNum),
-		senderNum:   config.SenderNum,
-		chanelSize:  config.ChannelSize,
+		senders:    make([]sSender, config.SenderNum),
+		senderNum:  config.SenderNum,
+		chanelSize: config.ChannelSize,
 
-		configCache:   newSConfigCache(),
+		configCache: newSConfigCache(),
 	}
 }
 
@@ -75,7 +75,7 @@ func (self *sSenderManager) send(args *apis.SendParams) error {
 		// try again
 		senderManager.msgChan <- &sSendUnit{gmsg, ret}
 		if suc = <-ret; !suc {
-			return errors.New("send error")
+			return errors.Error("send error")
 		}
 	}
 	return nil
@@ -89,12 +89,24 @@ func (self *sSenderManager) restartSender() {
 }
 
 func (self *sSenderManager) validateConfig(connInfo sConnectInfo) error {
-	sender, err := gomail.NewDialer(connInfo.Hostname, connInfo.Hostport, connInfo.Username, connInfo.Password).Dial()
-	if err != nil {
+	errChan := make(chan error)
+	go func() {
+		sender, err := gomail.NewDialer(connInfo.Hostname, connInfo.Hostport, connInfo.Username, connInfo.Password).Dial()
+		if err != nil {
+			errChan <- err
+			return
+		}
+		sender.Close()
+		errChan <- nil
+	}()
+
+	ticker := time.Tick(5 * time.Second)
+	select {
+	case <-ticker:
+		return errors.Error("535 Error")
+	case err := <-errChan:
 		return err
 	}
-	sender.Close()
-	return nil
 }
 
 func (self *sSenderManager) initSender() {

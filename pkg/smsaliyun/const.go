@@ -24,4 +24,8 @@ const (
 
 	NOTINIT = "Send service hasn't been init"
 	NEED_REMOTE_TEMPLATE = "remote template is needed in aliyun sms"
+
+	ACCESSKEYID_NOTFOUND = "InvalidAccessKeyId.NotFound"
+	SIGN_DOESNOTMATCH = "SignatureDoesNotMatch"
+	SIGHNTURE_ILLEGAL = "isv.SMS_SIGNATURE_ILLEGAL"
 )

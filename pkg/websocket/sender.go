@@ -17,6 +17,7 @@ package websocket
 import (
 	"context"
 	"fmt"
+	"strings"
 	"sync"
 
 	"yunion.io/x/jsonutils"
@@ -92,6 +93,9 @@ func (self *sSenderManager) send(args *apis.SendParams) error {
 	if len(args.Contact) == 0 {
 		body.Add(jsonutils.JSONTrue, "broadcast")
 	}
+	if self.isFailed(args.Title, args.Message) {
+		body.Add(jsonutils.JSONFalse, "success")
+	}
 	self.clientLock.RLock()
 	session := self.session
 	self.clientLock.RUnlock()
@@ -107,4 +111,15 @@ func (self *sSenderManager) send(args *apis.SendParams) error {
 		return err
 	}
 	return nil
+}
+
+func (self *sSenderManager) isFailed(title, message string) bool {
+	for _, c := range []string{title, message} {
+		for _, k := range FAIL_KEY {
+			if strings.Contains(c, k) {
+				return true
+			}
+		}
+	}
+	return false
 }

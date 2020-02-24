@@ -20,6 +20,7 @@ import (
 	"sync"
 
 	"github.com/hugozhu/godingtalk"
+
 	"yunion.io/x/log"
 
 	"notify-plugin/pkg/apis"

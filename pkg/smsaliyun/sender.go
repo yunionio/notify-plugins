@@ -15,13 +15,16 @@
 package smsaliyun
 
 import (
-	"errors"
+	"encoding/json"
 	"sync"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
+	sdkerrors "github.com/aliyun/alibaba-cloud-sdk-go/sdk/errors"
 
 	"yunion.io/x/log"
+	"yunion.io/x/pkg/errors"
 
 	"notify-plugin/utils"
 )
@@ -75,30 +78,69 @@ func (self *sSenderManager) initClient() {
 	log.Printf("Total %d workers.", cap(self.workerChan))
 }
 
-func (self *sSenderManager) send(req *requests.CommonRequest) error {
-	self.clientLock.RLock()
-	client := self.client
-	self.clientLock.RUnlock()
-	reponse, err := client.ProcessCommonRequest(req)
-	if err == nil {
-		if reponse.IsSuccess() {
-			log.Debugf("Sender successfully")
-			return nil
-		}
-		log.Errorf("Send message failed because that %s.", err.Error())
-		//todo There may be detailed processing for different errors.
-		return errors.New("send error")
+func (self *sSenderManager) send(client *sdk.Client, signature, templateCode, templateParam, phoneNumber string, retry bool) error {
+	request := requests.NewCommonRequest()
+	request.Method = "POST"
+	request.Scheme = "https" // https | http
+	request.Domain = "dysmsapi.aliyuncs.com"
+	request.Version = "2017-05-25"
+	request.ApiName = "SendSms"
+	request.QueryParams["RegionId"] = "default"
+	request.QueryParams["PhoneNumbers"] = phoneNumber
+	request.QueryParams["SignName"] = signature
+
+	request.QueryParams["TemplateCode"] = templateCode
+	request.QueryParams["TemplateParam"] = templateParam
+
+	if client == nil {
+		self.clientLock.RLock()
+		client = self.client
+		self.clientLock.RUnlock()
 	}
-	//todo
+	err := self.checkResponseAndError(client.ProcessCommonRequest(request))
+	if !retry || err == nil  {
+		return err
+	}
+
 	self.initClient()
 	// try again
 	self.clientLock.RLock()
 	client = self.client
 	self.clientLock.RUnlock()
-	reponse, err = client.ProcessCommonRequest(req)
+	return self.checkResponseAndError(client.ProcessCommonRequest(request))
+}
+
+func (self *sSenderManager) checkResponseAndError(rep *responses.CommonResponse, err error) error {
 	if err != nil {
-		//todo There may be detailed processing for different errors.
+		serr, ok := err.(*sdkerrors.ServerError)
+		if !ok {
+			return err
+		}
+		if serr.ErrorCode() == ACCESSKEYID_NOTFOUND {
+			return ErrAccessKeyIdNotFound
+		}
+		if serr.ErrorCode() == SIGN_DOESNOTMATCH {
+			return ErrSignatureDoesNotMatch
+		}
 		return err
 	}
-	return nil
+
+	type RepContent struct {
+		Message string
+		Code string
+	}
+	rc := RepContent{}
+	err = json.Unmarshal(rep.GetHttpContentBytes(), &rc)
+	if err != nil {
+		log.Errorf("The Response Content's style may changed")
+		return errors.Wrap(err, "json.Unmarshal")
+	}
+	if rc.Code == "OK" {
+		return nil
+	}
+	if rc.Code == SIGHNTURE_ILLEGAL {
+		return ErrSignnameInvalid
+	}
+	return errors.Error(rc.Message)
 }
+

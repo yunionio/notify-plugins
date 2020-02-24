@@ -22,6 +22,7 @@ import (
 	"syscall"
 
 	"google.golang.org/grpc"
+
 	"yunion.io/x/log"
 
 	"notify-plugin/pkg/apis"
@@ -44,7 +45,7 @@ func StartService() {
 
 	// init rpc Server
 	grpcServer := grpc.NewServer()
-	apis.RegisterSendAgentServer(grpcServer, &Server{"dingtalk"})
+	apis.RegisterSendAgentServer(grpcServer, &Server{apis.UnimplementedSendAgentServer{}, "dingtalk"})
 
 	la, err := net.Listen("unix", fmt.Sprintf("%s/%s.sock", config.SockFileDir, "dingtalk"))
 	if err != nil {

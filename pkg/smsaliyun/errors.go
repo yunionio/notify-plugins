@@ -12,17 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package websocket
+package smsaliyun
 
-const (
-	AUTH_URI          = "auth_uri"
-	ADMIN_USER        = "admin_user"
-	ADMIN_PASSWORD    = "admin_password"
-	ADMIN_TENANT_NAME = "admin_tenant_name"
-
-	NOTINIT = "Send service hasn't been init"
-)
+import "yunion.io/x/pkg/errors"
 
 var (
-	FAIL_KEY = []string{"失败", "fail ", " failed"}
+	ErrAccessKeyIdNotFound = errors.Error("AccessKeyId not found")
+	ErrSignatureDoesNotMatch = errors.Error("AccessKeySecret does not match with the accessKeyId")
+	ErrSignnameInvalid = errors.Error("Invalid signature (does not exist or is blackened)")
 )

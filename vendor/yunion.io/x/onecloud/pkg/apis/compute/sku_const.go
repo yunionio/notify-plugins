@@ -14,7 +14,10 @@
 
 package compute
 
-import "yunion.io/x/onecloud/pkg/util/choices"
+import (
+	"yunion.io/x/onecloud/pkg/apis"
+	"yunion.io/x/onecloud/pkg/apis/billing"
+)
 
 const (
 	SkuCategoryGeneralPurpose      = "general_purpose"      // 通用型
@@ -49,7 +52,7 @@ var InstanceFamilies = map[string]string{
 	SkuCategoryHighMemory:          "hr1",
 }
 
-var SKU_FAMILIES = choices.NewChoices(
+var SKU_FAMILIES = []string{
 	SkuCategoryGeneralPurpose,
 	SkuCategoryBurstable,
 	SkuCategoryComputeOptimized,
@@ -58,4 +61,43 @@ var SKU_FAMILIES = choices.NewChoices(
 	SkuCategoryHardwareAccelerated,
 	SkuCategoryHighStorage,
 	SkuCategoryHighMemory,
-)
+}
+
+type ServerSkuListInput struct {
+	apis.StatusStandaloneResourceListInput
+	apis.DomainizedResourceListInput
+
+	ManagedResourceListInput
+
+	ZonalFilterListInput
+	billing.BillingResourceListInput
+	UsableResourceListInput
+
+	// filter sku by memory size in MB
+	MemorySizeMb int `json:"memory_size_mb"`
+}
+
+type ElasticcacheSkuListInput struct {
+	apis.StatusStandaloneResourceListInput
+	apis.DomainizedResourceListInput
+
+	ManagedResourceListInput
+
+	UsableResourceListInput
+	billing.BillingResourceListInput
+
+	ZonalFilterListInput
+
+	// filter sku by memory size in MB
+	MemorySizeMb int `json:"memory_size_mb"`
+}
+
+type DBInstanceSkuListInput struct {
+	apis.EnabledStatusStandaloneResourceListInput
+	apis.DomainizedResourceListInput
+
+	ManagedResourceListInput
+
+	RegionalFilterListInput
+	billing.BillingResourceListInput
+}

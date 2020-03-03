@@ -14,13 +14,15 @@
 
 package modules
 
+import "yunion.io/x/onecloud/pkg/mcclient/modulebase"
+
 var (
-	DBInstanceDatabases ResourceManager
+	DBInstanceDatabases modulebase.ResourceManager
 )
 
 func init() {
 	DBInstanceDatabases = NewComputeManager("dbinstancedatabase", "dbinstancedatabases",
-		[]string{"ID", "Name", "Character_Set", "DBInstance_id"},
+		[]string{"ID", "Name", "Character_Set", "DBInstance_id", "DBInstance", "Status"},
 		[]string{})
 
 	registerCompute(&DBInstanceDatabases)

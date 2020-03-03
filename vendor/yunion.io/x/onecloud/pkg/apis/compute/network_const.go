@@ -14,6 +14,10 @@
 
 package compute
 
+import (
+	"time"
+)
+
 const (
 	// # DEFAULT_BANDWIDTH = options.default_bandwidth
 	MAX_BANDWIDTH = 100000
@@ -33,12 +37,15 @@ const (
 	NETWORK_STATUS_INIT          = "init"
 	NETWORK_STATUS_PENDING       = "pending"
 	NETWORK_STATUS_AVAILABLE     = "available"
+	NETWORK_STATUS_UNAVAILABLE   = "unavailable"
 	NETWORK_STATUS_FAILED        = "failed"
 	NETWORK_STATUS_UNKNOWN       = "unknown"
 	NETWORK_STATUS_START_DELETE  = "start_delete"
 	NETWORK_STATUS_DELETING      = "deleting"
 	NETWORK_STATUS_DELETED       = "deleted"
 	NETWORK_STATUS_DELETE_FAILED = "delete_failed"
+	NETWORK_STATUS_START_SYNC    = "start_sync"
+	NETWORK_STATUS_SYNCING       = "sync"
 )
 
 var (
@@ -52,6 +59,29 @@ var (
 
 	REGIONAL_NETWORK_PROVIDERS = []string{
 		CLOUD_PROVIDER_HUAWEI,
+		CLOUD_PROVIDER_CTYUN,
 		CLOUD_PROVIDER_UCLOUD,
+		CLOUD_PROVIDER_GOOGLE,
 	}
 )
+
+type IPAllocationDirection string
+
+const (
+	IPAllocationStepdown IPAllocationDirection = "stepdown"
+	IPAllocationStepup   IPAllocationDirection = "stepup"
+	IPAllocationRadnom   IPAllocationDirection = "random"
+	IPAllocationNone     IPAllocationDirection = "none"
+	IPAllocationDefault                        = ""
+)
+
+type SNetworkAddress struct {
+	IpAddr        string
+	MacAddr       string
+	Owner         string
+	OwnerId       string
+	OwnerType     string
+	AssociateId   string
+	AssociateType string
+	CreatedAt     time.Time
+}

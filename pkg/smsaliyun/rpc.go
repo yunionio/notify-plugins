@@ -24,19 +24,20 @@ import (
 	"google.golang.org/grpc/status"
 
 	"yunion.io/x/log"
+	"yunion.io/x/pkg/errors"
 
-	"notify-plugin/pkg/apis"
+	"yunion.io/x/notify-plugin/common"
+	"yunion.io/x/notify-plugin/pkg/apis"
 )
 
 type Server struct {
 	apis.UnimplementedSendAgentServer
-	name string
 }
 
 func (s *Server) Send(ctx context.Context, req *apis.SendParams) (*apis.Empty, error) {
 	empty := &apis.Empty{}
 	if senderManager.client == nil {
-		return empty, status.Error(codes.FailedPrecondition, NOTINIT)
+		return empty, status.Error(codes.FailedPrecondition, common.NOTINIT)
 	}
 	request := requests.NewCommonRequest()
 	request.Method = "POST"
@@ -47,7 +48,7 @@ func (s *Server) Send(ctx context.Context, req *apis.SendParams) (*apis.Empty, e
 	request.QueryParams["RegionId"] = "default"
 	request.QueryParams["PhoneNumbers"] = req.Contact
 
-	signature, _ := senderManager.configCache[SIGNATURE]
+	signature, _ := senderManager.configCache.Get(SIGNATURE)
 	if len(req.RemoteTemplate) == 0 {
 		return empty, status.Error(codes.InvalidArgument, NEED_REMOTE_TEMPLATE)
 	}
@@ -64,13 +65,15 @@ func (s *Server) Send(ctx context.Context, req *apis.SendParams) (*apis.Empty, e
 	return empty, nil
 }
 
-func (s *Server) UpdateConfig(ctx context.Context, req *apis.UpdateConfigParams) (*apis.Empty, error) {
-	empty := &apis.Empty{}
+func (s *Server) UpdateConfig(ctx context.Context, req *apis.UpdateConfigParams) (empty *apis.Empty, err error) {
+	defer func() {
+		if err != nil {
+			log.Errorf(err.Error())
+		}
+	}()
 	if req.Configs == nil {
-		return empty, status.Error(codes.InvalidArgument, "Config shouldn't be nil")
+		return empty, status.Error(codes.InvalidArgument, common.ConfigNil)
 	}
-	senderManager.configLock.Lock()
-	shouldInit := false
 	for key, value := range req.Configs {
 		if key == ACESS_KEY_SECRET_BP {
 			key = ACCESS_KEY_SECRET
@@ -78,32 +81,25 @@ func (s *Server) UpdateConfig(ctx context.Context, req *apis.UpdateConfigParams)
 		if key == ACESS_KEY_ID_BP {
 			key = ACCESS_KEY_ID
 		}
-		if key == ACCESS_KEY_SECRET || key == ACCESS_KEY_ID {
-			shouldInit = true
-		}
 		log.Debugf("update config: %s: %s", key, value)
-		senderManager.configCache[key] = value
+		senderManager.configCache.Set(key, value)
 	}
-	senderManager.configLock.Unlock()
-	if shouldInit {
-		senderManager.initClient()
+	err = senderManager.initClient()
+	if errors.Cause(err) == common.ErrConfigMiss {
+		return empty, status.Error(codes.FailedPrecondition, err.Error())
 	}
-	return empty, nil
+	if err != nil {
+		return empty, status.Error(codes.Unavailable, err.Error())
+	}
+	return
 }
 
 func (s *Server) ValidateConfig(ctx context.Context, config *apis.UpdateConfigParams) (*apis.ValidateConfigReply, error) {
-	accessKeyId, ok := config.Configs[ACCESS_KEY_ID]
+	vals, ok, noKey := common.CheckMap(config.Configs, ACCESS_KEY_ID, ACCESS_KEY_SECRET, SIGNATURE)
 	if !ok {
-		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("require %s", ACCESS_KEY_ID))
+		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("require %s", noKey))
 	}
-	accessKeySecret, ok := config.Configs[ACCESS_KEY_SECRET]
-	if !ok {
-		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("require %s", ACCESS_KEY_SECRET))
-	}
-	signature, ok := config.Configs[SIGNATURE]
-	if !ok {
-		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("require %s", SIGNATURE))
-	}
+	accessKeyId, accessKeySecret, signature := vals[0], vals[1], vals[2]
 
 	client, err := sdk.NewClientWithAccessKey("default", accessKeyId, accessKeySecret)
 	if err != nil {

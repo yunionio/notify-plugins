@@ -16,45 +16,37 @@ package dingtalk
 
 import (
 	"fmt"
-	"strings"
 	"sync"
+	"yunion.io/x/pkg/errors"
 
 	"github.com/hugozhu/godingtalk"
 
 	"yunion.io/x/log"
 
-	"notify-plugin/pkg/apis"
-	"notify-plugin/utils"
+	"yunion.io/x/notify-plugin/pkg/apis"
+	"yunion.io/x/notify-plugin/common"
 )
 
 var senderManager *sSenderManager
-
-type sConfigCache map[string]string
-
-func newSConfigCache() sConfigCache {
-	return make(map[string]string)
-}
 
 type sSendFunc func(*sSenderManager, string) error
 
 type sSenderManager struct {
 	workerChan  chan struct{}
-	templateDir string
 	client      *godingtalk.DingTalkClient // client to example sms
 	clientLock  sync.RWMutex               // lock to protect client
 
-	configCache sConfigCache // config cache
-	configLock  sync.RWMutex // lock to protect config cache
+	configCache *common.SConfigCache // config cache
 }
 
-func newSSenderManager(config *utils.SBaseOptions) *sSenderManager {
+func newSSenderManager(config *common.SBaseOptions) *sSenderManager {
 	return &sSenderManager{
-		workerChan: make(chan struct{}, config.SenderNum),
-		configCache: newSConfigCache(),
+		workerChan:  make(chan struct{}, config.SenderNum),
+		configCache: common.NewConfigCache(),
 	}
 }
 
-func (self *sSenderManager) getSendFunc(args *apis.SendParams) (sSendFunc, error) {
+func (self *sSenderManager) getSendFunc(args *apis.SendParams) sSendFunc {
 	if args.Title == args.Topic {
 		return func(manager *sSenderManager, agentID string) error {
 			manager.clientLock.RLock()
@@ -65,7 +57,7 @@ func (self *sSenderManager) getSendFunc(args *apis.SendParams) (sSendFunc, error
 				return fmt.Errorf("UserIDs: %s: %w", args.Contact, err)
 			}
 			return nil
-		}, nil
+		}
 	}
 	message := godingtalk.OAMessage{}
 	message.Head.Text = args.Topic
@@ -80,7 +72,7 @@ func (self *sSenderManager) getSendFunc(args *apis.SendParams) (sSendFunc, error
 			return fmt.Errorf("UserIDs: %s: %w", args.Contact, err)
 		}
 		return nil
-	}, nil
+	}
 }
 
 func (self *sSenderManager) getUseridByMobile(mobile string) (string, error) {
@@ -112,37 +104,28 @@ func (self *sSenderManager) getUseridByMobile(mobile string) (string, error) {
 	return "", ErrNoSuchUser
 }
 
-func (self *sSenderManager) initClient() {
-	self.configLock.RLock()
-	appKey, ok := self.configCache[APP_KEY]
+func (self *sSenderManager) initClient() error {
+	vals, ok, noKey := self.configCache.BatchGet(APP_KEY, APP_SECRET)
 	if !ok {
-		self.configLock.RUnlock()
-		return
+		return errors.Wrap(common.ErrConfigMiss, noKey)
 	}
-	appSecret, ok := self.configCache[APP_SECRET]
-	if !ok {
-		self.configLock.RUnlock()
-		return
-	}
-	self.configLock.RUnlock()
+	appKey, appSecret := vals[0], vals[1]
+
 	// lock and update
-	self.clientLock.Lock()
-	defer self.clientLock.Unlock()
-	oldClient := self.client
 	client := godingtalk.NewDingTalkClient(appKey, appSecret)
 	err := client.RefreshAccessToken()
 	if err != nil {
-		self.client = oldClient
-		return
+		return err
 	}
+	self.clientLock.Lock()
+	defer self.clientLock.Unlock()
 	self.client = client
+	return nil
 }
 
 func (self *sSenderManager) send(sendFunc sSendFunc) error {
 	// get agentID
-	self.configLock.RLock()
-	agentID, ok := self.configCache[AGENT_ID]
-	self.configLock.RUnlock()
+	agentID, ok := self.configCache.Get(AGENT_ID)
 	if !ok {
 		return ErrAgentIDNotInit
 	}
@@ -154,16 +137,16 @@ func (self *sSenderManager) send(sendFunc sSendFunc) error {
 		return nil
 	}
 
-	// access_token maybe be expired
-	if strings.Contains(err.Error(), "access_token") || strings.Contains(err.Error(), "accessToken") {
-		self.initClient()
-		// try again
-		err = sendFunc(self, agentID)
-		if err != nil {
-			fmt.Errorf("send failed after fetch access_token again: %w", err)
-		}
-		log.Debugf("send message successfully.")
-		return nil
-	}
-	return fmt.Errorf("send failed even if access_token is not expired: %w", err)
+	// access_token must not be expired
+	//if strings.Contains(err.Error(), "access_token") || strings.Contains(err.Error(), "accessToken") {
+	//	self.initClient()
+	//	// try again
+	//	err = sendFunc(self, agentID)
+	//	if err != nil {
+	//		fmt.Errorf("send failed after fetch access_token again: %w", err)
+	//	}
+	//	log.Debugf("send message successfully.")
+	//	return nil
+	//}
+	return errors.Wrap(err, "send failed")
 }

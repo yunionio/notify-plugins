@@ -19,8 +19,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pkg/errors"
-
+	"yunion.io/x/pkg/errors"
 	"yunion.io/x/pkg/util/timeutils"
 )
 
@@ -30,7 +29,7 @@ type JSONPair struct {
 }
 
 func NewDict(objs ...JSONPair) *JSONDict {
-	dict := JSONDict{data: make(map[string]JSONObject)}
+	dict := JSONDict{data: make(map[string]JSONObject, len(objs))}
 	for _, o := range objs {
 		dict.data[o.key] = o.val
 	}
@@ -38,7 +37,7 @@ func NewDict(objs ...JSONPair) *JSONDict {
 }
 
 func NewArray(objs ...JSONObject) *JSONArray {
-	arr := JSONArray{data: make([]JSONObject, 0)}
+	arr := JSONArray{data: make([]JSONObject, 0, len(objs))}
 	for _, o := range objs {
 		arr.data = append(arr.data, o)
 	}
@@ -303,6 +302,9 @@ func (this *JSONDict) GetArray(keys ...string) ([]JSONObject, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "Get")
 	}
+	if _, ok := obj.(*JSONDict); ok {
+		return nil, ErrInvalidJsonArray
+	}
 	return obj.GetArray()
 	/* arr, ok := obj.(*JSONArray)
 	   if !ok {
@@ -378,6 +380,13 @@ func (this *JSONFloat) Float(keys ...string) (float64, error) {
 		return 0.0, ErrOutOfKeyRange // fmt.Errorf("Out of key range: %s", keys)
 	}
 	return this.data, nil
+}
+
+func (this *JSONInt) Float(keys ...string) (float64, error) {
+	if len(keys) > 0 {
+		return 0.0, ErrOutOfKeyRange // fmt.Errorf("Out of key range: %s", keys)
+	}
+	return float64(this.data), nil
 }
 
 func (this *JSONString) Float(keys ...string) (float64, error) {

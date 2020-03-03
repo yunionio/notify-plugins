@@ -26,56 +26,42 @@ import (
 	"yunion.io/x/log"
 	"yunion.io/x/pkg/errors"
 
-	"notify-plugin/utils"
+	"yunion.io/x/notify-plugin/common"
 )
-
-type sConfigCache map[string]string
-
-func newSConfigCache() sConfigCache {
-	return make(map[string]string)
-}
 
 type sSenderManager struct {
 	workerChan  chan struct{}
-	templateDir string
 	client      *sdk.Client  // client to example sms
 	clientLock  sync.RWMutex // lock to protect client
 
-	configCache   sConfigCache   // config cache
-	configLock    sync.RWMutex   // lock to protect config cache
+	configCache   *common.SConfigCache // config cache
 }
 
-func newSSenderManager(config *utils.SBaseOptions) *sSenderManager {
+func newSSenderManager(config *common.SBaseOptions) *sSenderManager {
 	return &sSenderManager{
 		workerChan:  make(chan struct{}, config.SenderNum),
 
-		configCache:   newSConfigCache(),
+		configCache: common.NewConfigCache(),
 	}
 }
 
-func (self *sSenderManager) initClient() {
-	self.configLock.RLock()
-	accessKeyID, ok := self.configCache[ACCESS_KEY_ID]
+func (self *sSenderManager) initClient() error {
+	vals, ok, noKey := self.configCache.BatchGet(ACCESS_KEY_ID, ACCESS_KEY_SECRET)
 	if !ok {
-		self.configLock.RUnlock()
-		return
+		return errors.Wrap(common.ErrConfigMiss, noKey)
 	}
-	accessKeySecret, ok := self.configCache[ACCESS_KEY_SECRET]
-	if !ok {
-		self.configLock.RUnlock()
-		return
-	}
-	self.configLock.RUnlock()
+	accessKeyID, accessKeySecret := vals[0], vals[1]
+
 	// lock and update
-	self.clientLock.Lock()
-	defer self.clientLock.Unlock()
 	client, err := sdk.NewClientWithAccessKey("default", accessKeyID, accessKeySecret)
 	if err != nil {
-		log.Errorf("client connect failed because that %s.", err.Error())
-		return
+		return err
 	}
+	self.clientLock.Lock()
+	defer self.clientLock.Unlock()
 	self.client = client
 	log.Printf("Total %d workers.", cap(self.workerChan))
+	return nil
 }
 
 func (self *sSenderManager) send(client *sdk.Client, signature, templateCode, templateParam, phoneNumber string, retry bool) error {

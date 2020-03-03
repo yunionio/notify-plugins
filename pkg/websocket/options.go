@@ -15,10 +15,10 @@
 package websocket
 
 import (
-	"notify-plugin/utils"
+	"yunion.io/x/notify-plugin/common"
 )
 
 type SWebsocketConfig struct {
-	utils.SBaseOptions
+	common.SBaseOptions
 	Region string `hekp:"region"`
 }

@@ -18,20 +18,26 @@ import (
 	"fmt"
 
 	"yunion.io/x/onecloud/pkg/mcclient"
+	"yunion.io/x/onecloud/pkg/mcclient/modulebase"
 )
 
 type GroupManager struct {
-	ResourceManager
+	modulebase.ResourceManager
 }
 
-func (this *GroupManager) GetUsers(s *mcclient.ClientSession, gid string) (*ListResult, error) {
+func (this *GroupManager) GetUsers(s *mcclient.ClientSession, gid string) (*modulebase.ListResult, error) {
 	url := fmt.Sprintf("/groups/%s/users", gid)
-	return this._list(s, url, "users")
+	return modulebase.List(this.ResourceManager, s, url, "users")
 }
 
 var (
 	Groups GroupManager
 )
+
+func (this *GroupManager) GetProjects(session *mcclient.ClientSession, uid string) (*modulebase.ListResult, error) {
+	url := fmt.Sprintf("/groups/%s/projects?admin=true", uid)
+	return modulebase.List(this.ResourceManager, session, url, "projects")
+}
 
 func init() {
 	Groups = GroupManager{NewIdentityV3Manager("group", "groups",

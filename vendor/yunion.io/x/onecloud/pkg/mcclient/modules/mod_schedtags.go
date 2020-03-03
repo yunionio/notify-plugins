@@ -20,10 +20,11 @@ import (
 	"yunion.io/x/jsonutils"
 
 	"yunion.io/x/onecloud/pkg/mcclient"
+	"yunion.io/x/onecloud/pkg/mcclient/modulebase"
 )
 
 type SchedtagManager struct {
-	ResourceManager
+	modulebase.ResourceManager
 }
 
 var (
@@ -69,7 +70,7 @@ func (this *SchedtagManager) DoBatchSchedtagHostAddRemove(s *mcclient.ClientSess
 
 func init() {
 	Schedtags = SchedtagManager{NewComputeManager("schedtag", "schedtags",
-		[]string{"ID", "Name", "Default_strategy", "Resource_type"},
+		[]string{"ID", "Name", "Default_strategy", "Resource_type", "Domain_id", "Project_id"},
 		[]string{})}
 
 	registerCompute(&Schedtags)

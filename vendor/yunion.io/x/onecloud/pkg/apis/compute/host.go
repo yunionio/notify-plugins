@@ -15,6 +15,8 @@
 package compute
 
 import (
+	"yunion.io/x/jsonutils"
+
 	"yunion.io/x/onecloud/pkg/apis"
 )
 
@@ -42,4 +44,140 @@ type DiskSpec struct {
 	StartIndex int    `json:"start_index"`
 	EndIndex   int    `json:"end_index"`
 	Count      int    `json:"count"`
+}
+
+type HostListInput struct {
+	apis.EnabledStatusStandaloneResourceListInput
+	apis.DomainizedResourceListInput
+
+	ManagedResourceListInput
+	ZonalFilterListInput
+	WireFilterListInput
+	SchedtagFilterListInput
+
+	StorageFilterListInput
+	UsableResourceListInput
+
+	// filter by ResourceType
+	ResourceType string `json:"resource_type"`
+	// filter by mac of any network interface
+	AnyMac string `json:"any_mac"`
+	// filter storages not attached to this host
+	StorageNotAttached *bool `json:"storage_not_attached"`
+	// filter by Hypervisor
+	Hypervisor string `json:"hypervisor"`
+	// filter host that is empty
+	IsEmpty *bool `json:"is_empty"`
+	// filter host that is baremetal
+	Baremetal *bool `json:"baremetal"`
+}
+
+type HostDetails struct {
+	apis.EnabledStatusStandaloneResourceDetails
+	ManagedResourceInfo
+	ZoneResourceInfo
+
+	SHost
+
+	Schedtags []SchedtagShortDescDetails `json:"schedtags"`
+
+	ServerId  string `json:"server_id"`
+	Server    string `json:"server"`
+	ServerIps string `json:"server_ips"`
+	// 网卡数量
+	NicCount int `json:"nic_count"`
+	// 网卡详情
+	NicInfo []jsonutils.JSONObject `json:"nic_info"`
+	// CPU超分比
+	CpuCommit int `json:"cpu_commit"`
+	// 内存超分比
+	MemCommit int `json:"mem_commit"`
+	// 云主机数量
+	// example: 10
+	Guests int `json:"guests"`
+	// 非系统云主机数量
+	// example: 0
+	NonsystemGuests int `json:"nonsystem_guests"`
+	// 运行中云主机数量
+	// example: 2
+	RunningGuests int `json:"running_geusts"`
+	// CPU超分率
+	CpuCommitRate float64 `json:"cpu_commit_rate"`
+	// 内存超分率
+	MemCommitRate float64 `json:"mem_commit_rate"`
+	// 存储大小
+	Storage int64 `json:"storage"`
+	// 已使用存储大小
+	StorageUsed int64 `json:"storage_used"`
+	// 浪费存储大小(异常磁盘存储大小)
+	StorageWaste int64 `json:"storage_waste"`
+	// 虚拟存储大小
+	StorageVirtual int64 `json:"storage_virtual"`
+	// 可用存储大小
+	StorageFree int64 `json:"storage_free"`
+	// 存储超分率
+	StorageCommitRate float64             `json:"storage_commit_rate"`
+	Spec              *jsonutils.JSONDict `json:"spec"`
+	IsPrepaidRecycle  bool                `json:"is_prepaid_recycle"`
+	CanPrepare        bool                `json:"can_prepare"`
+	PrepareFailReason string              `json:"prepare_fail_reason"`
+
+	// 标签
+	Metadata map[string]string `json:"metadata"`
+}
+
+type HostResourceInfo struct {
+	// 归属云订阅ID
+	ManagerId string `json:"manager_id"`
+
+	ManagedResourceInfo
+
+	// 归属可用区ID
+	ZoneId string `json:"zone_id"`
+
+	ZoneResourceInfo
+
+	// 宿主机名称
+	Host string `json:"host"`
+
+	// 宿主机序列号
+	HostSN string `json:"host_sn"`
+
+	// 宿主机状态
+	HostStatus string `json:"host_status"`
+
+	// 宿主机服务状态`
+	HostServiceStatus string `json:"host_service_status"`
+
+	// 宿主机类型
+	HostType string `json:"host_type"`
+}
+
+type HostFilterListInput struct {
+	ZonalFilterListInput
+	ManagedResourceListInput
+
+	HostFilterListInputBase
+}
+
+type HostFilterListInputBase struct {
+	HostResourceInput
+
+	// 以宿主机序列号过滤
+	HostSN string `json:"host_sn"`
+
+	// 以宿主机名称排序
+	OrderByHost string `json:"order_by_host"`
+
+	// 以宿主机序列号名称排序
+	OrderByHostSN string `json:"order_by_host_sn"`
+}
+
+type HostResourceInput struct {
+	// 宿主机或物理机（ID或Name）
+	Host string `json:"host"`
+	// swagger:ignore
+	// Deprecated
+	// filter by host_id
+	HostId string `json:"host_id" deprecated-by:"host"`
 }

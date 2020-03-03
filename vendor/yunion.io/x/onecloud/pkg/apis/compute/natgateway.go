@@ -14,17 +14,77 @@
 
 package compute
 
+import (
+	"yunion.io/x/onecloud/pkg/apis"
+)
+
 const (
-	NAT_STAUTS_AVAILABLE     = "available" //可用
-	NAT_STATUS_ALLOCATE      = "allocate"  //创建中
-	NAT_STATUS_DEPLOYING     = "deploying" //配置中
-	NAT_STATUS_UNKNOWN       = "unknown"
-	NAT_STATUS_FAILED        = "failed"
-	NAT_STATUS_DELETED       = "deleted"
-	NAT_STATUS_DELETING      = "deleting"
-	NAT_STATUS_DELETE_FAILED = "delete_failed"
+	NAT_STAUTS_AVAILABLE     = "available"     //可用
+	NAT_STATUS_ALLOCATE      = "allocate"      //创建中
+	NAT_STATUS_DEPLOYING     = "deploying"     //配置中
+	NAT_STATUS_UNKNOWN       = "unknown"       //未知状态
+	NAT_STATUS_FAILED        = "failed"        //创建失败
+	NAT_STATUS_DELETED       = "deleted"       //删除
+	NAT_STATUS_DELETING      = "deleting"      //删除中
+	NAT_STATUS_DELETE_FAILED = "delete_failed" //删除失败
+
+	NAT_SPEC_SMALL  = "small"  //小型
+	NAT_SPEC_MIDDLE = "middle" //中型
+	NAT_SPEC_LARGE  = "large"  //大型
+	NAT_SPEC_XLARGE = "xlarge" //超大型
 
 	QCLOUD_NAT_SPEC_SMALL  = "small"
 	QCLOUD_NAT_SPEC_MIDDLE = "middle"
 	QCLOUD_NAT_SPEC_LARGE  = "large"
 )
+
+type NatGetewayListInput struct {
+	apis.StatusStandaloneResourceListInput
+
+	VpcFilterListInput
+	RegionalFilterListInput
+	ManagedResourceListInput
+}
+
+type NatEntryListInput struct {
+	apis.StatusStandaloneResourceListInput
+	NatGatewayFilterListInput
+	ManagedResourceListInput
+}
+
+type NatDEntryListInput struct {
+	NatEntryListInput
+}
+
+type NatSEntryListInput struct {
+	NatEntryListInput
+	NetworkFilterListBase
+}
+
+type NatGatewayResourceInfo struct {
+	// NAT网关名称
+	Natgateway string `json:"natgateway"`
+
+	// 归属VPC ID
+	VpcId string `json:"vpc_id"`
+
+	VpcResourceInfo
+}
+
+type NatGatewayFilterListInput struct {
+	// 以NAT网关过滤
+	Natgateway string `json:"natgateway"`
+
+	// 以NAT网关名字排序
+	OrderByNatgateway string `json:"order_by_natgateway"`
+
+	VpcFilterListInput
+}
+
+type NatEntryDetails struct {
+	apis.StatusStandaloneResourceDetails
+	NatGatewayResourceInfo
+
+	// NAT ENTRY的真实名称？？
+	RealName string `json:"real_name"`
+}

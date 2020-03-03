@@ -25,6 +25,12 @@ type SUserExtended struct {
 	LastActiveAt     time.Time
 	DomainId         string
 
+	IsSystemAccount bool
+
+	Displayname string
+	Email       string
+	Mobile      string
+
 	LocalId       int
 	LocalName     string
 	DomainName    string

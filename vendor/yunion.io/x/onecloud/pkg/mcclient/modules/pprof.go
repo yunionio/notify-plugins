@@ -15,18 +15,22 @@
 package modules
 
 import (
+	"context"
 	"fmt"
 	"io"
 
 	"yunion.io/x/onecloud/pkg/mcclient"
+	"yunion.io/x/onecloud/pkg/mcclient/modulebase"
+	"yunion.io/x/onecloud/pkg/util/httputils"
 )
 
 func GetPProfByType(s *mcclient.ClientSession, serviceType string, profileType string, seconds int) (io.Reader, error) {
-	man := &BaseManager{serviceType: serviceType}
-	if seconds <= 0 {
-		seconds = 15
-	}
-	resp, err := man.rawBaseUrlRequest(s, "GET", fmt.Sprintf("/debug/pprof/%s?seconds=%d", profileType, seconds), nil, nil)
+	return modulebase.GetPProfByType(s, serviceType, profileType, seconds)
+}
+
+func GetNamedAddressPProfByType(s *mcclient.ClientSession, address string, profileType string, seconds int) (io.Reader, error) {
+	urlStr := fmt.Sprintf("%s%s", address, fmt.Sprintf("/debug/pprof/%s?seconds=%d", profileType, seconds))
+	resp, err := httputils.Request(s.GetClient().HttpClient(), context.Background(), "GET", urlStr, s.Header, nil, false)
 	if err != nil {
 		return nil, err
 	}

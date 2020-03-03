@@ -16,13 +16,13 @@ package netutils
 
 import (
 	"fmt"
+	"math/bits"
 	"math/rand"
 	"net"
 	"strconv"
 	"strings"
 
-	"github.com/pkg/errors"
-
+	"yunion.io/x/pkg/errors"
 	"yunion.io/x/pkg/util/regutils"
 )
 
@@ -206,6 +206,19 @@ func (ar IPV4AddrRange) EndIp() IPV4Addr {
 	return ar.end
 }
 
+func (ar IPV4AddrRange) Merge(ar2 IPV4AddrRange) (*IPV4AddrRange, bool) {
+	if ar.IsOverlap(ar2) || ar.end+1 == ar2.start || ar2.end+1 == ar.start {
+		if ar2.start < ar.start {
+			ar.start = ar2.start
+		}
+		if ar2.end > ar.end {
+			ar.end = ar2.end
+		}
+		return &ar, true
+	}
+	return nil, false
+}
+
 func (ar IPV4AddrRange) IsOverlap(ar2 IPV4AddrRange) bool {
 	if ar.start > ar2.end || ar.end < ar2.start {
 		return false
@@ -308,17 +321,16 @@ func (ar IPV4AddrRange) equals(ar2 IPV4AddrRange) bool {
 }
 
 func Masklen2Mask(maskLen int8) IPV4Addr {
-	var mask uint32 = 0
-	for i := 0; i < int(maskLen); i += 1 {
-		mask |= 1 << uint(31-i)
+	if maskLen < 0 {
+		panic("negative masklen")
 	}
-	return IPV4Addr(mask)
+	return IPV4Addr(^(uint32(1<<(32-uint8(maskLen))) - 1))
 }
 
 type IPV4Prefix struct {
 	Address IPV4Addr
 	MaskLen int8
-	ipRange *IPV4AddrRange
+	ipRange IPV4AddrRange
 }
 
 func (pref *IPV4Prefix) String() string {
@@ -329,15 +341,15 @@ func (pref *IPV4Prefix) String() string {
 	}
 }
 
-func Mask2Len(mask IPV4Addr) int8 {
-	var maskLen int8 = 0
-	for {
-		if (mask & (1 << uint(31-maskLen))) == 0 {
-			break
-		}
-		maskLen += 1
+func (pref *IPV4Prefix) Equals(pref1 *IPV4Prefix) bool {
+	if pref1 == nil {
+		return false
 	}
-	return maskLen
+	return pref.ipRange.equals(pref1.ipRange)
+}
+
+func Mask2Len(mask IPV4Addr) int8 {
+	return int8(bits.LeadingZeros32(^uint32(mask)))
 }
 
 func ParsePrefix(prefix string) (IPV4Addr, int8, error) {
@@ -378,7 +390,12 @@ func NewIPV4Prefix(prefix string) (IPV4Prefix, error) {
 	if err != nil {
 		return IPV4Prefix{}, errors.Wrap(err, "ParsePrefix")
 	}
-	return IPV4Prefix{Address: addr, MaskLen: maskLen}, nil
+	pref := IPV4Prefix{
+		Address: addr,
+		MaskLen: maskLen,
+	}
+	pref.ipRange = pref.ToIPRange()
+	return pref, nil
 }
 
 func (prefix IPV4Prefix) ToIPRange() IPV4AddrRange {
@@ -388,10 +405,6 @@ func (prefix IPV4Prefix) ToIPRange() IPV4AddrRange {
 }
 
 func (prefix IPV4Prefix) Contains(ip IPV4Addr) bool {
-	if prefix.ipRange == nil {
-		ipRange := prefix.ToIPRange()
-		prefix.ipRange = &ipRange
-	}
 	return prefix.ipRange.Contains(ip)
 }
 

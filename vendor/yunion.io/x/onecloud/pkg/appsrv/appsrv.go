@@ -17,10 +17,13 @@ package appsrv
 import (
 	"bufio"
 	"context"
+	"crypto/sha1"
+	"encoding/base64"
 	"fmt"
 	"math/rand"
 	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"strings"
 	"sync"
@@ -56,6 +59,7 @@ type Application struct {
 	defHandlerInfo    SHandlerInfo
 	cors              *Cors
 	middlewares       []MiddlewareFunc
+	hostId            string
 
 	isExiting       bool
 	idleConnsClosed chan struct{}
@@ -67,7 +71,8 @@ const (
 	DEFAULT_READ_TIMEOUT        = 0
 	DEFAULT_READ_HEADER_TIMEOUT = 10 * time.Second
 	DEFAULT_WRITE_TIMEOUT       = 0
-	DEFAULT_PROCESS_TIMEOUT     = 15 * time.Second
+	// set default process timeout to 60 seconds
+	DEFAULT_PROCESS_TIMEOUT = 60 * time.Second
 )
 
 var quitHandlerRegisted bool
@@ -89,6 +94,18 @@ func NewApplication(name string, connMax int, db bool) *Application {
 	}
 	app.SetContext(appctx.APP_CONTEXT_KEY_APP, &app)
 	app.SetContext(appctx.APP_CONTEXT_KEY_APPNAME, app.name)
+
+	hm := sha1.New()
+	hm.Write([]byte(name))
+	hostname, _ := os.Hostname()
+	hm.Write([]byte(hostname))
+	outIp := utils.GetOutboundIP()
+	hm.Write([]byte(outIp.String()))
+	hostId := base64.URLEncoding.EncodeToString(hm.Sum(nil))
+
+	log.Infof("App hostId: %s (%s,%s,%s)", hostId, name, hostname, outIp.String())
+	app.hostId = hostId
+	app.SetContext(appctx.APP_CONTEXT_KEY_HOST_ID, hostId)
 
 	// initialize random seed
 	rand.Seed(time.Now().UnixNano())
@@ -167,6 +184,7 @@ func (lrw *loggingResponseWriter) Hijack() (rwc net.Conn, buf *bufio.ReadWriter,
 }
 
 func (lrw *loggingResponseWriter) WriteHeader(code int) {
+	log.Debugf("XXXX loggingResponseWriter WriteHeader %d", code)
 	if code < 100 || code >= 600 {
 		log.Errorf("Invalud status code %d, set code to 598", code)
 		code = 598
@@ -189,6 +207,7 @@ func genRequestId(w http.ResponseWriter, r *http.Request) string {
 func (app *Application) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// log.Printf("defaultHandler %s %s", r.Method, r.URL.Path)
 	rid := genRequestId(w, r)
+	w.Header().Set("X-Request-Host-Id", app.hostId)
 	lrw := &loggingResponseWriter{w, http.StatusOK}
 	start := time.Now()
 	hi, params := app.defaultHandle(lrw, r, rid)
@@ -215,7 +234,7 @@ func (app *Application) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		skipLog = true
 	}
 	if !skipLog {
-		log.Infof("%d %s %s %s (%s) %.2fms", lrw.status, rid, r.Method, r.URL, r.RemoteAddr, duration)
+		log.Infof("%s %d %s %s %s (%s) %.2fms", app.hostId, lrw.status, rid, r.Method, r.URL, r.RemoteAddr, duration)
 	}
 }
 
@@ -234,6 +253,11 @@ func (app *Application) handleCORS(w http.ResponseWriter, r *http.Request) bool 
 
 func (app *Application) defaultHandle(w http.ResponseWriter, r *http.Request, rid string) (*SHandlerInfo, *SAppParams) {
 	segs := SplitPath(r.URL.EscapedPath())
+	for i := range segs {
+		if p, err := url.PathUnescape(segs[i]); err == nil {
+			segs[i] = p
+		}
+	}
 	params := make(map[string]string)
 	w.Header().Set("Server", "Yunion AppServer/Go/2018.4")
 	w.Header().Set("X-Frame-Options", "SAMEORIGIN")
@@ -381,10 +405,7 @@ func (app *Application) registerCleanShutdown(s *http.Server, onStop func()) {
 	}
 	app.idleConnsClosed = make(chan struct{})
 
-	// dump goroutine stack
-	signalutils.RegisterSignal(func() {
-		utils.DumpAllGoroutineStack(log.Logger().Out)
-	}, syscall.SIGUSR1)
+	signalutils.SetDumpStackSignal()
 
 	quitSignals := []os.Signal{syscall.SIGHUP, syscall.SIGINT, syscall.SIGQUIT, syscall.SIGTERM}
 	signalutils.RegisterSignal(func() {

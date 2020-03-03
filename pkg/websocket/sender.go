@@ -19,68 +19,50 @@ import (
 	"fmt"
 	"strings"
 	"sync"
+	"yunion.io/x/pkg/errors"
 
 	"yunion.io/x/jsonutils"
 	"yunion.io/x/onecloud/pkg/mcclient"
 	"yunion.io/x/onecloud/pkg/mcclient/auth"
 	"yunion.io/x/onecloud/pkg/mcclient/modules"
 
-	"notify-plugin/pkg/apis"
+	"yunion.io/x/notify-plugin/pkg/apis"
+	"yunion.io/x/notify-plugin/common"
 )
 
 var senderManager *sSenderManager
 
-type sConfigCache map[string]string
-
-func newSConfigCache() sConfigCache {
-	return make(map[string]string)
-}
-
 type sSenderManager struct {
 	workerChan  chan struct{}
-	templateDir string
 	region      string
 	clientLock  sync.RWMutex // lock to protect client
 	session     *mcclient.ClientSession
 
-	configCache   sConfigCache   // config cache
-	configLock    sync.RWMutex   // lock to protect config cache
+	configCache *common.SConfigCache // config cache
 }
 
 func newSSenderManager(config *SWebsocketConfig) *sSenderManager {
 	return &sSenderManager{
-		workerChan:  make(chan struct{}, config.SenderNum),
-		region:      config.Region,
+		workerChan: make(chan struct{}, config.SenderNum),
+		region:     config.Region,
 
-		configCache:   newSConfigCache(),
+		configCache: common.NewConfigCache(),
 	}
 }
 
-func (self *sSenderManager) initClient() {
-	self.configLock.RLock()
-	authUri, ok := self.configCache[AUTH_URI]
+func (self *sSenderManager) initClient() error {
+	vals, ok, noKey := self.configCache.BatchGet(AUTH_URI, ADMIN_USER, ADMIN_PASSWORD, ADMIN_TENANT_NAME)
 	if !ok {
-		self.configLock.RUnlock()
-		return
+		return errors.Wrap(common.ErrConfigMiss, noKey)
 	}
-	adminUser, ok := self.configCache[ADMIN_USER]
-	if !ok {
-		self.configLock.RUnlock()
-		return
-	}
-	adminPassword, ok := self.configCache[ADMIN_PASSWORD]
-	if !ok {
-		self.configLock.RUnlock()
-		return
-	}
-	adminTenantName, ok := self.configCache[ADMIN_TENANT_NAME]
-	self.configLock.RUnlock()
+	authUri, adminUser, adminPassword, adminTenantName := vals[0], vals[1], vals[2], vals[3]
 
-	self.clientLock.Lock()
-	defer self.clientLock.Unlock()
 	a := auth.NewAuthInfo(authUri, "", adminUser, adminPassword, adminTenantName, "")
 	auth.Init(a, false, true, "", "")
+	self.clientLock.Lock()
+	defer self.clientLock.Unlock()
 	self.session = auth.GetAdminSession(context.Background(), self.region, "")
+	return nil
 }
 
 func (self *sSenderManager) send(args *apis.SendParams) error {

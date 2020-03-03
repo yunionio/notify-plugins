@@ -14,13 +14,15 @@
 
 package modules
 
+import "yunion.io/x/onecloud/pkg/mcclient/modulebase"
+
 var (
-	MeterAlert ResourceManager
+	MeterAlert modulebase.ResourceManager
 )
 
 func init() {
-	MeterAlert = NewMeterAlertManager("meteralert", "meteralerts",
-		[]string{"id", "type", "provider", "account", "account_id", "comparator", "threshold", "recipients", "level", "channel", "status", "create_by", "update_by", "delete_by", "gmt_create", "gmt_modified", "gmt_delete", "is_deleted", "project_id", "remark"},
+	MeterAlert = NewMonitorV2Manager("meteralert", "meteralerts",
+		[]string{"id", "type", "provider", "account", "account_id", "comparator", "threshold", "recipients", "level", "channel", "state", "project_id"},
 		[]string{})
 
 	register(&MeterAlert)

@@ -14,8 +14,10 @@
 
 package modules
 
+import "yunion.io/x/onecloud/pkg/mcclient/modulebase"
+
 type AnsiblePlaybookManager struct {
-	ResourceManager
+	modulebase.ResourceManager
 }
 
 var (
@@ -37,5 +39,5 @@ func init() {
 			[]string{},
 		),
 	}
-	register(&AnsiblePlaybooks)
+	registerV2(&AnsiblePlaybooks)
 }

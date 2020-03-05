@@ -16,33 +16,30 @@ package dingtalk
 
 import (
 	"context"
+	"yunion.io/x/pkg/errors"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
 	"yunion.io/x/log"
 
-	"notify-plugin/pkg/apis"
+	"yunion.io/x/notify-plugin/common"
+	"yunion.io/x/notify-plugin/pkg/apis"
 )
 
 type Server struct {
 	apis.UnimplementedSendAgentServer
-	name string
 }
 
 func (s *Server) Send(ctx context.Context, req *apis.SendParams) (*apis.Empty, error) {
 	empty := &apis.Empty{}
 	if senderManager.client == nil {
-		err := status.Error(codes.FailedPrecondition, NOTINIT)
+		err := status.Error(codes.FailedPrecondition, common.NOTINIT)
 		return empty, err
 	}
-	sendFunc, err := senderManager.getSendFunc(req)
-	if err != nil {
-		return empty, status.Error(codes.Internal, err.Error())
-	}
-
+	sendFunc := senderManager.getSendFunc(req)
 	senderManager.workerChan <- struct{}{}
-	err = senderManager.send(sendFunc)
+	err := senderManager.send(sendFunc)
 	<-senderManager.workerChan
 	if err == ErrAgentIDNotInit {
 		return empty, status.Error(codes.FailedPrecondition, err.Error())
@@ -54,32 +51,33 @@ func (s *Server) Send(ctx context.Context, req *apis.SendParams) (*apis.Empty, e
 	return empty, nil
 }
 
-func (s *Server) UpdateConfig(ctx context.Context, req *apis.UpdateConfigParams) (*apis.Empty, error) {
-	empty := &apis.Empty{}
+func (s *Server) UpdateConfig(ctx context.Context, req *apis.UpdateConfigParams) (empty *apis.Empty, err error) {
+	defer func() {
+		if err != nil {
+			log.Errorf(err.Error())
+		}
+	}()
+	empty = new(apis.Empty)
 	if req.Configs == nil {
-		return empty, status.Error(codes.InvalidArgument, "Config shouldn't be nil")
+		return empty, status.Error(codes.InvalidArgument, common.ConfigNil)
 	}
 	log.Debugf("update config...")
-	senderManager.configLock.Lock()
-	shouldInit := false
-	for key, value := range req.Configs {
-		if key == APP_KEY || key == APP_SECRET {
-			shouldInit = true
-		}
-		senderManager.configCache[key] = value
+	senderManager.configCache.BatchSet(req.Configs)
+	err = senderManager.initClient()
+	if errors.Cause(err) == common.ErrConfigMiss {
+		return empty, status.Error(codes.FailedPrecondition, err.Error())
 	}
-	senderManager.configLock.Unlock()
-	if shouldInit {
-		senderManager.initClient()
+	if err != nil {
+		return empty, status.Error(codes.Unavailable, err.Error())
 	}
-	return empty, nil
+	return
 }
 
 func (s *Server) UseridByMobile(ctx context.Context, req *apis.UseridByMobileParams) (*apis.UseridByMobileReply, error) {
 	reply := &apis.UseridByMobileReply{}
 
 	if senderManager.client == nil {
-		err := status.Error(codes.FailedPrecondition, NOTINIT)
+		err := status.Error(codes.FailedPrecondition, common.NOTINIT)
 		return reply, err
 	}
 	userId, err := senderManager.getUseridByMobile(req.Mobile)

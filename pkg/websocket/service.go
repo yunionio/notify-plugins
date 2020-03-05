@@ -15,56 +15,19 @@
 package websocket
 
 import (
-	"fmt"
-	"net"
-	"os"
-	"os/signal"
-	"syscall"
-
-	"google.golang.org/grpc"
-
 	"yunion.io/x/log"
 
-	"notify-plugin/pkg/apis"
-	"notify-plugin/utils"
+	"yunion.io/x/notify-plugin/pkg/apis"
+	"yunion.io/x/notify-plugin/common"
 )
 
 func StartService() {
-	// config parse:
 	var config SWebsocketConfig
-	utils.ParseOptions(&config, os.Args, "websocket.conf")
-	log.SetLogLevelByString(log.Logger(), config.LogLevel)
-
-	// check socket dir
-	err := utils.CheckDir(config.SockFileDir)
-	if err != nil {
-		log.Fatalf("Dir %s not exist and create failed.", config.SockFileDir)
-	}
-
-	// init sender manager
-	senderManager = newSSenderManager(&config)
-
-	// init rpc Server
-	grpcServer := grpc.NewServer()
-	apis.RegisterSendAgentServer(grpcServer, &Server{apis.UnimplementedSendAgentServer{}, "webconsole"})
-
-	la, err := net.Listen("unix", fmt.Sprintf("%s/%s.sock", config.SockFileDir, "webconsole"))
-	if err != nil {
-		log.Fatalln(err)
-	}
-
-	sigs := make(chan os.Signal, 1)
-	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
-	go grpcServer.Serve(la)
-	log.Infoln("Service start successfully")
-
-	select {
-	//case <-tmp:
-	//	log.Errorln("All sender quit.")
-	//	la.Close()
-	case <-sigs:
-		log.Println("Receive stop signal, stopping....")
-		la.Close()
-		log.Println("Stopped")
-	}
+	common.StartService(&config, &Server{apis.UnimplementedSendAgentServer{}},
+		"webconsole", "websocket.conf",
+		func() {
+			log.Debugf("region: %s", config.Region)
+			senderManager = newSSenderManager(&config)
+		},
+	)
 }

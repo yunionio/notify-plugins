@@ -20,24 +20,24 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/pkg/errors"
+	"yunion.io/x/pkg/errors"
+
 	api "yunion.io/x/onecloud/pkg/apis/compute"
+	"yunion.io/x/onecloud/pkg/cloudprovider"
 	"yunion.io/x/onecloud/pkg/mcclient"
+	"yunion.io/x/onecloud/pkg/mcclient/modulebase"
 	"yunion.io/x/onecloud/pkg/util/httputils"
 )
 
 type SBucketManager struct {
-	ResourceManager
+	modulebase.ResourceManager
 }
 
-func (manager *SBucketManager) Upload(s *mcclient.ClientSession, bucketId string, key string, body io.Reader, contLength int64, contType string, storageClass string, acl string) error {
+func (manager *SBucketManager) Upload(s *mcclient.ClientSession, bucketId string, key string, body io.Reader, contLength int64, storageClass string, acl string, meta http.Header) error {
 	method := httputils.POST
 	path := fmt.Sprintf("/%s/%s/upload", manager.URLPath(), bucketId)
-	headers := http.Header{}
+	headers := cloudprovider.MetaToHttpHeader(cloudprovider.META_HEADER_PREFIX, meta)
 	headers.Set(api.BUCKET_UPLOAD_OBJECT_KEY_HEADER, key)
-	if len(contType) > 0 {
-		headers.Set("Content-Type", contType)
-	}
 
 	if contLength > 0 {
 		headers.Set("Content-Length", strconv.FormatInt(contLength, 10))
@@ -51,7 +51,7 @@ func (manager *SBucketManager) Upload(s *mcclient.ClientSession, bucketId string
 		headers.Set(api.BUCKET_UPLOAD_OBJECT_ACL_HEADER, acl)
 	}
 
-	resp, err := manager.rawRequest(s, method, path, headers, body)
+	resp, err := modulebase.RawRequest(manager.ResourceManager, s, method, path, headers, body)
 	if err != nil {
 		return errors.Wrap(err, "rawRequest")
 	}

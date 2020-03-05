@@ -21,8 +21,6 @@ const (
 	//APP_KEY = "appKey"
 	APP_SECRET = "app_secret"
 	AGENT_ID   = "agent_id"
-
-	NOTINIT = "Send service hasn't been init"
 )
 
 var (

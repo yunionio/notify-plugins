@@ -214,6 +214,7 @@ const (
 	LB_TLS_CIPHER_POLICY_1_1        = "tls_cipher_policy_1_1"
 	LB_TLS_CIPHER_POLICY_1_2        = "tls_cipher_policy_1_2"
 	LB_TLS_CIPHER_POLICY_1_2_strict = "tls_cipher_policy_1_2_strict"
+	LB_TLS_CIPHER_POLICY_deault     = ""
 )
 
 var LB_TLS_CIPHER_POLICIES = choices.NewChoices(
@@ -221,6 +222,7 @@ var LB_TLS_CIPHER_POLICIES = choices.NewChoices(
 	LB_TLS_CIPHER_POLICY_1_1,
 	LB_TLS_CIPHER_POLICY_1_2,
 	LB_TLS_CIPHER_POLICY_1_2_strict,
+	LB_TLS_CIPHER_POLICY_deault,
 )
 
 const (
@@ -271,6 +273,38 @@ var LB_HEALTH_CHECK_HTTP_CODES = choices.NewChoices(
 	LB_HEALTH_CHECK_HTTP_CODE_3xx,
 	LB_HEALTH_CHECK_HTTP_CODE_4xx,
 	LB_HEALTH_CHECK_HTTP_CODE_5xx,
+)
+
+const (
+	LB_REDIRECT_OFF = "off"
+	LB_REDIRECT_RAW = "raw"
+)
+
+var LB_REDIRECT_TYPES = choices.NewChoices(
+	LB_REDIRECT_OFF,
+	LB_REDIRECT_RAW,
+)
+
+const (
+	LB_REDIRECT_CODE_301 = int64(301) // Moved Permanently
+	LB_REDIRECT_CODE_302 = int64(302) // Found
+	LB_REDIRECT_CODE_307 = int64(307) // Temporary Redirect
+)
+
+var LB_REDIRECT_CODES = []int64{
+	LB_REDIRECT_CODE_301,
+	LB_REDIRECT_CODE_302,
+	LB_REDIRECT_CODE_307,
+}
+
+const (
+	LB_REDIRECT_SCHEME_HTTP  = "http"
+	LB_REDIRECT_SCHEME_HTTPS = "https"
+)
+
+var LB_REDIRECT_SCHEMES = choices.NewChoices(
+	LB_REDIRECT_SCHEME_HTTP,
+	LB_REDIRECT_SCHEME_HTTPS,
 )
 
 const (
@@ -363,13 +397,13 @@ var LB_BACKEND_ROLES = choices.NewChoices(
 const (
 	LB_CHARGE_TYPE_BY_TRAFFIC   = "traffic"
 	LB_CHARGE_TYPE_BY_BANDWIDTH = "bandwidth"
-	LB_CHARGE_TYPE_BY_HOUR      = "hour"
+	LB_CHARGE_TYPE_POSTPAID     = "postpaid"
 )
 
 var LB_CHARGE_TYPES = choices.NewChoices(
 	LB_CHARGE_TYPE_BY_TRAFFIC,
 	LB_CHARGE_TYPE_BY_BANDWIDTH,
-	LB_CHARGE_TYPE_BY_HOUR,
+	LB_CHARGE_TYPE_POSTPAID,
 )
 
 const (

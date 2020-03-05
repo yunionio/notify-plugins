@@ -15,59 +15,18 @@
 package smsaliyun
 
 import (
-	"fmt"
-	"net"
-	"os"
-	"os/signal"
-	"syscall"
-
-	"google.golang.org/grpc"
-
-	"yunion.io/x/log"
-
-	"notify-plugin/pkg/apis"
-	"notify-plugin/utils"
+	"yunion.io/x/notify-plugin/pkg/apis"
+	"yunion.io/x/notify-plugin/common"
 )
 
 var senderManager *sSenderManager
 
 func StartService() {
-	// config parse:
-	var config utils.SBaseOptions
-	utils.ParseOptions(&config, os.Args, "smsaliyun.conf")
-	log.SetLogLevelByString(log.Logger(), config.LogLevel)
-	log.SetLogLevelByString(log.Logger(), config.LogLevel)
-
-	// check socket dir
-	err := utils.CheckDir(config.SockFileDir)
-	if err != nil {
-		log.Fatalf("Dir %s not exist and create failed.", config.SockFileDir)
-	}
-
-	// init sender manager
-	senderManager = newSSenderManager(&config)
-
-	// init rpc Server
-	grpcServer := grpc.NewServer()
-	apis.RegisterSendAgentServer(grpcServer, &Server{apis.UnimplementedSendAgentServer{}, "mobile"})
-
-	la, err := net.Listen("unix", fmt.Sprintf("%s/%s.sock", config.SockFileDir, "mobile"))
-	if err != nil {
-		log.Fatalln(err)
-	}
-
-	sigs := make(chan os.Signal, 1)
-	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
-	go grpcServer.Serve(la)
-	log.Infoln("Service start successfully")
-
-	select {
-	//case <-tmp:
-	//	log.Errorln("All sender quit.")
-	//	la.Close()
-	case <-sigs:
-		log.Println("Receive stop signal, stopping....")
-		la.Close()
-		log.Println("Stopped")
-	}
+	var config common.SBaseOptions
+	common.StartService(&config, &Server{apis.UnimplementedSendAgentServer{}},
+		"mobile", "smsaliyun.conf",
+		func() {
+			senderManager = newSSenderManager(&config)
+		},
+	)
 }

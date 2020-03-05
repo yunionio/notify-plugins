@@ -9,8 +9,6 @@ github.com/aliyun/alibaba-cloud-sdk-go/sdk/errors
 github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests
 github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses
 github.com/aliyun/alibaba-cloud-sdk-go/sdk/utils
-# github.com/davecgh/go-spew v1.1.1
-github.com/davecgh/go-spew/spew
 # github.com/fatih/color v1.7.0
 github.com/fatih/color
 # github.com/ghodss/yaml v1.0.0
@@ -33,7 +31,7 @@ github.com/golang-plus/uuid/internal/namebased/md5
 github.com/golang-plus/uuid/internal/namebased/sha1
 github.com/golang-plus/uuid/internal/random
 github.com/golang-plus/uuid/internal/timebased
-# github.com/golang/protobuf v1.3.1
+# github.com/golang/protobuf v1.3.2
 github.com/golang/protobuf/proto
 github.com/golang/protobuf/ptypes
 github.com/golang/protobuf/ptypes/any
@@ -43,7 +41,7 @@ github.com/golang/protobuf/ptypes/timestamp
 github.com/hugozhu/godingtalk
 # github.com/jmespath/go-jmespath v0.0.0-20180206201540-c2b33e8439af
 github.com/jmespath/go-jmespath
-# github.com/json-iterator/go v1.1.5
+# github.com/json-iterator/go v1.1.7
 github.com/json-iterator/go
 # github.com/konsorten/go-windows-terminal-sequences v1.0.1
 github.com/konsorten/go-windows-terminal-sequences
@@ -53,20 +51,24 @@ github.com/mattn/go-colorable
 github.com/mattn/go-isatty
 # github.com/mgutz/ansi v0.0.0-20170206155736-9520e82c474b
 github.com/mgutz/ansi
+# github.com/minio/minio-go/v6 v6.0.33
+github.com/minio/minio-go/v6/pkg/credentials
+github.com/minio/minio-go/v6/pkg/encrypt
+github.com/minio/minio-go/v6/pkg/s3signer
+github.com/minio/minio-go/v6/pkg/s3utils
+github.com/minio/minio-go/v6/pkg/set
+# github.com/mitchellh/go-homedir v1.1.0
+github.com/mitchellh/go-homedir
 # github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd
 github.com/modern-go/concurrent
-# github.com/modern-go/reflect2 v0.0.0-20180701023420-4b7aa43c6742
+# github.com/modern-go/reflect2 v1.0.1
 github.com/modern-go/reflect2
 # github.com/moul/http2curl v1.0.0
 github.com/moul/http2curl
 # github.com/pkg/errors v0.8.1
 github.com/pkg/errors
-# github.com/pmezard/go-difflib v1.0.0
-github.com/pmezard/go-difflib/difflib
 # github.com/sirupsen/logrus v1.4.2
 github.com/sirupsen/logrus
-# github.com/stretchr/testify v1.3.0
-github.com/stretchr/testify/assert
 # github.com/texttheater/golang-levenshtein v0.0.0-20180516184445-d188e65d659e
 github.com/texttheater/golang-levenshtein/levenshtein
 # github.com/tredoe/osutil v0.0.0-20161130133508-7d3ee1afa71c
@@ -75,8 +77,15 @@ github.com/tredoe/osutil/user/crypt/common
 github.com/tredoe/osutil/user/crypt/sha512_crypt
 # github.com/ugorji/go v0.0.0-20161130061742-9c7f9b7a2bc3
 github.com/ugorji/go/codec
-# golang.org/x/crypto v0.0.0-20190621222207-cc06ce4a13d4
+# github.com/vishvananda/netlink v1.0.0
+github.com/vishvananda/netlink
+github.com/vishvananda/netlink/nl
+# github.com/vishvananda/netns v0.0.0-20191106174202-0a2b9b5464df
+github.com/vishvananda/netns
+# golang.org/x/crypto v0.0.0-20191002192127-34f69633bfdc
+golang.org/x/crypto/argon2
 golang.org/x/crypto/bcrypt
+golang.org/x/crypto/blake2b
 golang.org/x/crypto/blowfish
 golang.org/x/crypto/curve25519
 golang.org/x/crypto/ed25519
@@ -86,25 +95,28 @@ golang.org/x/crypto/internal/subtle
 golang.org/x/crypto/poly1305
 golang.org/x/crypto/ssh
 golang.org/x/crypto/ssh/terminal
-# golang.org/x/net v0.0.0-20190603091049-60506f45cf65
+# golang.org/x/net v0.0.0-20191007182048-72f939374954
 golang.org/x/net/http/httpguts
 golang.org/x/net/http2
 golang.org/x/net/http2/hpack
 golang.org/x/net/idna
 golang.org/x/net/internal/timeseries
+golang.org/x/net/publicsuffix
 golang.org/x/net/trace
-# golang.org/x/sys v0.0.0-20190620070143-6f217b454f45
+# golang.org/x/sync v0.0.0-20190423024810-112230192c58
+golang.org/x/sync/errgroup
+# golang.org/x/sys v0.0.0-20191008105621-543471e840be
 golang.org/x/sys/cpu
 golang.org/x/sys/unix
 golang.org/x/sys/windows
-# golang.org/x/text v0.3.1-0.20180807135948-17ff2d5776d2
+# golang.org/x/text v0.3.2
 golang.org/x/text/secure/bidirule
 golang.org/x/text/transform
 golang.org/x/text/unicode/bidi
 golang.org/x/text/unicode/norm
-# google.golang.org/genproto v0.0.0-20190404172233-64821d5d2107
+# google.golang.org/genproto v0.0.0-20190502173448-54afdca5d873
 google.golang.org/genproto/googleapis/rpc/status
-# google.golang.org/grpc v1.19.0
+# google.golang.org/grpc v1.23.1
 google.golang.org/grpc
 google.golang.org/grpc/balancer
 google.golang.org/grpc/balancer/base
@@ -119,6 +131,7 @@ google.golang.org/grpc/encoding/proto
 google.golang.org/grpc/grpclog
 google.golang.org/grpc/internal
 google.golang.org/grpc/internal/backoff
+google.golang.org/grpc/internal/balancerload
 google.golang.org/grpc/internal/binarylog
 google.golang.org/grpc/internal/channelz
 google.golang.org/grpc/internal/envconfig
@@ -133,6 +146,7 @@ google.golang.org/grpc/peer
 google.golang.org/grpc/resolver
 google.golang.org/grpc/resolver/dns
 google.golang.org/grpc/resolver/passthrough
+google.golang.org/grpc/serviceconfig
 google.golang.org/grpc/stats
 google.golang.org/grpc/status
 google.golang.org/grpc/tap
@@ -146,30 +160,47 @@ gopkg.in/gomail.v2
 gopkg.in/ini.v1
 # gopkg.in/yaml.v2 v2.2.2
 gopkg.in/yaml.v2
-# yunion.io/x/jsonutils v0.0.0-20190625054549-a964e1e8a051
+# yunion.io/x/executor v0.0.0-20200227030256-a18417815e74
+yunion.io/x/executor/apis
+yunion.io/x/executor/client
+# yunion.io/x/jsonutils v0.0.0-20200303051356-aa609aba0cda
 yunion.io/x/jsonutils
 # yunion.io/x/log v0.0.0-20190629062853-9f6483a7103d
 yunion.io/x/log
 yunion.io/x/log/hooks
-# yunion.io/x/onecloud v0.0.0-20190815080704-9bc0c41b452d
+# yunion.io/x/onecloud v0.0.0-20200305061741-9ed9de4f91a5
 yunion.io/x/onecloud/pkg/apis
+yunion.io/x/onecloud/pkg/apis/billing
+yunion.io/x/onecloud/pkg/apis/cloudprovider
 yunion.io/x/onecloud/pkg/apis/compute
 yunion.io/x/onecloud/pkg/apis/identity
 yunion.io/x/onecloud/pkg/apis/scheduler
 yunion.io/x/onecloud/pkg/appctx
 yunion.io/x/onecloud/pkg/appsrv
+yunion.io/x/onecloud/pkg/cloudcommon/types
+yunion.io/x/onecloud/pkg/cloudprovider
 yunion.io/x/onecloud/pkg/httperrors
 yunion.io/x/onecloud/pkg/mcclient
 yunion.io/x/onecloud/pkg/mcclient/auth
+yunion.io/x/onecloud/pkg/mcclient/modulebase
 yunion.io/x/onecloud/pkg/mcclient/modules
+yunion.io/x/onecloud/pkg/monitor/notifydrivers/feishu
 yunion.io/x/onecloud/pkg/proxy
 yunion.io/x/onecloud/pkg/util/ansible
+yunion.io/x/onecloud/pkg/util/billing
 yunion.io/x/onecloud/pkg/util/choices
+yunion.io/x/onecloud/pkg/util/cloudinit
 yunion.io/x/onecloud/pkg/util/hashcache
 yunion.io/x/onecloud/pkg/util/httputils
+yunion.io/x/onecloud/pkg/util/iproute2
+yunion.io/x/onecloud/pkg/util/netutils2
+yunion.io/x/onecloud/pkg/util/procutils
 yunion.io/x/onecloud/pkg/util/rbacutils
+yunion.io/x/onecloud/pkg/util/s3auth
 yunion.io/x/onecloud/pkg/util/seclib2
-# yunion.io/x/pkg v0.0.0-20190726033806-b564cfdcc224
+yunion.io/x/onecloud/pkg/util/streamutils
+yunion.io/x/onecloud/pkg/util/stringutils2
+# yunion.io/x/pkg v0.0.0-20200302034534-fdf44d54b070
 yunion.io/x/pkg/errors
 yunion.io/x/pkg/gotypes
 yunion.io/x/pkg/trace
@@ -178,13 +209,17 @@ yunion.io/x/pkg/util/cache
 yunion.io/x/pkg/util/clock
 yunion.io/x/pkg/util/errors
 yunion.io/x/pkg/util/netutils
+yunion.io/x/pkg/util/osprofile
 yunion.io/x/pkg/util/reflectutils
 yunion.io/x/pkg/util/regutils
 yunion.io/x/pkg/util/seclib
+yunion.io/x/pkg/util/secrules
 yunion.io/x/pkg/util/sets
 yunion.io/x/pkg/util/signalutils
 yunion.io/x/pkg/util/timeutils
 yunion.io/x/pkg/util/version
 yunion.io/x/pkg/utils
+# yunion.io/x/s3cli v0.0.0-20190917004522-13ac36d8687e
+yunion.io/x/s3cli
 # yunion.io/x/structarg v0.0.0-20190809075558-115bed041de3
 yunion.io/x/structarg

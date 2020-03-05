@@ -16,22 +16,31 @@ package compute
 
 import "yunion.io/x/onecloud/pkg/apis"
 
-type SSnapshotCreateInput struct {
-	apis.Meta
+type SnapshotCreateInput struct {
+	apis.VirtualResourceCreateInput
 
-	Name      string `json:"name"`
-	ProjectId string `json:"project_id"`
-	DomainId  string `json:"domain_id"`
-
-	DiskId        string `json:"disk_id"`
-	StorageId     string `json:"storage_id"`
-	CreatedBy     string `json:"created_by"`
-	Location      string `json:"location"`
-	Size          int    `json:"size"`
-	DiskType      string `json:"disk_type"`
+	// 磁盘名称或Id,建议使用Id
+	// 目前仅VMware平台不支持创建快照,其余平台磁盘均支持创建快照
+	// required: true
+	Disk string `json:"disk"`
+	// swagger:ignore
+	DiskId string `json:"disk_id"`
+	// swagger:ignore
+	StorageId string `json:"storage_id"`
+	// swagger:ignore
+	CreatedBy string `json:"created_by"`
+	// swagger:ignore
+	Location string `json:"location"`
+	// swagger:ignore
+	Size int `json:"size"`
+	// swagger:ignore
+	DiskType string `json:"disk_type"`
+	// swagger:ignore
 	CloudregionId string `json:"cloudregion_id"`
-	OutOfChain    bool   `json:"out_of_chain"`
-	ManagerId     string `json:"manager_id"`
+	// swagger:ignore
+	OutOfChain bool `json:"out_of_chain"`
+	// swagger:ignore
+	ManagerId string `json:"manager_id"`
 }
 
 type SSnapshotPolicyCreateInput struct {
@@ -41,10 +50,63 @@ type SSnapshotPolicyCreateInput struct {
 	ProjectId string `json:"project_id"`
 	DomainId  string `json:"domain_id"`
 
-	ManagerId     string `json:"manager_id"`
-	CloudregionId string `json:"cloudregion_id"`
-
 	RetentionDays  int   `json:"retention_days"`
 	RepeatWeekdays []int `json:"repeat_weekdays"`
 	TimePoints     []int `json:"time_points"`
+}
+
+type SSnapshotPolicyCreateInternalInput struct {
+	apis.Meta
+
+	Name      string
+	ProjectId string
+	DomainId  string
+
+	RetentionDays  int
+	RepeatWeekdays uint8
+	TimePoints     uint32
+}
+
+type SnapshotListInput struct {
+	apis.VirtualResourceListInput
+	ManagedResourceListInput
+	RegionalFilterListInput
+
+	StorageShareFilterListInput
+
+	// filter snapshot that is fake deleted
+	FakeDeleted *bool `json:"fake_deleted"`
+	// filter by disk type
+	DiskType string `json:"disk_type"`
+	// filter instance snapshot
+	IsInstanceSnapshot *bool `json:"is_instance_snapshot"`
+}
+
+type InstanceSnapshotListInput struct {
+	apis.VirtualResourceListInput
+
+	ServerFilterListInput
+}
+
+type SnapshotDetails struct {
+	apis.VirtualResourceDetails
+	ManagedResourceInfo
+	CloudregionResourceInfo
+
+	SSnapshot
+
+	// 存储类型
+	StorageType string `json:"storage_type"`
+	// 磁盘状态
+	DiskStatus string `json:"disk_status"`
+	// 云主机名称
+	Guest string `json:"guest"`
+	// 云主机Id
+	GuestId string `json:"guest_id"`
+	// 云主机状态
+	GuestStatus string `json:"guest_status"`
+	// 磁盘名称
+	DiskName string `json:"disk_name"`
+	// 是否是子快照
+	IsSubSnapshot bool `json:"is_sub_snapshot,allowempty"`
 }

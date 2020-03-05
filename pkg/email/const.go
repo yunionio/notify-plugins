@@ -20,6 +20,4 @@ const (
 	HOSTNAME  = "mail.smtp.hostname"
 	HOSTPORT  = "mail.smtp.hostport"
 	GLOBALSSL = "mail.global.ssl"
-
-	NOTINIT = "Send service hasn't been init"
 )

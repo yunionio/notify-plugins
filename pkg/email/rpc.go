@@ -25,18 +25,18 @@ import (
 
 	"yunion.io/x/log"
 
-	"notify-plugin/pkg/apis"
+	"yunion.io/x/notify-plugin/pkg/apis"
+	"yunion.io/x/notify-plugin/common"
 )
 
 type Server struct {
 	apis.UnimplementedSendAgentServer
-	name string
 }
 
 func (s *Server) Send(ctx context.Context, req *apis.SendParams) (*apis.Empty, error) {
 	empty := &apis.Empty{}
 	if senderManager.msgChan == nil {
-		err := status.Error(codes.FailedPrecondition, NOTINIT)
+		err := status.Error(codes.FailedPrecondition, common.NOTINIT)
 		return empty, err
 	}
 	log.Debugf("reviced msg for %s: %s", req.Contact, req.Message)
@@ -48,37 +48,30 @@ func (s *Server) Send(ctx context.Context, req *apis.SendParams) (*apis.Empty, e
 	return empty, nil
 }
 
-func (s *Server) UpdateConfig(ctx context.Context, req *apis.UpdateConfigParams) (*apis.Empty, error) {
-	empty := &apis.Empty{}
+func (s *Server) UpdateConfig(ctx context.Context, req *apis.UpdateConfigParams) (empty *apis.Empty, err error) {
+	defer func() {
+		if err != nil {
+			log.Errorf(err.Error())
+		}
+	}()
+	empty = new(apis.Empty)
 	if req.Configs == nil {
-		return empty, status.Error(codes.InvalidArgument, "Config shouldn't be nil")
+		return empty, status.Error(codes.InvalidArgument, common.ConfigNil)
 	}
-	senderManager.configLock.Lock()
-	for key, value := range req.Configs {
-		senderManager.configCache[key] = value
+	senderManager.configCache.BatchSet(req.Configs)
+	err = senderManager.restartSender()
+	if err != nil {
+		return empty, status.Error(codes.FailedPrecondition, err.Error())
 	}
-	senderManager.configLock.Unlock()
-	senderManager.restartSender()
-	return empty, nil
+	return
 }
 
 func (s *Server) ValidateConfig(ctx context.Context, config *apis.UpdateConfigParams) (*apis.ValidateConfigReply, error) {
-	hostname, ok := config.Configs[HOSTNAME]
+	vals, ok, noKey := common.CheckMap(config.Configs, HOSTNAME, HOSTPORT, USERNAME, PASSWORD)
 	if !ok {
-		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("require %s", HOSTNAME))
+		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("require %s", noKey))
 	}
-	hostport, ok := config.Configs[HOSTPORT]
-	if !ok {
-		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("require %s", HOSTPORT))
-	}
-	username, ok := config.Configs[USERNAME]
-	if !ok {
-		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("require %s", USERNAME))
-	}
-	password, ok := config.Configs[PASSWORD]
-	if !ok {
-		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("require %s", PASSWORD))
-	}
+	hostname, hostport, username, password := vals[0], vals[1], vals[2], vals[3]
 	port, err := strconv.Atoi(hostport)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("invalid hostport %s", hostport))

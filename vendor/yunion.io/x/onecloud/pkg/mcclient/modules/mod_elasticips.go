@@ -14,13 +14,15 @@
 
 package modules
 
+import "yunion.io/x/onecloud/pkg/mcclient/modulebase"
+
 var (
-	Elasticips ResourceManager
+	Elasticips modulebase.ResourceManager
 )
 
 func init() {
 	Elasticips = NewComputeManager("eip", "eips",
-		[]string{"ID", "Name", "IP_Addr", "Status",
+		[]string{"ID", "Name", "Mode", "IP_Addr", "Status",
 			"Associate_Type", "Associate_ID",
 			"Associate_Name",
 			"Bandwidth", "Charge_Type",

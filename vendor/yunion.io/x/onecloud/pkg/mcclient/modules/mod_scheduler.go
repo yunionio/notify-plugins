@@ -20,10 +20,10 @@ import (
 
 	"yunion.io/x/jsonutils"
 
+	api "yunion.io/x/onecloud/pkg/apis/scheduler"
 	"yunion.io/x/onecloud/pkg/mcclient"
 	"yunion.io/x/onecloud/pkg/mcclient/auth"
-
-	api "yunion.io/x/onecloud/pkg/apis/scheduler"
+	"yunion.io/x/onecloud/pkg/mcclient/modulebase"
 )
 
 var (
@@ -37,7 +37,7 @@ func init() {
 }
 
 type SchedulerManager struct {
-	ResourceManager
+	modulebase.ResourceManager
 }
 
 func (this *SchedulerManager) DoSchedule(s *mcclient.ClientSession, input *api.ScheduleInput, count int) (*api.ScheduleOutput, error) {
@@ -47,7 +47,7 @@ func (this *SchedulerManager) DoSchedule(s *mcclient.ClientSession, input *api.S
 	}
 	input.Count = count
 	body := input.JSON(input)
-	ret, err := this._post(s, url, body, "")
+	ret, err := modulebase.Post(this.ResourceManager, s, url, body, "")
 	if err != nil {
 		return nil, err
 	}
@@ -82,7 +82,7 @@ func newSchedIdentURL(action, ident string) string {
 
 func (this *SchedulerManager) Test(s *mcclient.ClientSession, params *api.ScheduleInput) (jsonutils.JSONObject, error) {
 	url := newSchedURL("test")
-	_, obj, err := this.jsonRequest(s, "POST", url, nil, params.JSON(params))
+	_, obj, err := modulebase.JsonRequest(this.ResourceManager, s, "POST", url, nil, params.JSON(params))
 	if err != nil {
 		return nil, err
 	}
@@ -109,7 +109,7 @@ func (this *SchedulerManager) DoForecast(s *mcclient.ClientSession, params jsonu
 	data.Set("domain_id", jsonutils.NewString(domainId))
 	data.Set("project_id", jsonutils.NewString(projectId))
 	url := newSchedURL("forecast")
-	_, obj, err := this.jsonRequest(s, "POST", url, nil, data)
+	_, obj, err := modulebase.JsonRequest(this.ResourceManager, s, "POST", url, nil, data)
 	if err != nil {
 		return nil, err
 	}
@@ -118,14 +118,14 @@ func (this *SchedulerManager) DoForecast(s *mcclient.ClientSession, params jsonu
 
 func (this *SchedulerManager) Cleanup(s *mcclient.ClientSession, params jsonutils.JSONObject) (jsonutils.JSONObject, error) {
 	url := newSchedURL("cleanup")
-	return this._post(s, url, params, "")
+	return modulebase.Post(this.ResourceManager, s, url, params, "")
 }
 
 func (this *SchedulerManager) SyncSku(s *mcclient.ClientSession, wait bool) (jsonutils.JSONObject, error) {
 	params := jsonutils.NewDict()
 	params.Add(jsonutils.NewBool(wait), "wait")
 	url := newSchedURL("sync-sku")
-	return this._post(s, url, params, "")
+	return modulebase.Post(this.ResourceManager, s, url, params, "")
 }
 
 func (this *SchedulerManager) Kill(s *mcclient.ClientSession, params jsonutils.JSONObject) (jsonutils.JSONObject, error) {
@@ -134,7 +134,7 @@ func (this *SchedulerManager) Kill(s *mcclient.ClientSession, params jsonutils.J
 
 func (this *SchedulerManager) CandidateList(s *mcclient.ClientSession, params jsonutils.JSONObject) (obj jsonutils.JSONObject, err error) {
 	url := newSchedURL("candidate-list")
-	_, obj, err = this.jsonRequest(s, "POST", url, nil, params)
+	_, obj, err = modulebase.JsonRequest(this.ResourceManager, s, "POST", url, nil, params)
 	if err != nil {
 		return
 	}
@@ -188,12 +188,12 @@ func (this *SchedulerManager) CandidateList(s *mcclient.ClientSession, params js
 
 func (this *SchedulerManager) CandidateDetail(s *mcclient.ClientSession, id string, params jsonutils.JSONObject) (jsonutils.JSONObject, error) {
 	url := newSchedIdentURL("candidate-detail", id)
-	return this._post(s, url, params, "candidate")
+	return modulebase.Post(this.ResourceManager, s, url, params, "candidate")
 }
 
 func (this *SchedulerManager) HistoryList(s *mcclient.ClientSession, params jsonutils.JSONObject) (obj jsonutils.JSONObject, err error) {
 	url := newSchedURL("history-list")
-	_, obj, err = this.jsonRequest(s, "POST", url, nil, params)
+	_, obj, err = modulebase.JsonRequest(this.ResourceManager, s, "POST", url, nil, params)
 	if err != nil {
 		return
 	}
@@ -202,7 +202,7 @@ func (this *SchedulerManager) HistoryList(s *mcclient.ClientSession, params json
 
 func (this *SchedulerManager) HistoryShow(s *mcclient.ClientSession, id string, params jsonutils.JSONObject) (jsonutils.JSONObject, error) {
 	url := newSchedIdentURL("history-detail", id)
-	return this._post(s, url, params, "history")
+	return modulebase.Post(this.ResourceManager, s, url, params, "history")
 }
 
 func (this *SchedulerManager) CleanCache(s *mcclient.ClientSession, hostId, sessionId string) error {
@@ -213,7 +213,7 @@ func (this *SchedulerManager) CleanCache(s *mcclient.ClientSession, hostId, sess
 	if len(sessionId) > 0 {
 		url = fmt.Sprintf("%s?session=%s", url, sessionId)
 	}
-	resp, err := this.rawRequest(s, "POST", url, nil, nil)
+	resp, err := modulebase.RawRequest(this.ResourceManager, s, "POST", url, nil, nil)
 	if err != nil {
 		return err
 	}

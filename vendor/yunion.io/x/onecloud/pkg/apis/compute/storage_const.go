@@ -14,6 +14,10 @@
 
 package compute
 
+import (
+	"yunion.io/x/onecloud/pkg/apis"
+)
+
 const (
 	STORAGE_LOCAL     = "local"
 	STORAGE_BAREMETAL = "baremetal"
@@ -49,6 +53,7 @@ const (
 	// STORAGE_CLOUD_SSD ="cloud_ssd"
 	STORAGE_LOCAL_BASIC   = "local_basic"
 	STORAGE_LOCAL_SSD     = "local_ssd"
+	STORAGE_LOCAL_PRO     = "local_pro"
 	STORAGE_CLOUD_BASIC   = "cloud_basic"
 	STORAGE_CLOUD_PREMIUM = "cloud_premium"
 
@@ -59,6 +64,7 @@ const (
 
 	// openstack
 	STORAGE_OPENSTACK_ISCSI = "iscsi"
+	STORAGE_OPENSTACK_NOVA  = "nova"
 
 	// Ucloud storage type
 	STORAGE_UCLOUD_CLOUD_NORMAL         = "CLOUD_NORMAL"         // 普通云盘
@@ -70,6 +76,16 @@ const (
 	// Zstack storage type
 	STORAGE_ZSTACK_LOCAL_STORAGE = "localstorage"
 	STORAGE_ZSTACK_CEPH          = "ceph"
+
+	// Google storage type
+	STORAGE_GOOGLE_LOCAL_SSD   = "local-ssd"   //本地SSD暂存盘 (最多8个)
+	STORAGE_GOOGLE_PD_STANDARD = "pd-standard" //标准永久性磁盘
+	STORAGE_GOOGLE_PD_SSD      = "pd-ssd"      //SSD永久性磁盘
+
+	// ctyun storage type
+	STORAGE_CTYUN_SSD  = "SSD"  // 超高IO云硬盘
+	STORAGE_CTYUN_SAS  = "SAS"  // 高IO云硬盘
+	STORAGE_CTYUN_SATA = "SATA" // 普通IO云硬盘
 )
 
 const (
@@ -116,7 +132,50 @@ var (
 	STORAGE_LIMITED_TYPES = []string{STORAGE_LOCAL, STORAGE_BAREMETAL, STORAGE_NAS, STORAGE_RBD, STORAGE_NFS, STORAGE_GPFS}
 
 	SHARED_FILE_STORAGE = []string{STORAGE_NFS, STORAGE_GPFS}
+	FIEL_STORAGE        = []string{STORAGE_LOCAL, STORAGE_NFS, STORAGE_GPFS}
 
 	// 目前来说只支持这些
 	SHARED_STORAGE = []string{STORAGE_NFS, STORAGE_GPFS, STORAGE_RBD}
 )
+
+type StorageFilterListInput struct {
+	// 过滤关联此存储（ID或Name）的列表结果
+	Storage string `json:"storage"`
+	// swagger:ignore
+	// Deprecated
+	// filter by storage_id
+	StorageId string `json:"storage_id" deprecated-by:"storage"`
+
+	// 以存储名称排序
+	// pattern:asc|desc
+	OrderByStorage string `json:"order_by_storage"`
+
+	StorageShareFilterListInput
+
+	ZonalFilterListInput
+	ManagedResourceListInput
+}
+
+type StorageShareFilterListInput struct {
+	// filter shared storage
+	Share *bool `json:"share"`
+	// filter local storage
+	Local *bool `json:"local"`
+}
+
+type StorageListInput struct {
+	apis.EnabledStatusStandaloneResourceListInput
+
+	ManagedResourceListInput
+	ZonalFilterListInput
+
+	UsableResourceListInput
+	StorageShareFilterListInput
+}
+
+type StoragecacheListInput struct {
+	apis.StandaloneResourceListInput
+	apis.DomainizedResourceListInput
+
+	ManagedResourceListInput
+}

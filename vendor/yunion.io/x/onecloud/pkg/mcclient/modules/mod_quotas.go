@@ -18,17 +18,23 @@ import (
 	"fmt"
 
 	"yunion.io/x/jsonutils"
-	"yunion.io/x/log"
 
 	"yunion.io/x/onecloud/pkg/mcclient"
+	"yunion.io/x/onecloud/pkg/mcclient/modulebase"
+	"yunion.io/x/onecloud/pkg/util/httputils"
 )
 
 type QuotaManager struct {
-	ResourceManager
+	modulebase.ResourceManager
 }
 
 func (this *QuotaManager) getURL(params jsonutils.JSONObject) string {
+	return this.getURL2(params, "")
+}
+
+func (this *QuotaManager) getURL2(params jsonutils.JSONObject, extra string) string {
 	url := fmt.Sprintf("/%s", this.URLPath())
+	query := jsonutils.NewDict()
 	if params != nil {
 		tenant, _ := params.GetString("tenant")
 		if len(tenant) > 0 {
@@ -37,130 +43,140 @@ func (this *QuotaManager) getURL(params jsonutils.JSONObject) string {
 			domain := jsonutils.GetAnyString(params, []string{"domain", "project_domain"})
 			if len(domain) > 0 {
 				url = fmt.Sprintf("%s/domains/%s", url, domain)
+			} else {
+				scope, _ := params.GetString("scope")
+				if len(scope) > 0 {
+					query.Add(jsonutils.NewString(scope), "scope")
+				}
 			}
 		}
+		refresh := jsonutils.QueryBoolean(params, "refresh", false)
+		if refresh {
+			query.Add(jsonutils.JSONTrue, "refresh")
+		}
+		primary := jsonutils.QueryBoolean(params, "primary", false)
+		if primary {
+			query.Add(jsonutils.JSONTrue, "primary")
+		}
+	}
+	if len(extra) > 0 {
+		url = httputils.JoinPath(url, extra)
+	}
+	if query.Size() > 0 {
+		url += "?" + query.QueryString()
 	}
 	return url
 }
 
 func (this *QuotaManager) GetQuota(s *mcclient.ClientSession, params jsonutils.JSONObject) (jsonutils.JSONObject, error) {
-	computeQuota, err := this._get(s, this.getURL(params), this.KeywordPlural)
+	quotas, err := modulebase.Get(this.ResourceManager, s, this.getURL(params), this.KeywordPlural)
 	if err != nil {
 		return nil, err
 	}
-	imageQuota, err := ImageQuotas._get(s, ImageQuotas.getURL(params), ImageQuotas.KeywordPlural)
+	ret := jsonutils.NewDict()
+	ret.Add(quotas, "data")
+	return ret, nil
+}
+
+func (this *QuotaManager) DoCleanPendingUsage(s *mcclient.ClientSession, params jsonutils.JSONObject) (jsonutils.JSONObject, error) {
+	url := this.getURL2(params, "pending")
+	results, err := modulebase.Delete(this.ResourceManager, s, url, nil, "")
 	if err != nil {
 		return nil, err
 	}
-	computeQuotaDict := computeQuota.(*jsonutils.JSONDict)
-	computeQuotaDict.Update(imageQuota)
-	return computeQuotaDict, nil
-}
-
-func getQuotaKey(quota jsonutils.JSONObject) string {
-	domainId, _ := quota.GetString("domain_id")
-	tenantId, _ := quota.GetString("tenant_id")
-	platform, _ := quota.GetString("platform")
-	return fmt.Sprintf("%s-%s-%s", domainId, tenantId, platform)
-}
-
-func quotaListToMap(list []jsonutils.JSONObject) map[string]jsonutils.JSONObject {
-	ret := make(map[string]jsonutils.JSONObject)
-	for i := range list {
-		key := getQuotaKey(list[i])
-		ret[key] = list[i]
-	}
-	return ret
-}
-
-func mergeQuotaList(list1 []jsonutils.JSONObject, list2 []jsonutils.JSONObject) []jsonutils.JSONObject {
-	list2map := quotaListToMap(list2)
-	for i := range list1 {
-		key := getQuotaKey(list1[i])
-		if quota, ok := list2map[key]; ok {
-			list1[i].(*jsonutils.JSONDict).Update(quota)
-		}
-	}
-	return list1
+	return results, nil
 }
 
 func (this *QuotaManager) GetQuotaList(s *mcclient.ClientSession, params jsonutils.JSONObject) (jsonutils.JSONObject, error) {
 	var reqUrl string
+	query := jsonutils.NewDict()
+
 	domainId := jsonutils.GetAnyString(params, []string{"domain", "project_domain", "domain_id", "project_domain_id"})
 	if len(domainId) > 0 {
-		reqUrl = "/quotas/projects?project_domain=" + domainId
+		query.Add(jsonutils.NewString(domainId), "project_domain")
+		reqUrl = fmt.Sprintf("%s/projects", this.URLPath())
 	} else {
-		reqUrl = "/quotas/domains"
+		reqUrl = fmt.Sprintf("%s/domains", this.URLPath())
 	}
-	computeQuotaList, err := this._list(s, reqUrl, this.KeywordPlural)
-	if err != nil {
-		return nil, err
+	refresh := jsonutils.QueryBoolean(params, "refresh", false)
+	if refresh {
+		query.Add(jsonutils.JSONTrue, "refresh")
 	}
-	imageQuotaList, err := ImageQuotas._list(s, reqUrl, this.KeywordPlural)
-	if err != nil {
-		return nil, err
+	primary := jsonutils.QueryBoolean(params, "primary", false)
+	if primary {
+		query.Add(jsonutils.JSONTrue, "primary")
 	}
-	data := mergeQuotaList(computeQuotaList.Data, imageQuotaList.Data)
-	ret := jsonutils.NewDict()
-	ret.Add(jsonutils.NewArray(data...), "data")
-	return ret, nil
-}
+	if query.Size() > 0 {
+		reqUrl += "?" + query.QueryString()
+	}
 
-func (this *QuotaManager) doPost(s *mcclient.ClientSession, params jsonutils.JSONObject, url string) (jsonutils.JSONObject, error) {
-	quotas, ok := params.(*jsonutils.JSONDict)
-	if !ok {
-		return nil, fmt.Errorf("Invalid input")
+	computeQuotaList, err := modulebase.List(this.ResourceManager, s, reqUrl, this.KeywordPlural)
+	if err != nil {
+		return nil, err
 	}
-	data := quotas.CopyExcludes("tenant", "user", "image")
-	var err error
-	if data.Size() > 0 {
-		body := jsonutils.NewDict()
-		body.Add(data, this.KeywordPlural)
-		log.Debugf("set compute quota %s", body)
-		_, err = this._post(s, url, body, this.KeywordPlural)
-		if err != nil {
-			log.Errorf("set compute quota fail %s %s", data, err)
-			return nil, err
-		}
-	}
-	data = quotas.CopyIncludes("image", "action", "cascade")
-	if data.Size() > 0 {
-		body := jsonutils.NewDict()
-		body.Add(data, ImageQuotas.KeywordPlural)
-		log.Debugf("set image quota %s", body)
-		_, err = ImageQuotas._post(s, url, body, ImageQuotas.KeywordPlural)
-		if err != nil {
-			log.Errorf("set quota fail %s %s", data, err)
-			return nil, err
-		}
-	}
-	return jsonutils.NewDict(), nil
+	ret := jsonutils.NewDict()
+	ret.Add(jsonutils.NewArray(computeQuotaList.Data...), "data")
+	return ret, nil
 }
 
 func (this *QuotaManager) DoQuotaSet(s *mcclient.ClientSession, params jsonutils.JSONObject) (jsonutils.JSONObject, error) {
 	url := this.getURL(params)
-	return this.doPost(s, params, url)
-}
-
-func (this *QuotaManager) DoQuotaCheck(s *mcclient.ClientSession, params jsonutils.JSONObject) (jsonutils.JSONObject, error) {
-	url := this.getURL(params)
-	url = fmt.Sprintf("%s/check_quota", url)
-	return this.doPost(s, params, url)
+	body := jsonutils.NewDict()
+	body.Add(params, this.KeywordPlural)
+	results, err := modulebase.Post(this.ResourceManager, s, url, body, this.KeywordPlural)
+	if err != nil {
+		return nil, err
+	}
+	ret := jsonutils.NewDict()
+	ret.Add(results, "data")
+	return ret, nil
 }
 
 var (
-	Quotas      QuotaManager
-	ImageQuotas QuotaManager
+	Quotas        QuotaManager
+	ProjectQuotas QuotaManager
+	RegionQuotas  QuotaManager
+	ZoneQuotas    QuotaManager
+	ImageQuotas   QuotaManager
+
+	quotaColumns = []string{}
+	/*quotaColumns = []string{
+		"domain", "domain_id",
+		"tenant", "tenant_id",
+		"provider",
+		"brand",
+		"cloud_env",
+		"account", "account_id",
+		"manager", "manager_id",
+		"region", "region_id",
+		"zone", "zone_id",
+		"hypervisor",
+	}*/
 )
 
 func init() {
 	Quotas = QuotaManager{NewComputeManager("quota", "quotas",
-		[]string{},
+		quotaColumns,
 		[]string{})}
 	registerCompute(&Quotas)
 
-	ImageQuotas = QuotaManager{NewImageManager("quota", "quotas",
-		[]string{},
+	ProjectQuotas = QuotaManager{NewComputeManager("project_quota", "project_quotas",
+		quotaColumns,
 		[]string{})}
-	// registerV2(&ImageQuotas)
+	registerCompute(&ProjectQuotas)
+
+	RegionQuotas = QuotaManager{NewComputeManager("region_quota", "region_quotas",
+		quotaColumns,
+		[]string{})}
+	registerCompute(&RegionQuotas)
+
+	ZoneQuotas = QuotaManager{NewComputeManager("zone_quota", "zone_quotas",
+		quotaColumns,
+		[]string{})}
+	registerCompute(&ZoneQuotas)
+
+	ImageQuotas = QuotaManager{NewImageManager("image_quota", "image_quotas",
+		quotaColumns,
+		[]string{})}
+	registerV2(&ImageQuotas)
 }

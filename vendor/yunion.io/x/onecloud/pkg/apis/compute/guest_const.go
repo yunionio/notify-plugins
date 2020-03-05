@@ -59,6 +59,9 @@ const (
 	VM_SUSPEND        = "suspend"
 	VM_SUSPEND_FAILED = "suspend_failed"
 
+	VM_RESUMING      = "resuming"
+	VM_RESUME_FAILED = "resume_failed"
+
 	VM_START_DELETE = "start_delete"
 	VM_DELETE_FAIL  = "delete_fail"
 	VM_DELETING     = "deleting"
@@ -84,15 +87,23 @@ const (
 	VM_DISK_RESET        = "disk_reset"
 	VM_DISK_RESET_FAIL   = "disk_reset_failed"
 
+	VM_START_INSTANCE_SNAPSHOT   = "start_instance_snapshot"
+	VM_INSTANCE_SNAPSHOT_FAILED  = "instance_snapshot_failed"
+	VM_START_SNAPSHOT_RESET      = "start_snapshot_reset"
+	VM_SNAPSHOT_RESET_FAILED     = "snapshot_reset_failed"
+	VM_SNAPSHOT_AND_CLONE_FAILED = "clone_from_snapshot_failed"
+
 	VM_SYNCING_STATUS = "syncing"
 	VM_SYNC_CONFIG    = "sync_config"
 	VM_SYNC_FAIL      = "sync_fail"
 
+	VM_START_RESIZE_DISK  = "start_resize_disk"
 	VM_RESIZE_DISK        = "resize_disk"
 	VM_RESIZE_DISK_FAILED = "resize_disk_fail"
-	VM_START_SAVE_DISK    = "start_save_disk"
-	VM_SAVE_DISK          = "save_disk"
-	VM_SAVE_DISK_FAILED   = "save_disk_failed"
+
+	VM_START_SAVE_DISK  = "start_save_disk"
+	VM_SAVE_DISK        = "save_disk"
+	VM_SAVE_DISK_FAILED = "save_disk_failed"
 
 	VM_RESTORING_SNAPSHOT = "restoring_snapshot"
 	VM_RESTORE_DISK       = "restore_disk"
@@ -105,6 +116,9 @@ const (
 	VM_DISSOCIATE_EIP_FAILED = "dissociate_eip_failed"
 
 	VM_REMOVE_STATEFILE = "remove_state"
+
+	VM_IO_THROTTLE      = "io_throttle"
+	VM_IO_THROTTLE_FAIL = "io_throttle_fail"
 
 	VM_ADMIN = "admin"
 
@@ -129,12 +143,14 @@ const (
 	HYPERVISOR_OPENSTACK = "openstack"
 	HYPERVISOR_UCLOUD    = "ucloud"
 	HYPERVISOR_ZSTACK    = "zstack"
+	HYPERVISOR_GOOGLE    = "google"
+	HYPERVISOR_CTYUN     = "ctyun"
 
 	//	HYPERVISOR_DEFAULT = HYPERVISOR_KVM
 	HYPERVISOR_DEFAULT = HYPERVISOR_KVM
 )
 
-var VM_RUNNING_STATUS = []string{VM_START_START, VM_STARTING, VM_RUNNING, VM_BLOCK_STREAM}
+var VM_RUNNING_STATUS = []string{VM_START_START, VM_STARTING, VM_RUNNING, VM_BLOCK_STREAM, VM_BLOCK_STREAM_FAIL}
 var VM_CREATING_STATUS = []string{VM_CREATE_NETWORK, VM_CREATE_DISK, VM_START_DEPLOY, VM_DEPLOYING}
 
 var HYPERVISORS = []string{
@@ -150,6 +166,8 @@ var HYPERVISORS = []string{
 	HYPERVISOR_OPENSTACK,
 	HYPERVISOR_UCLOUD,
 	HYPERVISOR_ZSTACK,
+	HYPERVISOR_GOOGLE,
+	HYPERVISOR_CTYUN,
 }
 
 var ONECLOUD_HYPERVISORS = []string{
@@ -165,6 +183,8 @@ var PUBLIC_CLOUD_HYPERVISORS = []string{
 	HYPERVISOR_QCLOUD,
 	HYPERVISOR_HUAWEI,
 	HYPERVISOR_UCLOUD,
+	HYPERVISOR_GOOGLE,
+	HYPERVISOR_CTYUN,
 }
 
 var PRIVATE_CLOUD_HYPERVISORS = []string{
@@ -187,6 +207,8 @@ var HYPERVISOR_HOSTTYPE = map[string]string{
 	HYPERVISOR_OPENSTACK: HOST_TYPE_OPENSTACK,
 	HYPERVISOR_UCLOUD:    HOST_TYPE_UCLOUD,
 	HYPERVISOR_ZSTACK:    HOST_TYPE_ZSTACK,
+	HYPERVISOR_GOOGLE:    HOST_TYPE_GOOGLE,
+	HYPERVISOR_CTYUN:     HOST_TYPE_CTYUN,
 }
 
 var HOSTTYPE_HYPERVISOR = map[string]string{
@@ -202,20 +224,32 @@ var HOSTTYPE_HYPERVISOR = map[string]string{
 	HOST_TYPE_OPENSTACK:  HYPERVISOR_OPENSTACK,
 	HOST_TYPE_UCLOUD:     HYPERVISOR_UCLOUD,
 	HOST_TYPE_ZSTACK:     HYPERVISOR_ZSTACK,
+	HOST_TYPE_GOOGLE:     HYPERVISOR_GOOGLE,
+	HOST_TYPE_CTYUN:      HYPERVISOR_CTYUN,
 }
 
 const (
-	VM_AWS_DEFAULT_LOGIN_USER    = "ec2user"
-	VM_AZURE_DEFAULT_LOGIN_USER  = "toor"
-	VM_ZSTACK_DEFAULT_LOGIN_USER = "root"
+	VM_AWS_DEFAULT_LOGIN_USER         = "ec2user"
+	VM_AWS_DEFAULT_WINDOWS_LOGIN_USER = "Administrator"
+	VM_AZURE_DEFAULT_LOGIN_USER       = "toor"
+	VM_ZSTACK_DEFAULT_LOGIN_USER      = "root"
 
 	VM_METADATA_APP_TAGS            = "app_tags"
 	VM_METADATA_CREATE_PARAMS       = "create_params"
 	VM_METADATA_LOGIN_ACCOUNT       = "login_account"
 	VM_METADATA_LOGIN_KEY           = "login_key"
+	VM_METADATA_LAST_LOGIN_KEY      = "last_login_key"
 	VM_METADATA_LOGIN_KEY_TIMESTAMP = "login_key_timestamp"
 	VM_METADATA_OS_ARCH             = "os_arch"
 	VM_METADATA_OS_DISTRO           = "os_distribution"
 	VM_METADATA_OS_NAME             = "os_name"
 	VM_METADATA_OS_VERSION          = "os_version"
 )
+
+func Hypervisors2HostTypes(hypervisors []string) []string {
+	hostTypes := make([]string, len(hypervisors))
+	for i := range hypervisors {
+		hostTypes[i] = HYPERVISOR_HOSTTYPE[hypervisors[i]]
+	}
+	return hostTypes
+}

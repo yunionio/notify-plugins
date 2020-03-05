@@ -16,6 +16,7 @@ package timeutils
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"yunion.io/x/pkg/util/regutils"
@@ -42,9 +43,10 @@ func Localify(now time.Time) time.Time {
 }
 
 const (
-	IsoTimeFormat         = "2006-01-02T15:04:05Z"
-	IsoNoSecondTimeFormat = "2006-01-02T15:04Z"
-	FullIsoTimeFormat     = "2006-01-02T15:04:05.000000Z"
+	IsoTimeFormat         = "2006-01-02T15:04:05Z07:00"
+	IsoNoSecondTimeFormat = "2006-01-02T15:04Z07:00"
+	FullIsoTimeFormat     = "2006-01-02T15:04:05.000000Z07:00"
+	FullIsoNanoTimeFormat = "2006-01-02T15:04:05.000000000Z07:00"
 	MysqlTimeFormat       = "2006-01-02 15:04:05"
 	NormalTimeFormat      = "2006-01-02T15:04:05"
 	FullNormalTimeFormat  = "2006-01-02T15:04:05.000000"
@@ -66,6 +68,10 @@ func IsoNoSecondTime(now time.Time) string {
 
 func FullIsoTime(now time.Time) string {
 	return Utcify(now).Format(FullIsoTimeFormat)
+}
+
+func FullIsoNanoTime(now time.Time) string {
+	return Utcify(now).Format(FullIsoNanoTimeFormat)
 }
 
 func MysqlTime(now time.Time) string {
@@ -100,8 +106,30 @@ func ParseIsoNoSecondTime(str string) (time.Time, error) {
 	return time.Parse(IsoNoSecondTimeFormat, str)
 }
 
+func toFullIsoNanoTimeFormat(str string) string {
+	// 2019-09-17T20:50:17.66667134+08:00
+	// 2019-11-19T18:54:48.084-08:00
+	subsecStr := str[20:]
+	pos := -1
+	for _, s := range []byte{'Z', '+', '-'} {
+		pos = strings.IndexByte(subsecStr, s)
+		if pos >= 0 {
+			break
+		}
+	}
+	if pos < 0 { //避免-1越界
+		return str
+	}
+	leftOver := subsecStr[pos:]
+	subsecStr = subsecStr[:pos]
+	for len(subsecStr) < 9 {
+		subsecStr += "0"
+	}
+	return str[:20] + subsecStr + leftOver
+}
+
 func ParseFullIsoTime(str string) (time.Time, error) {
-	return time.Parse(FullIsoTimeFormat, str)
+	return time.Parse(FullIsoNanoTimeFormat, toFullIsoNanoTimeFormat(str))
 }
 
 func ParseMysqlTime(str string) (time.Time, error) {
@@ -137,6 +165,7 @@ func ParseZStackDate(str string) (time.Time, error) {
 }
 
 func ParseTimeStr(str string) (time.Time, error) {
+	str = strings.TrimSpace(str)
 	if regutils.MatchFullISOTime(str) {
 		return ParseFullIsoTime(str)
 	} else if regutils.MatchISOTime(str) {

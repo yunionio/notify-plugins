@@ -16,7 +16,6 @@ package email
 
 import (
 	"strconv"
-	"sync"
 	"time"
 
 	"gopkg.in/gomail.v2"
@@ -24,14 +23,9 @@ import (
 	"yunion.io/x/log"
 	"yunion.io/x/pkg/errors"
 
-	"notify-plugin/pkg/apis"
+	"yunion.io/x/notify-plugin/pkg/apis"
+	"yunion.io/x/notify-plugin/common"
 )
-
-type sConfigCache map[string]string
-
-func newSConfigCache() sConfigCache {
-	return make(map[string]string)
-}
 
 type sConnectInfo struct {
 	Hostname string
@@ -45,10 +39,8 @@ type sSenderManager struct {
 	senders     []sSender
 	senderNum   int
 	chanelSize  int
-	templateDir string
 
-	configCache sConfigCache
-	configLock  sync.RWMutex
+	configCache *common.SConfigCache
 }
 
 func newSSenderManager(config *SEmailConfig) *sSenderManager {
@@ -57,13 +49,13 @@ func newSSenderManager(config *SEmailConfig) *sSenderManager {
 		senderNum:  config.SenderNum,
 		chanelSize: config.ChannelSize,
 
-		configCache: newSConfigCache(),
+		configCache: common.NewConfigCache(),
 	}
 }
 
 func (self *sSenderManager) send(args *apis.SendParams) error {
 	gmsg := gomail.NewMessage()
-	username := senderManager.configCache[USERNAME]
+	username, _ := senderManager.configCache.Get(USERNAME)
 	gmsg.SetHeader("From", username)
 	gmsg.SetHeader("To", args.Contact)
 	gmsg.SetHeader("Subject", args.Topic)
@@ -81,11 +73,11 @@ func (self *sSenderManager) send(args *apis.SendParams) error {
 	return nil
 }
 
-func (self *sSenderManager) restartSender() {
+func (self *sSenderManager) restartSender() error {
 	for _, sender := range self.senders {
 		sender.stop()
 	}
-	self.initSender()
+	return self.initSender()
 }
 
 func (self *sSenderManager) validateConfig(connInfo sConnectInfo) error {
@@ -109,29 +101,12 @@ func (self *sSenderManager) validateConfig(connInfo sConnectInfo) error {
 	}
 }
 
-func (self *sSenderManager) initSender() {
-	self.configLock.RLock()
-	hostName, ok := self.configCache[HOSTNAME]
+func (self *sSenderManager) initSender() error {
+	vals, ok, noKey := self.configCache.BatchGet(HOSTNAME, PASSWORD, USERNAME, HOSTPORT)
 	if !ok {
-		self.configLock.RUnlock()
-		return
+		return errors.Wrap(common.ErrConfigMiss, noKey)
 	}
-	password, ok := self.configCache[PASSWORD]
-	if !ok {
-		self.configLock.RUnlock()
-		return
-	}
-	userName, ok := self.configCache[USERNAME]
-	if !ok {
-		self.configLock.RUnlock()
-		return
-	}
-	hostPortStr, ok := self.configCache[HOSTPORT]
-	if !ok {
-		self.configLock.RUnlock()
-		return
-	}
-	self.configLock.RUnlock()
+	hostName, password, userName, hostPortStr := vals[0], vals[1], vals[2], vals[3]
 	hostPort, _ := strconv.Atoi(hostPortStr)
 	dialer := gomail.NewDialer(hostName, hostPort, userName, password)
 	// Configs are obtained successfully, it's time to init msgChan.
@@ -151,6 +126,7 @@ func (self *sSenderManager) initSender() {
 	}
 
 	log.Infof("Total %d senders.", self.senderNum)
+	return nil
 }
 
 type sSender struct {

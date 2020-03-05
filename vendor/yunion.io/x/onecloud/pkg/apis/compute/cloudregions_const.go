@@ -31,11 +31,31 @@ const (
 	CITY_HONG_KONG     = "Hongkong"    //香港
 	CITY_NING_XIA      = "Ningxia"     //宁夏
 	CITY_GUANG_ZHOU    = "Guangzhou"   //广州
+	CITY_TAI_WAN       = "Taiwan"      //台湾
 	CITY_GUI_YANG      = "Guiyang"     //贵阳
 	CITY_TAIPEI        = "Taipei"      //台北市
 	CITY_KAOHSIUNG     = "Kaohsiung"   //高雄市
 	CITY_CHENG_DU      = "Chengdu"     //成都
+	CITY_HE_YUAN       = "HeYuan"      //河源
 	CITY_CHONG_QING    = "Chongqing"   //重庆
+	CITY_LAN_ZHOU      = "Lanzhou"     //兰州
+	CITY_TAI_YUAN      = "Taiyuan"     //太原
+	CITY_TIAN_JIN      = "Tianjin"     //天津
+	CITY_WU_LU_MU_QI   = "Wulumuqi"    //乌鲁木齐
+	CITY_NAN_NING      = "Nanning"     //南宁
+	CITY_ZHENG_ZHOU    = "Zhengzhou"   //郑州
+	CITY_KUN_MING      = "Kunming"     //昆明
+	CITY_XI_AN         = "Xian"        //西安
+	CITY_HAI_KOU       = "Haikou"      //海口
+	CITY_WU_HU         = "Wuhu"        //芜湖
+	CITY_FU_ZHOU       = "Fuzhou"      //福州
+	CITY_WU_HAN        = "Wuhan"       //武汉
+	CITY_CHANG_SHA     = "Changsha"    //长沙
+	CITY_SHU_ZHOU      = "Shuzhou"     //苏州
+	CITY_BAO_DING      = "Baoding"     //保定
+	CITY_NAN_JING      = "Nanjing"     //南京
+	CITY_FO_SHAN       = "Foshan"      //佛山
+	CITY_QUAN_ZHOU     = "Quanzhou"    //泉州
 
 	// 日本
 	CITY_TOKYO = "Tokyo" //东京
@@ -49,6 +69,20 @@ const (
 	CITY_YARRALUMLA = "Yarralumla" //亚拉伦拉
 	CITY_MELBOURNE  = "Melbourne"  //墨尔本
 
+	//芬兰
+	CITY_FINLAND = "Finland"
+
+	//比利时
+	CITY_BELGIUM = "Belgium" //比利时
+
+	//瑞士
+	CITY_ZURICH = "Zurich" //苏黎世
+	CITY_GENEVA = "Geneva" //日内瓦
+
+	// 挪威
+	CITY_STAVANGER = "Stavanger" //斯塔万格
+	CITY_OSLO      = "Oslo"      // 奥斯陆
+
 	// 马来西亚
 	CITY_KUALA_LUMPUR = "Kuala Lumpur" //吉隆坡
 
@@ -61,20 +95,22 @@ const (
 	CITY_MAHARASHTRA = "Maharashtra" //马哈拉施特拉邦
 
 	// 美国
-	CITY_VIRGINIA      = "Virginia"      //弗吉尼亚
-	CITY_SILICONVALLEY = "Siliconvalley" //硅谷
-	CITY_OHIO          = "Ohio"          //俄亥俄州
-	CITY_N_VIRGINIA    = "N. Virginia"   //北弗吉尼亚
-	CITY_N_CALIFORNIA  = "N. California" //北加州
-	CITY_OREGON        = "Oregon"        //俄勒冈州
-	CITY_LOS_ANGELES   = "Los Angeles"   //洛杉矶
-	CITY_SAN_FRANCISCO = "San Francisco" //旧金山
-	CITY_UTAH          = "Utah"          //犹他州
-	CITY_WASHINGTON    = "Washington"    //华盛顿
-	CITY_TEXAS         = "Texas"         //德克萨斯
-	CITY_CHICAGO       = "Chicago"       //芝加哥
-	CITY_IOWA          = "Iowa"          //爱荷华
-	CITY_US_GOV_WEST   = "us-gov-west"   //???
+	CITY_VIRGINIA       = "Virginia"       //弗吉尼亚
+	CITY_SILICONVALLEY  = "Siliconvalley"  //硅谷
+	CITY_OHIO           = "Ohio"           //俄亥俄州
+	CITY_N_VIRGINIA     = "N. Virginia"    //北弗吉尼亚
+	CITY_N_CALIFORNIA   = "N. California"  //北加州
+	CITY_OREGON         = "Oregon"         //俄勒冈州
+	CITY_LOS_ANGELES    = "Los Angeles"    //洛杉矶
+	CITY_SAN_FRANCISCO  = "San Francisco"  //旧金山
+	CITY_UTAH           = "Utah"           //犹他州
+	CITY_WASHINGTON     = "Washington"     //华盛顿
+	CITY_TEXAS          = "Texas"          //德克萨斯
+	CITY_CHICAGO        = "Chicago"        //芝加哥
+	CITY_IOWA           = "Iowa"           //爱荷华
+	CITY_US_GOV_WEST    = "us-gov-west"    //???
+	CITY_SOUTH_CAROLINA = "South Carolina" //南卡罗来纳州
+	CITY_SALT_LAKE_CITY = "Salt Lake City" //盐湖城
 
 	// 英国
 	CITY_LONDON      = "London"      //伦敦
@@ -85,7 +121,8 @@ const (
 	CITY_DUBAI = "Dubai" //迪拜
 
 	// 德国
-	CITY_FRANKFURT = "Frankfurt" //法兰克福
+	CITY_FRANKFURT   = "Frankfurt"   // 法兰克福
+	CITY_DELMENHORST = "Delmenhorst" // 代尔门霍斯特
 
 	// 韩国
 	CITY_SEOUL = "Seoul" //首尔
@@ -95,6 +132,7 @@ const (
 	CITY_CANADA_CENTRAL = "Canada Central" //加拿大中部
 	CITY_QUEBEC         = "Quebec"         //魁北克市
 	CITY_TORONTO        = "Toronto"        //多伦多
+	CITY_MONTREAL       = "Montreal"       //蒙特利尔
 
 	// 爱尔兰
 	CITY_IRELAND = "Ireland" //爱尔兰
@@ -115,8 +153,9 @@ const (
 	CITY_HOLLAND = "Holland" //荷兰
 
 	// 南非
-	CITY_PRETORIA  = "Pretoria"  //比勒陀利亚
-	CITY_CAPE_TOWN = "Cape Town" //开普敦
+	CITY_PRETORIA     = "Pretoria"     //比勒陀利亚
+	CITY_CAPE_TOWN    = "Cape Town"    //开普敦
+	CITY_JOHANNESBURG = "Johannesburg" //约翰内斯堡
 
 	// 泰国
 	CITY_BANGKOK = "Bangkok" //曼谷
@@ -153,4 +192,6 @@ const (
 	COUNTRY_CODE_RU = "RU" //俄罗斯
 	COUNTRY_CODE_NG = "NG" //尼日利亚
 	COUNTRY_CODE_VN = "VN" //越南
+	COUNTRY_CODE_CH = "CH" //瑞士
+	COUNTRY_CODE_NO = "NO" //挪威
 )

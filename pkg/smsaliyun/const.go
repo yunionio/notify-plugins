@@ -22,7 +22,6 @@ const (
 	ACESS_KEY_SECRET_BP = "accessKeySecret"
 	SIGNATURE           = "signature"
 
-	NOTINIT = "Send service hasn't been init"
 	NEED_REMOTE_TEMPLATE = "remote template is needed in aliyun sms"
 
 	ACCESSKEYID_NOTFOUND = "InvalidAccessKeyId.NotFound"

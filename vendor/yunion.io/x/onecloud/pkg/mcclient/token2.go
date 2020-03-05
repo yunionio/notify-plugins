@@ -27,61 +27,93 @@ import (
 )
 
 type KeystoneEndpointV2 struct {
-	Id          string
-	InternalURL string
-	PublicURL   string
-	AdminURL    string
-	Region      string
+	// 接口ID
+	Id string `json:"id"`
+	// 内部URL
+	InternalURL string `json:"internal_url"`
+	// 外部URL
+	PublicURL string `json:"public_url"`
+	// 管理URL
+	AdminURL string `json:"admin_url"`
+	// 区域ID
+	Region string `json:"region"`
 }
 
 type KeystoneServiceV2 struct {
-	Name      string
-	Type      string
-	Endpoints []KeystoneEndpointV2
+	// 服务名称
+	Name string `json:"name"`
+	// 服务类型
+	Type string `json:"type"`
+	// 服务接口地址列表
+	Endpoints []KeystoneEndpointV2 `json:"endpoints"`
 }
 
 type KeystoneRoleV2 struct {
-	Name string
+	// 角色名称
+	Name string `json:"name"`
 }
 
 type KeystoneUserV2 struct {
-	Id       string
-	Name     string
-	Username string
-	Roles    []KeystoneRoleV2
+	// 用户ID
+	Id string `json:"id"`
+	// 用户名
+	Name string `json:"name"`
+	// 用户username
+	Username string `json:"username"`
+	// 用户角色列表
+	Roles []KeystoneRoleV2 `json:"roles"`
 }
 
 type KeystoneTenantV2 struct {
-	Id          string
-	Name        string
-	Enabled     bool
-	Description string
-	Domain      struct {
-		Id   string
-		Name string
-	}
+	// 项目ID
+	Id string `json:"id"`
+	// 项目名称
+	Name string `json:"name"`
+	// 是否启用
+	Enabled bool `json:"enabled"`
+	// 描述
+	Description string `json:"description"`
+	// 项目归属域信息
+	Domain struct {
+		// 域ID
+		Id string `json:"id"`
+		// 域名称
+		Name string `json:"name"`
+	} `json:"domain"`
 }
 
 type KeystoneTokenV2 struct {
-	Id      string
-	Expires time.Time
-	Tenant  KeystoneTenantV2
+	// token
+	Id string `json:"id"`
+	// 过期时间(UTC)
+	Expires time.Time `json:"expires"`
+	// token有效的项目信息
+	Tenant KeystoneTenantV2 `json:"tenant"`
 }
 
 type KeystoneMetadataV2 struct {
-	IsAdmin int
-	Roles   []string
+	// 是否为管理员
+	IsAdmin int `json:"is_admin"`
+	// 角色
+	Roles []string `json:"roles"`
 }
 
 type KeystoneServiceCatalogV2 []KeystoneServiceV2
 
+// Keystone token信息V2
 type TokenCredentialV2 struct {
-	Token          KeystoneTokenV2
-	ServiceCatalog KeystoneServiceCatalogV2
-	User           KeystoneUserV2
-	Tenants        []KeystoneTenantV2
-	Metadata       KeystoneMetadataV2
-	Context        SAuthContext
+	// token信息
+	Token KeystoneTokenV2 `json:"token"`
+	// 服务目录
+	ServiceCatalog KeystoneServiceCatalogV2 `json:"service_catalog"`
+	// 认证用户信息
+	User KeystoneUserV2 `json:"user"`
+	// 用户所属项目列表
+	Tenants []KeystoneTenantV2 `json:"tenants"`
+	// 认证元数据
+	Metadata KeystoneMetadataV2 `json:"metadata"`
+	// 认证上下文
+	Context SAuthContext `json:"context"`
 }
 
 func (token *TokenCredentialV2) GetTokenString() string {

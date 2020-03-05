@@ -16,24 +16,24 @@ package websocket
 
 import (
 	"context"
+	"yunion.io/x/notify-plugin/common"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
 	"yunion.io/x/log"
 
-	"notify-plugin/pkg/apis"
+	"yunion.io/x/notify-plugin/pkg/apis"
 )
 
 type Server struct {
 	apis.UnimplementedSendAgentServer
-	name string
 }
 
 func (s *Server) Send(ctx context.Context, req *apis.SendParams) (*apis.Empty, error) {
 	empty := &apis.Empty{}
 	if senderManager.session == nil {
-		return empty, status.Error(codes.FailedPrecondition, NOTINIT)
+		return empty, status.Error(codes.FailedPrecondition, common.NOTINIT)
 	}
 	senderManager.workerChan <- struct{}{}
 	err := senderManager.send(req)
@@ -45,22 +45,20 @@ func (s *Server) Send(ctx context.Context, req *apis.SendParams) (*apis.Empty, e
 	return empty, nil
 }
 
-func (s *Server) UpdateConfig(ctx context.Context, req *apis.UpdateConfigParams) (*apis.Empty, error) {
-	empty := &apis.Empty{}
-	if req.Configs == nil {
-		return empty, status.Error(codes.InvalidArgument, "Config shouldn't be nil")
-	}
-	senderManager.configLock.Lock()
-	shouldInit := false
-	for key, value := range req.Configs {
-		if key == AUTH_URI || key == ADMIN_USER || key == ADMIN_PASSWORD {
-			shouldInit = true
+func (s *Server) UpdateConfig(ctx context.Context, req *apis.UpdateConfigParams) (empty *apis.Empty, err error) {
+	defer func() {
+		if err != nil {
+			log.Errorf(err.Error())
 		}
-		senderManager.configCache[key] = value
+	}()
+	empty = new(apis.Empty)
+	if req.Configs == nil {
+		return empty, status.Error(codes.InvalidArgument, common.ConfigNil)
 	}
-	senderManager.configLock.Unlock()
-	if shouldInit {
-		senderManager.initClient()
+	senderManager.configCache.BatchSet(req.Configs)
+	err = senderManager.initClient()
+	if err != nil {
+		return nil, status.Error(codes.FailedPrecondition, err.Error())
 	}
-	return empty, nil
+	return
 }

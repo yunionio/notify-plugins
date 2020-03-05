@@ -15,8 +15,11 @@
 package appsrv
 
 import (
+	"encoding/xml"
 	"io/ioutil"
 	"net/http"
+
+	"github.com/pkg/errors"
 
 	"yunion.io/x/jsonutils"
 )
@@ -51,5 +54,17 @@ func FetchJSON(req *http.Request) (jsonutils.JSONObject, error) {
 		return jsonutils.Parse(b)
 	} else {
 		return nil, nil
+	}
+}
+
+func FetchXml(req *http.Request, target interface{}) error {
+	b, e := Fetch(req)
+	if e != nil {
+		return errors.Wrap(e, "Fetch")
+	}
+	if len(b) > 0 {
+		return xml.Unmarshal(b, target)
+	} else {
+		return nil
 	}
 }

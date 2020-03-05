@@ -16,14 +16,16 @@ package modules
 
 import (
 	"fmt"
+	"net/url"
 
 	"yunion.io/x/jsonutils"
 
 	"yunion.io/x/onecloud/pkg/mcclient"
+	"yunion.io/x/onecloud/pkg/mcclient/modulebase"
 )
 
 type ContactsManager struct {
-	ResourceManager
+	modulebase.ResourceManager
 }
 
 func (this *ContactsManager) PerformActionWithArrayParams(s *mcclient.ClientSession, id string, action string, params jsonutils.JSONObject) (jsonutils.JSONObject, error) {
@@ -34,13 +36,33 @@ func (this *ContactsManager) PerformActionWithArrayParams(s *mcclient.ClientSess
 		body.Add(params, this.KeywordPlural)
 	}
 
-	return this._post(s, path, body, this.Keyword)
+	return modulebase.Post(this.ResourceManager, s, path, body, this.Keyword)
 }
 
 func (this *ContactsManager) DoBatchDeleteContacts(s *mcclient.ClientSession, params jsonutils.JSONObject) (jsonutils.JSONObject, error) {
 	path := "/contacts/delete-contact"
 
-	return this._post(s, path, params, this.Keyword)
+	return modulebase.Post(this.ResourceManager, s, path, params, this.Keyword)
+}
+
+func (this *ContactsManager) CustomizedPerformAction(session *mcclient.ClientSession, id string, action string,
+	params jsonutils.JSONObject) (jsonutils.JSONObject, error) {
+
+	body := jsonutils.NewDict()
+	if params != nil {
+		body.Add(params, this.Keyword)
+	}
+	path := fmt.Sprintf("/%s/%s/%s?uname=true", this.ContextPath(nil), url.PathEscape(id), url.PathEscape(action))
+	return modulebase.Post(this.ResourceManager, session, path, params, this.KeywordPlural)
+}
+
+func (this *ContactsManager) CustomizedGet(session *mcclient.ClientSession, id string,
+	params jsonutils.JSONObject) (jsonutils.JSONObject,
+	error) {
+
+	q := params.(*jsonutils.JSONDict)
+	q.Add(jsonutils.JSONTrue, "uname")
+	return this.ResourceManager.Get(session, id, params)
 }
 
 var (

@@ -14,6 +14,10 @@
 
 package compute
 
+import (
+	"yunion.io/x/onecloud/pkg/apis"
+)
+
 const (
 	EIP_MODE_INSTANCE_PUBLICIP = "public_ip"
 	EIP_MODE_STANDALONE_EIP    = "elastic_ip"
@@ -21,6 +25,7 @@ const (
 	EIP_ASSOCIATE_TYPE_SERVER       = "server"
 	EIP_ASSOCIATE_TYPE_NAT_GATEWAY  = "natgateway"
 	EIP_ASSOCIATE_TYPE_LOADBALANCER = "loadbalancer"
+	EIP_ASSOCIATE_TYPE_UNKNOWN      = "unknown"
 
 	EIP_STATUS_READY           = "ready"
 	EIP_STATUS_UNKNOWN         = "unknown"
@@ -47,3 +52,16 @@ const (
 var (
 	EIP_ASSOCIATE_VALID_TYPES = []string{EIP_ASSOCIATE_TYPE_SERVER, EIP_ASSOCIATE_TYPE_NAT_GATEWAY}
 )
+
+type ElasticipListInput struct {
+	apis.VirtualResourceListInput
+
+	ManagedResourceListInput
+	RegionalFilterListInput
+	UsableResourceListInput
+
+	// filter usable eip for given associate type
+	UsableEipForAssociateType string `json:"usable_eip_for_associate_type"`
+	// filter usable eip for given associate id
+	UsableEipForAssociateId string `json:"usable_eip_for_associate_id"`
+}

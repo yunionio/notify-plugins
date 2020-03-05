@@ -22,6 +22,7 @@ import (
 	"io/ioutil"
 	"net"
 	"net/http"
+	"net/http/httputil"
 	"net/url"
 	"os"
 	"strconv"
@@ -32,6 +33,7 @@ import (
 	"github.com/moul/http2curl"
 
 	"yunion.io/x/jsonutils"
+	"yunion.io/x/pkg/errors"
 	"yunion.io/x/pkg/gotypes"
 	"yunion.io/x/pkg/trace"
 
@@ -50,6 +52,10 @@ const (
 	PATCH  = THttpMethod("PATCH")
 	DELETE = THttpMethod("DELETE")
 	OPTION = THttpMethod("OPTION")
+
+	IdleConnTimeout       = 60
+	TLSHandshakeTimeout   = 10
+	ResponseHeaderTimeout = 30
 )
 
 var (
@@ -80,6 +86,18 @@ func (e *JSONClientError) Error() string {
 	return jsonutils.Marshal(errMsg).String()
 }
 
+func (err *JSONClientError) Cause() error {
+	if len(err.Class) > 0 {
+		return errors.Error(err.Class)
+	} else if err.Code >= 500 {
+		return errors.ErrServer
+	} else if err.Code >= 400 {
+		return errors.ErrClient
+	} else {
+		return errors.ErrUnclassified
+	}
+}
+
 func ErrorCode(err error) int {
 	if err == nil {
 		return 0
@@ -91,14 +109,15 @@ func ErrorCode(err error) int {
 	return -1
 }
 
-func headerExists(header *http.Header, key string) bool {
-	keyu := strings.ToUpper(key)
-	for k := range *header {
-		if strings.ToUpper(k) == keyu {
-			return true
-		}
+func ErrorMsg(err error) string {
+	if err == nil {
+		return ""
 	}
-	return false
+	switch je := err.(type) {
+	case *JSONClientError:
+		return je.Details
+	}
+	return err.Error()
 }
 
 func GetAddrPort(urlStr string) (string, int, error) {
@@ -127,30 +146,114 @@ func GetAddrPort(urlStr string) (string, int, error) {
 	}
 }
 
-func GetTransport(insecure bool, timeout time.Duration) *http.Transport {
-	return &http.Transport{
-		DialContext: (&net.Dialer{
-			Timeout:   timeout,
-			KeepAlive: timeout,
-		}).DialContext,
-		IdleConnTimeout:       90 * time.Second,
-		TLSHandshakeTimeout:   10 * time.Second,
-		ExpectContinueTimeout: 1 * time.Second,
-		TLSClientConfig:       &tls.Config{InsecureSkipVerify: insecure},
-		DisableCompression:    true,
+func GetTransport(insecure bool) *http.Transport {
+	return getTransport(insecure, false)
+}
+
+func adptiveDial(network, addr string) (net.Conn, error) {
+	conn, err := net.DialTimeout(network, addr, 10*time.Second)
+	if err != nil {
+		return nil, err
 	}
+	return getConnDelegate(conn, 10*time.Second, 20*time.Second), nil
+}
+
+func getTransport(insecure bool, adaptive bool) *http.Transport {
+	tr := &http.Transport{
+		Proxy: http.ProxyFromEnvironment,
+		// 一个空闲连接保持连接的时间
+		// IdleConnTimeout is the maximum amount of time an idle
+		// (keep-alive) connection will remain idle before closing
+		// itself.
+		// Zero means no limit.
+		IdleConnTimeout: IdleConnTimeout * time.Second,
+		// 建立TCP连接后，等待TLS握手的超时时间
+		// TLSHandshakeTimeout specifies the maximum amount of time waiting to
+		// wait for a TLS handshake. Zero means no timeout.
+		TLSHandshakeTimeout: TLSHandshakeTimeout * time.Second,
+		// 发送请求后，等待服务端http响应的超时时间
+		// ResponseHeaderTimeout, if non-zero, specifies the amount of
+		// time to wait for a server's response headers after fully
+		// writing the request (including its body, if any). This
+		// time does not include the time to read the response body.
+		ResponseHeaderTimeout: ResponseHeaderTimeout * time.Second,
+		// 当请求携带Expect: 100-continue时，等待服务端100响应的超时时间
+		// ExpectContinueTimeout, if non-zero, specifies the amount of
+		// time to wait for a server's first response headers after fully
+		// writing the request headers if the request has an
+		// "Expect: 100-continue" header. Zero means no timeout and
+		// causes the body to be sent immediately, without
+		// waiting for the server to approve.
+		// This time does not include the time to send the request header.
+		ExpectContinueTimeout: 5 * time.Second,
+		TLSClientConfig:       &tls.Config{InsecureSkipVerify: insecure},
+	}
+	if adaptive {
+		tr.Dial = adptiveDial
+	} else {
+		tr.DialContext = (&net.Dialer{
+			// 建立TCP连接超时时间
+			// Timeout is the maximum amount of time a dial will wait for
+			// a connect to complete. If Deadline is also set, it may fail
+			// earlier.
+			//
+			// The default is no timeout.
+			//
+			// When using TCP and dialing a host name with multiple IP
+			// addresses, the timeout may be divided between them.
+			//
+			// With or without a timeout, the operating system may impose
+			// its own earlier timeout. For instance, TCP timeouts are
+			// often around 3 minutes.
+			Timeout: 10 * time.Second,
+			//
+			// KeepAlive specifies the interval between keep-alive
+			// probes for an active network connection.
+			// If zero, keep-alive probes are sent with a default value
+			// (currently 15 seconds), if supported by the protocol and operating
+			// system. Network protocols or operating systems that do
+			// not support keep-alives ignore this field.
+			// If negative, keep-alive probes are disabled.
+			KeepAlive: 5 * time.Second, // send keep-alive probe every 5 seconds
+		}).DialContext
+	}
+	return tr
 }
 
 func GetClient(insecure bool, timeout time.Duration) *http.Client {
-	tr := GetTransport(insecure, timeout)
+	adaptive := false
+	if timeout == 0 {
+		adaptive = true
+	}
+	tr := getTransport(insecure, adaptive)
 	return &http.Client{
 		Transport: tr,
-		Timeout:   timeout,
+		// 一个完整http request的超时时间
+		// Timeout specifies a time limit for requests made by this
+		// Client. The timeout includes connection time, any
+		// redirects, and reading the response body. The timer remains
+		// running after Get, Head, Post, or Do return and will
+		// interrupt reading of the Response.Body.
+		//
+		// A Timeout of zero means no timeout.
+		//
+		// The Client cancels requests to the underlying Transport
+		// as if the Request's Context ended.
+		//
+		// For compatibility, the Client will also use the deprecated
+		// CancelRequest method on Transport if found. New
+		// RoundTripper implementations should use the Request's Context
+		// for cancellation instead of implementing CancelRequest.
+		Timeout: timeout,
 	}
 }
 
 func GetTimeoutClient(timeout time.Duration) *http.Client {
 	return GetClient(true, timeout)
+}
+
+func GetAdaptiveTimeoutClient() *http.Client {
+	return GetClient(true, 0)
 }
 
 var defaultHttpClient *http.Client
@@ -187,29 +290,44 @@ func Request(client *http.Client, ctx context.Context, method THttpMethod, urlSt
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Add("User-Agent", USER_AGENT)
+	req.Header.Set("User-Agent", USER_AGENT)
+	req.Header.Set("Accept", "*/*")
+	req.Header.Set("Accept-Encoding", "*")
 	if body == nil {
-		req.Header.Set("Content-Length", "0")
+		if method != GET && method != HEAD {
+			req.ContentLength = 0
+			req.Header.Set("Content-Length", "0")
+		}
 	} else {
-		if headerExists(&header, "Content-Length") {
-			clen := header.Get("Content-Length")
+		clen := header.Get("Content-Length")
+		if len(clen) > 0 {
 			req.ContentLength, _ = strconv.ParseInt(clen, 10, 64)
 		}
 	}
 	if header != nil {
-		for k, v := range header {
-			req.Header[k] = v
+		for k, vs := range header {
+			for i, v := range vs {
+				if i == 0 {
+					req.Header.Set(k, v)
+				} else {
+					req.Header.Add(k, v)
+				}
+			}
 		}
 	}
 	if debug {
-		yellow("Request", method, urlStr, req.Header, body)
+		dump, _ := httputil.DumpRequestOut(req, false)
+		yellow(string(dump))
 		// 忽略掉上传文件的请求,避免大量日志输出
 		if header.Get("Content-Type") != "application/octet-stream" {
 			curlCmd, _ := http2curl.GetCurlCommand(req)
-			cyan("CURL:", curlCmd)
+			cyan("CURL:", curlCmd, "\n")
 		}
 	}
 	resp, err := client.Do(req)
+	if err != nil {
+		red(err.Error())
+	}
 	if err == nil && clientTrace != nil {
 		clientTrace.EndClientTraceHeader(resp.Header)
 	}
@@ -217,7 +335,7 @@ func Request(client *http.Client, ctx context.Context, method THttpMethod, urlSt
 }
 
 func JSONRequest(client *http.Client, ctx context.Context, method THttpMethod, urlStr string, header http.Header, body jsonutils.JSONObject, debug bool) (http.Header, jsonutils.JSONObject, error) {
-	bodystr := ""
+	var bodystr string
 	if !gotypes.IsNil(body) {
 		bodystr = body.String()
 	}
@@ -225,7 +343,8 @@ func JSONRequest(client *http.Client, ctx context.Context, method THttpMethod, u
 	if header == nil {
 		header = http.Header{}
 	}
-	header.Add("Content-Type", "application/json")
+	header.Set("Content-Length", strconv.FormatInt(int64(len(bodystr)), 10))
+	header.Set("Content-Type", "application/json")
 	resp, err := Request(client, ctx, method, urlStr, header, jbody, debug)
 	return ParseJSONResponse(resp, err, debug)
 }
@@ -250,6 +369,50 @@ func CloseResponse(resp *http.Response) {
 	}
 }
 
+func ParseResponse(resp *http.Response, err error, debug bool) (http.Header, []byte, error) {
+	if err != nil {
+		ce := JSONClientError{}
+		ce.Code = 499
+		ce.Details = err.Error()
+		return nil, nil, &ce
+	}
+	defer CloseResponse(resp)
+	if debug {
+		dump, _ := httputil.DumpResponse(resp, false)
+		if resp.StatusCode < 300 {
+			green(string(dump))
+		} else if resp.StatusCode < 400 {
+			yellow(string(dump))
+		} else {
+			red(string(dump))
+		}
+	}
+	rbody, err := ioutil.ReadAll(resp.Body)
+	if debug {
+		fmt.Fprintf(os.Stderr, "Response body: %s\n", string(rbody))
+	}
+	if err != nil {
+		return nil, nil, fmt.Errorf("Fail to read body: %s", err)
+	}
+	if resp.StatusCode < 300 {
+		return resp.Header, rbody, nil
+	} else if resp.StatusCode >= 300 && resp.StatusCode < 400 {
+		ce := JSONClientError{}
+		ce.Code = resp.StatusCode
+		ce.Details = resp.Header.Get("Location")
+		ce.Class = "redirect"
+		return nil, nil, &ce
+	} else {
+		ce := JSONClientError{}
+		ce.Code = resp.StatusCode
+		ce.Details = resp.Status
+		if len(rbody) > 0 {
+			ce.Details = string(rbody)
+		}
+		return nil, nil, &ce
+	}
+}
+
 func ParseJSONResponse(resp *http.Response, err error, debug bool) (http.Header, jsonutils.JSONObject, error) {
 	if err != nil {
 		ce := JSONClientError{}
@@ -259,15 +422,13 @@ func ParseJSONResponse(resp *http.Response, err error, debug bool) (http.Header,
 	}
 	defer CloseResponse(resp)
 	if debug {
+		dump, _ := httputil.DumpResponse(resp, false)
 		if resp.StatusCode < 300 {
-			green("Status:", resp.StatusCode)
-			green(resp.Header)
+			green(string(dump))
 		} else if resp.StatusCode < 400 {
-			yellow("Status:", resp.StatusCode)
-			yellow(resp.Header)
+			yellow(string(dump))
 		} else {
-			red("Status:", resp.StatusCode)
-			red(resp.Header)
+			red(string(dump))
 		}
 	}
 	rbody, err := ioutil.ReadAll(resp.Body)
@@ -279,7 +440,7 @@ func ParseJSONResponse(resp *http.Response, err error, debug bool) (http.Header,
 	}
 
 	var jrbody jsonutils.JSONObject = nil
-	if len(rbody) > 0 {
+	if len(rbody) > 0 && string(rbody[0]) == "{" {
 		var err error
 		jrbody, err = jsonutils.Parse(rbody)
 		if err != nil && debug {
@@ -301,6 +462,9 @@ func ParseJSONResponse(resp *http.Response, err error, debug bool) (http.Header,
 		if jrbody == nil {
 			ce.Code = resp.StatusCode
 			ce.Details = resp.Status
+			if len(rbody) > 0 {
+				ce.Details = string(rbody)
+			}
 			return nil, nil, &ce
 		}
 
@@ -344,4 +508,8 @@ func ParseJSONResponse(resp *http.Response, err error, debug bool) (http.Header,
 		}
 		return nil, nil, &ce
 	}
+}
+
+func JoinPath(ep string, path string) string {
+	return strings.TrimRight(ep, "/") + "/" + strings.TrimLeft(path, "/")
 }

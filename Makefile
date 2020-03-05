@@ -24,7 +24,7 @@ all:
 fmt:
 
 cmd/%: fmt
-	go build $(GO_BUILD_FLAGS) -o $(BIN_DIR)/$(shell basename $@) notify-plugin/$@
+	go build $(GO_BUILD_FLAGS) -o $(BIN_DIR)/$(shell basename $@) yunion.io/x/notify-plugin/$@
 
 image: all
 	docker build -f Dockerfile -t $(REGISTRY)/notify-plugins:$(VERSION) .

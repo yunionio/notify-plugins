@@ -14,6 +14,16 @@
 
 package compute
 
+import (
+	"net/http"
+
+	"yunion.io/x/pkg/errors"
+
+	"yunion.io/x/onecloud/pkg/apis"
+	"yunion.io/x/onecloud/pkg/cloudprovider"
+	"yunion.io/x/onecloud/pkg/httperrors"
+)
+
 const (
 	BUCKET_OPS_STATS_CHANGE = "stats_change"
 
@@ -30,3 +40,64 @@ const (
 	BUCKET_UPLOAD_OBJECT_ACL_HEADER          = "X-Yunion-Bucket-Upload-Acl"
 	BUCKET_UPLOAD_OBJECT_STORAGECLASS_HEADER = "X-Yunion-Bucket-Upload-Storageclass"
 )
+
+type BucketCreateInput struct {
+	apis.VirtualResourceCreateInput
+	RegionalResourceCreateInput
+	ManagedResourceCreateInput
+
+	StorageClass string `json:"storage_class"`
+}
+
+type BucketDetails struct {
+	apis.VirtualResourceDetails
+	ManagedResourceInfo
+	CloudregionResourceInfo
+
+	SBucket
+
+	// 访问URL列表
+	AccessUrls []cloudprovider.SBucketAccessUrl `json:"access_urls"`
+}
+
+type BucketObjectsActionInput struct {
+	Key []string
+}
+
+type BucketAclInput struct {
+	BucketObjectsActionInput
+
+	Acl cloudprovider.TBucketACLType
+}
+
+func (input *BucketAclInput) Validate() error {
+	switch input.Acl {
+	case cloudprovider.ACLPrivate, cloudprovider.ACLAuthRead, cloudprovider.ACLPublicRead, cloudprovider.ACLPublicReadWrite:
+		// do nothing
+	default:
+		return errors.Wrap(httperrors.ErrInputParameter, "acl")
+	}
+	return nil
+}
+
+type BucketMetadataInput struct {
+	BucketObjectsActionInput
+
+	Metadata http.Header
+}
+
+func (input *BucketMetadataInput) Validate() error {
+	if len(input.Key) == 0 {
+		return errors.Wrap(httperrors.ErrEmptyRequest, "key")
+	}
+	if len(input.Metadata) == 0 {
+		return errors.Wrap(httperrors.ErrEmptyRequest, "metadata")
+	}
+	return nil
+}
+
+type BucketListInput struct {
+	apis.VirtualResourceListInput
+	ManagedResourceListInput
+	RegionalFilterListInput
+}

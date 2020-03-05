@@ -19,10 +19,8 @@ const (
 	ADMIN_USER        = "admin_user"
 	ADMIN_PASSWORD    = "admin_password"
 	ADMIN_TENANT_NAME = "admin_tenant_name"
-
-	NOTINIT = "Send service hasn't been init"
 )
 
 var (
-	FAIL_KEY = []string{"失败", "fail ", " failed"}
+	FAIL_KEY = []string{"失败", "fail ", "failed"}
 )

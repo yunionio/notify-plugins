@@ -31,7 +31,6 @@ import (
 func StartService(opt IServiceOptions, srv apis.SendAgentServer, service string, configFile string, init func()) {
 	// config parse:
 	ParseOptions(opt, os.Args, configFile)
-	log.Debugf("sendnum: %d", opt.(*SBaseOptions).SenderNum)
 	log.SetLogLevelByString(log.Logger(), opt.GetLogLevel())
 
 	// check socket dir

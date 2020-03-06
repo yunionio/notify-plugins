@@ -8,7 +8,4 @@ ENV PATH="/opt/yunion/bin:${PATH}"
 
 RUN mkdir -p /opt/yunion/bin
 
-ADD ./_output/bin/dingtalk /opt/yunion/bin/dingtalk
-ADD ./_output/bin/email /opt/yunion/bin/email
-ADD ./_output/bin/smsaliyun /opt/yunion/bin/smsaliyun
-ADD ./_output/bin/websocket /opt/yunion/bin/websocket
+ADD ./_output/bin /opt/yunion/bin

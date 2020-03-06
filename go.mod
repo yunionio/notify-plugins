@@ -15,3 +15,5 @@ require (
 	yunion.io/x/pkg v0.0.0-20200302034534-fdf44d54b070
 	yunion.io/x/structarg v0.0.0-20190809075558-115bed041de3
 )
+
+replace github.com/hugozhu/godingtalk v0.0.0-20190801052409-282448228972 => github.com/rainzm/godingtalk v0.0.0-20200306060204-eba626028cff

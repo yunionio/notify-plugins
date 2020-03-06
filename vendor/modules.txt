@@ -37,7 +37,7 @@ github.com/golang/protobuf/ptypes
 github.com/golang/protobuf/ptypes/any
 github.com/golang/protobuf/ptypes/duration
 github.com/golang/protobuf/ptypes/timestamp
-# github.com/hugozhu/godingtalk v0.0.0-20190801052409-282448228972
+# github.com/hugozhu/godingtalk v0.0.0-20190801052409-282448228972 => github.com/rainzm/godingtalk v0.0.0-20200306060204-eba626028cff
 github.com/hugozhu/godingtalk
 # github.com/jmespath/go-jmespath v0.0.0-20180206201540-c2b33e8439af
 github.com/jmespath/go-jmespath

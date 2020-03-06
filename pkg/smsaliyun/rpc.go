@@ -89,7 +89,7 @@ func (s *Server) UpdateConfig(ctx context.Context, req *apis.UpdateConfigParams)
 		return empty, status.Error(codes.FailedPrecondition, err.Error())
 	}
 	if err != nil {
-		return empty, status.Error(codes.Unavailable, err.Error())
+		return empty, status.Error(codes.Internal, err.Error())
 	}
 	return
 }

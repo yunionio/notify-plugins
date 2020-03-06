@@ -2,7 +2,7 @@
 
 ![image](http://static.dingtalk.com/media/lALOAQ6nfSvM5Q_229_43.png)
 
-Check out DingTalk Open API document at: http://open.dingtalk.com
+Check out DingTalk Open API document at: https://ding-doc.dingtalk.com/
 
 ## Usage
 
@@ -46,7 +46,7 @@ http://hugozhu.myalert.info/2016/05/02/66-use-dingtalk-golang-sdk-to-send-messag
 
 ```
 export GOPATH=`pwd`
-go get github.com/hugozhu/godingtalk/ding_alert
+go get github.com/hugozhu/godingtalk/demo/ding_alert
 
 export corpid=<组织的corpid 通过 https://oa.dingtalk.com 获取>
 export corpsecret=<组织的corpsecret 通过 https://oa.dingtalk.com 获取>

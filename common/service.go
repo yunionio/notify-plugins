@@ -48,6 +48,14 @@ func StartService(opt IServiceOptions, srv apis.SendAgentServer, service string,
 
 	socketFile := fmt.Sprintf("%s/%s.sock", opt.GetSockFileDir(), service)
 	log.Infof("Socket file path: %s", socketFile)
+	if IsExist(socketFile) {
+		log.Infof("socket file already exists, try deleting...")
+		err := os.Remove(socketFile)
+		if err != nil {
+			log.Fatalf("delete failed")
+		}
+		log.Infof("delete successfully")
+	}
 	la, err := net.Listen("unix", socketFile)
 	if err != nil {
 		log.Fatalln(err)

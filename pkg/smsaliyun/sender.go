@@ -15,38 +15,99 @@
 package smsaliyun
 
 import (
+	"context"
 	"encoding/json"
+	"fmt"
 	"sync"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk"
+	sdkerrors "github.com/aliyun/alibaba-cloud-sdk-go/sdk/errors"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
-	sdkerrors "github.com/aliyun/alibaba-cloud-sdk-go/sdk/errors"
 
 	"yunion.io/x/log"
 	"yunion.io/x/pkg/errors"
 
-	"yunion.io/x/notify-plugin/common"
+	"yunion.io/x/notify-plugin/pkg/apis"
+	"yunion.io/x/notify-plugin/pkg/common"
 )
 
-type sSenderManager struct {
-	workerChan  chan struct{}
-	client      *sdk.Client  // client to example sms
-	clientLock  sync.RWMutex // lock to protect client
-
-	configCache   *common.SConfigCache // config cache
+type SConnectInfo struct {
+	AccessKeyID     string
+	AccessKeySecret string
+	Signature       string
 }
 
-func newSSenderManager(config *common.SBaseOptions) *sSenderManager {
-	return &sSenderManager{
-		workerChan:  make(chan struct{}, config.SenderNum),
+type SSenderManager struct {
+	common.SSenderBase
+	client     *sdk.Client  // client to example sms
+	clientLock sync.RWMutex // lock to protect client
+}
 
-		configCache: common.NewConfigCache(),
+func (self *SSenderManager) IsReady(ctx context.Context) bool {
+	return self.client == nil
+}
+
+func (self *SSenderManager) CheckConfig(ctx context.Context, configs map[string]string) (interface{}, error) {
+	vals, ok, noKey := common.CheckMap(configs, ACCESS_KEY_ID, ACCESS_KEY_SECRET, SIGNATURE)
+	if !ok {
+		return nil, fmt.Errorf("require %s", noKey)
+	}
+	return SConnectInfo{vals[0], vals[1], vals[2]}, nil
+}
+
+func (self *SSenderManager) UpdateConfig(ctx context.Context, configs map[string]string) error {
+	for key, value := range configs {
+		if key == ACESS_KEY_SECRET_BP {
+			key = ACCESS_KEY_SECRET
+		}
+		if key == ACESS_KEY_ID_BP {
+			key = ACCESS_KEY_ID
+		}
+		log.Debugf("update config: %s: %s", key, value)
+		self.ConfigCache.Set(key, value)
+	}
+	return self.initClient()
+}
+
+func (self *SSenderManager) ValidateConfig(ctx context.Context, configs interface{}) (*apis.ValidateConfigReply, error) {
+	connInfo := configs.(SConnectInfo)
+	client, err := sdk.NewClientWithAccessKey("default", connInfo.AccessKeyID, connInfo.AccessKeySecret)
+	if err != nil {
+		return nil, errors.Wrap(err, "NewClientWithAccessKey")
+	}
+	rep := apis.ValidateConfigReply{IsValid: true}
+	err = self.send(client, connInfo.Signature, "SMS_123456789", `{"code": "123456"}`, "12345678901", false)
+	if err == ErrSignnameInvalid || err == ErrSignatureDoesNotMatch || err == ErrAccessKeyIdNotFound {
+		rep.IsValid = false
+		rep.Msg = err.Error()
+		return &rep, nil
+	}
+	return &rep, nil
+}
+
+func (self *SSenderManager) FetchContact(ctx context.Context, related string) (string, error) {
+	return "", nil
+}
+
+func (self *SSenderManager) Send(ctx context.Context, params *apis.SendParams) error {
+	signature, _ := self.ConfigCache.Get(SIGNATURE)
+	if len(params.RemoteTemplate) == 0 {
+		return errors.Wrapf(common.ErrConfigMiss, "require %s", SIGNATURE)
+	}
+	return self.Do(func() error {
+		return self.send(nil, signature, params.RemoteTemplate, params.Message, params.Contact, true)
+	})
+}
+
+func NewSender(config common.IServiceOptions) common.ISender {
+	return &SSenderManager{
+		SSenderBase: common.NewSSednerBase(config),
 	}
 }
 
-func (self *sSenderManager) initClient() error {
-	vals, ok, noKey := self.configCache.BatchGet(ACCESS_KEY_ID, ACCESS_KEY_SECRET)
+func (self *SSenderManager) initClient() error {
+	vals, ok, noKey := self.ConfigCache.BatchGet(ACCESS_KEY_ID, ACCESS_KEY_SECRET)
 	if !ok {
 		return errors.Wrap(common.ErrConfigMiss, noKey)
 	}
@@ -60,11 +121,10 @@ func (self *sSenderManager) initClient() error {
 	self.clientLock.Lock()
 	defer self.clientLock.Unlock()
 	self.client = client
-	log.Printf("Total %d workers.", cap(self.workerChan))
 	return nil
 }
 
-func (self *sSenderManager) send(client *sdk.Client, signature, templateCode, templateParam, phoneNumber string, retry bool) error {
+func (self *SSenderManager) send(client *sdk.Client, signature, templateCode, templateParam, phoneNumber string, retry bool) error {
 	request := requests.NewCommonRequest()
 	request.Method = "POST"
 	request.Scheme = "https" // https | http
@@ -84,7 +144,7 @@ func (self *sSenderManager) send(client *sdk.Client, signature, templateCode, te
 		self.clientLock.RUnlock()
 	}
 	err := self.checkResponseAndError(client.ProcessCommonRequest(request))
-	if !retry || err == nil  {
+	if !retry || err == nil {
 		return err
 	}
 
@@ -96,7 +156,7 @@ func (self *sSenderManager) send(client *sdk.Client, signature, templateCode, te
 	return self.checkResponseAndError(client.ProcessCommonRequest(request))
 }
 
-func (self *sSenderManager) checkResponseAndError(rep *responses.CommonResponse, err error) error {
+func (self *SSenderManager) checkResponseAndError(rep *responses.CommonResponse, err error) error {
 	if err != nil {
 		serr, ok := err.(*sdkerrors.ServerError)
 		if !ok {
@@ -113,7 +173,7 @@ func (self *sSenderManager) checkResponseAndError(rep *responses.CommonResponse,
 
 	type RepContent struct {
 		Message string
-		Code string
+		Code    string
 	}
 	rc := RepContent{}
 	err = json.Unmarshal(rep.GetHttpContentBytes(), &rc)
@@ -129,4 +189,3 @@ func (self *sSenderManager) checkResponseAndError(rep *responses.CommonResponse,
 	}
 	return errors.Error(rc.Message)
 }
-

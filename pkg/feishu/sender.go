@@ -15,33 +15,62 @@
 package feishu
 
 import (
+	"context"
 	"sync"
 
-	"yunion.io/x/log"
+	"google.golang.org/grpc/codes"
+
 	"yunion.io/x/onecloud/pkg/monitor/notifydrivers/feishu"
 	"yunion.io/x/pkg/errors"
 
-	"yunion.io/x/notify-plugin/common"
 	"yunion.io/x/notify-plugin/pkg/apis"
+	"yunion.io/x/notify-plugin/pkg/common"
 )
 
-type sSendManager struct {
-	workerChan chan struct{}
+type SSendManager struct {
+	common.SSenderBase
 	client     *feishu.Tenant
 	clientLock sync.RWMutex
-
-	configCache *common.SConfigCache
 }
 
-func newSSendManager(config *common.SBaseOptions) *sSendManager {
-	log.Debugf("sender num: %d", config.SenderNum)
-	return &sSendManager{
-		workerChan:  make(chan struct{}, config.SenderNum),
-		configCache: common.NewConfigCache(),
+func (self *SSendManager) IsReady(ctx context.Context) bool {
+	return self.client == nil
+}
+
+func (self *SSendManager) CheckConfig(ctx context.Context, configs map[string]string) (interface{}, error) {
+	return nil, nil
+}
+
+func (self *SSendManager) UpdateConfig(ctx context.Context, configs map[string]string) error {
+	self.ConfigCache.BatchSet(configs)
+	return self.initClient()
+}
+
+func (self *SSendManager) ValidateConfig(ctx context.Context, configs interface{}) (*apis.ValidateConfigReply, error) {
+	return nil, nil
+}
+
+func (self *SSendManager) FetchContact(ctx context.Context, related string) (string, error) {
+	return self.userIdByMobile(related)
+}
+
+func (self *SSendManager) Send(ctx context.Context, params *apis.SendParams) error {
+	return self.Do(func() error {
+		return self.send(params)
+	})
+}
+
+func init() {
+	common.RegisterErr(errors.ErrNotFound, codes.NotFound)
+}
+
+func NewSender(config common.IServiceOptions) common.ISender {
+	return &SSendManager{
+		SSenderBase: common.NewSSednerBase(config),
 	}
 }
 
-func (self *sSendManager) send(args *apis.SendParams) error {
+func (self *SSendManager) send(args *apis.SendParams) error {
 	req := feishu.MsgReq{
 		OpenId:  args.Contact,
 		MsgType: "text",
@@ -54,8 +83,8 @@ func (self *sSendManager) send(args *apis.SendParams) error {
 	return err
 }
 
-func (self *sSendManager) initClient() error {
-	vals, ok, noKey := self.configCache.BatchGet(APP_ID, APP_SECRET)
+func (self *SSendManager) initClient() error {
+	vals, ok, noKey := self.ConfigCache.BatchGet(APP_ID, APP_SECRET)
 	if !ok {
 		return errors.Wrap(common.ErrConfigMiss, noKey)
 	}
@@ -72,6 +101,6 @@ func (self *sSendManager) initClient() error {
 	return nil
 }
 
-func (self *sSendManager) userIdByMobile(mobile string) (string, error) {
+func (self *SSendManager) userIdByMobile(mobile string) (string, error) {
 	return self.client.UserIdByMobile(mobile)
 }

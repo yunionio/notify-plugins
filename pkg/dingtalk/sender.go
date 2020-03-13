@@ -15,40 +15,70 @@
 package dingtalk
 
 import (
+	"context"
 	"fmt"
 	"sync"
-	"yunion.io/x/pkg/errors"
 
 	"github.com/hugozhu/godingtalk"
+	"google.golang.org/grpc/codes"
 
 	"yunion.io/x/log"
+	"yunion.io/x/pkg/errors"
 
+	"yunion.io/x/notify-plugin/pkg/common"
 	"yunion.io/x/notify-plugin/pkg/apis"
-	"yunion.io/x/notify-plugin/common"
 )
 
-var senderManager *sSenderManager
+type sSendFunc func(*SSenderManager, string) error
 
-type sSendFunc func(*sSenderManager, string) error
-
-type sSenderManager struct {
-	workerChan  chan struct{}
-	client      *godingtalk.DingTalkClient // client to example sms
-	clientLock  sync.RWMutex               // lock to protect client
-
-	configCache *common.SConfigCache // config cache
+type SSenderManager struct {
+	common.SSenderBase
+	client     *godingtalk.DingTalkClient // client to example sms
+	clientLock sync.RWMutex               // lock to protect client
 }
 
-func newSSenderManager(config *common.SBaseOptions) *sSenderManager {
-	return &sSenderManager{
-		workerChan:  make(chan struct{}, config.SenderNum),
-		configCache: common.NewConfigCache(),
+func init() {
+	common.RegisterErr(ErrAgentIDNotInit, codes.FailedPrecondition)
+	common.RegisterErr(ErrNoSuchUser, codes.NotFound)
+}
+
+func (self *SSenderManager) IsReady(ctx context.Context) bool {
+	return self.client == nil
+}
+
+func (self *SSenderManager) CheckConfig(ctx context.Context, configs map[string]string) (interface{}, error) {
+	return nil, nil
+}
+
+func (self *SSenderManager) UpdateConfig(ctx context.Context, configs map[string]string) error {
+	self.ConfigCache.BatchSet(configs)
+	return self.initClient()
+}
+
+func (self *SSenderManager) ValidateConfig(ctx context.Context, configs interface{}) (*apis.ValidateConfigReply, error) {
+	return nil, nil
+}
+
+func (self *SSenderManager) FetchContact(ctx context.Context, related string) (string, error) {
+	return self.getUseridByMobile(related)
+}
+
+func (self *SSenderManager) Send(ctx context.Context, params *apis.SendParams) error {
+	sendFunc := self.getSendFunc(params)
+	return self.Do(func()error{
+		return self.send(sendFunc)
+	})
+}
+
+func NewSender(config common.IServiceOptions) common.ISender {
+	return &SSenderManager{
+		SSenderBase: common.NewSSednerBase(config),
 	}
 }
 
-func (self *sSenderManager) getSendFunc(args *apis.SendParams) sSendFunc {
+func (self *SSenderManager) getSendFunc(args *apis.SendParams) sSendFunc {
 	if args.Title == args.Topic {
-		return func(manager *sSenderManager, agentID string) error {
+		return func(manager *SSenderManager, agentID string) error {
 			manager.clientLock.RLock()
 			client := manager.client
 			manager.clientLock.RUnlock()
@@ -63,7 +93,7 @@ func (self *sSenderManager) getSendFunc(args *apis.SendParams) sSendFunc {
 	message.Head.Text = args.Topic
 	message.Body.Title = args.Title
 	message.Body.Content = args.Message
-	return func(manager *sSenderManager, agentID string) error {
+	return func(manager *SSenderManager, agentID string) error {
 		manager.clientLock.RLock()
 		client := manager.client
 		manager.clientLock.RUnlock()
@@ -75,7 +105,7 @@ func (self *sSenderManager) getSendFunc(args *apis.SendParams) sSendFunc {
 	}
 }
 
-func (self *sSenderManager) getUseridByMobile(mobile string) (string, error) {
+func (self *SSenderManager) getUseridByMobile(mobile string) (string, error) {
 	// get department list
 	userid, err := self.client.UseridByMobile(mobile)
 	if err != nil {
@@ -87,8 +117,8 @@ func (self *sSenderManager) getUseridByMobile(mobile string) (string, error) {
 	return userid, nil
 }
 
-func (self *sSenderManager) initClient() error {
-	vals, ok, noKey := self.configCache.BatchGet(APP_KEY, APP_SECRET)
+func (self *SSenderManager) initClient() error {
+	vals, ok, noKey := self.ConfigCache.BatchGet(APP_KEY, APP_SECRET)
 	if !ok {
 		return errors.Wrap(common.ErrConfigMiss, noKey)
 	}
@@ -106,9 +136,9 @@ func (self *sSenderManager) initClient() error {
 	return nil
 }
 
-func (self *sSenderManager) send(sendFunc sSendFunc) error {
+func (self *SSenderManager) send(sendFunc sSendFunc) error {
 	// get agentID
-	agentID, ok := self.configCache.Get(AGENT_ID)
+	agentID, ok := self.ConfigCache.Get(AGENT_ID)
 	if !ok {
 		return ErrAgentIDNotInit
 	}

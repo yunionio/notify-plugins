@@ -71,13 +71,14 @@ func ParseOptions(optStruct interface{}, args []string, configFileName string) {
 type IServiceOptions interface {
 	GetLogLevel() string
 	GetSockFileDir() string
+	GetSenderNum() int
+	GetOthers() interface{}
 }
 
 type SBaseOptions struct {
-	SockFileDir   string `help:"socket file directory" default:"/etc/yunion/notify"`
-	SenderNum     int    `default:"50" help:"number of sender"`
-	LogLevel      string `help:"log level" default:"info" choices:"debug|info|warn|error"`
-	LogFilePrefix string `help:"prefix of log files"`
+	SockFileDir string `help:"socket file directory" default:"/etc/yunion/notify"`
+	SenderNum   int    `default:"50" help:"number of sender"`
+	LogLevel    string `help:"log level" default:"info" choices:"debug|info|warn|error"`
 
 	structarg.BaseOptions
 }
@@ -88,4 +89,12 @@ func (o SBaseOptions) GetLogLevel() string {
 
 func (o SBaseOptions) GetSockFileDir() string {
 	return o.SockFileDir
+}
+
+func (o SBaseOptions) GetSenderNum() int {
+	return o.SenderNum
+}
+
+func (s SBaseOptions) GetOthers() interface{} {
+	return nil
 }

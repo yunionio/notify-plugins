@@ -15,18 +15,12 @@
 package email
 
 import (
-	"yunion.io/x/notify-plugin/pkg/apis"
-	"yunion.io/x/notify-plugin/common"
+	"yunion.io/x/notify-plugin/pkg/common"
 )
 
-var senderManager *sSenderManager
+var senderManager *SSenderManager
 
 func StartService() {
 	var config SEmailConfig
-	common.StartService(&config, &Server{apis.UnimplementedSendAgentServer{}},
-		"email", "email.conf",
-		func() {
-			senderManager = newSSenderManager(&config)
-		},
-	)
+	common.StartService(&config, NewSender, "email", "email.conf")
 }

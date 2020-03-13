@@ -28,7 +28,7 @@ import (
 	"yunion.io/x/notify-plugin/pkg/apis"
 )
 
-func StartService(opt IServiceOptions, srv apis.SendAgentServer, service string, configFile string, init func()) {
+func StartService(opt IServiceOptions, generator func(IServiceOptions)ISender, service string, configFile string) {
 	// config parse:
 	ParseOptions(opt, os.Args, configFile)
 	log.SetLogLevelByString(log.Logger(), opt.GetLogLevel())
@@ -39,12 +39,9 @@ func StartService(opt IServiceOptions, srv apis.SendAgentServer, service string,
 		log.Fatalf("Dir %s not exist and create failed.", opt.GetSockFileDir())
 	}
 
-	// init
-	init()
-
 	// init rpc Server
 	grpcServer := grpc.NewServer()
-	apis.RegisterSendAgentServer(grpcServer, srv)
+	apis.RegisterSendAgentServer(grpcServer, NewServer(generator(opt)))
 
 	socketFile := fmt.Sprintf("%s/%s.sock", opt.GetSockFileDir(), service)
 	log.Infof("Socket file path: %s", socketFile)

@@ -37,7 +37,7 @@ type SConnectInfo struct {
 	Password string
 }
 
-type SSenderManager struct {
+type SEmailSender struct {
 	msgChan    chan *sSendUnit
 	senders    []sSender
 	senderNum  int
@@ -46,11 +46,11 @@ type SSenderManager struct {
 	configCache *common.SConfigCache
 }
 
-func (self *SSenderManager) IsReady(ctx context.Context) bool {
+func (self *SEmailSender) IsReady(ctx context.Context) bool {
 	return self.msgChan == nil
 }
 
-func (self *SSenderManager) CheckConfig(ctx context.Context, configs map[string]string) (interface{}, error) {
+func (self *SEmailSender) CheckConfig(ctx context.Context, configs map[string]string) (interface{}, error) {
 	vals, ok, noKey := common.CheckMap(configs, HOSTNAME, HOSTPORT, USERNAME, PASSWORD)
 	if !ok {
 		return nil, fmt.Errorf("require %s", noKey)
@@ -68,12 +68,12 @@ func (self *SSenderManager) CheckConfig(ctx context.Context, configs map[string]
 	}, nil
 }
 
-func (self *SSenderManager) UpdateConfig(ctx context.Context, configs map[string]string) error {
+func (self *SEmailSender) UpdateConfig(ctx context.Context, configs map[string]string) error {
 	self.configCache.BatchSet(configs)
 	return self.restartSender()
 }
 
-func (self *SSenderManager) ValidateConfig(ctx context.Context, configs interface{}) (*apis.ValidateConfigReply, error) {
+func (self *SEmailSender) ValidateConfig(ctx context.Context, configs interface{}) (*apis.ValidateConfigReply, error) {
 	connInfo := configs.(SConnectInfo)
 	err := self.validateConfig(connInfo)
 	if err == nil {
@@ -94,17 +94,17 @@ func (self *SSenderManager) ValidateConfig(ctx context.Context, configs interfac
 	return &reply, nil
 }
 
-func (self *SSenderManager) FetchContact(ctx context.Context, related string) (string, error) {
+func (self *SEmailSender) FetchContact(ctx context.Context, related string) (string, error) {
 	return "", nil
 }
 
-func (self *SSenderManager) Send(ctx context.Context, params *apis.SendParams) error {
+func (self *SEmailSender) Send(ctx context.Context, params *apis.SendParams) error {
 	log.Debugf("reviced msg for %s: %s", params.Contact, params.Message)
 	return senderManager.send(params)
 }
 
 func NewSender(config common.IServiceOptions) common.ISender {
-	return &SSenderManager{
+	return &SEmailSender{
 		senders:    make([]sSender, config.GetSenderNum()),
 		senderNum:  config.GetSenderNum(),
 		chanelSize: config.GetOthers().(int),
@@ -113,7 +113,7 @@ func NewSender(config common.IServiceOptions) common.ISender {
 	}
 }
 
-func (self *SSenderManager) send(args *apis.SendParams) error {
+func (self *SEmailSender) send(args *apis.SendParams) error {
 	gmsg := gomail.NewMessage()
 	username, _ := senderManager.configCache.Get(USERNAME)
 	gmsg.SetHeader("From", username)
@@ -133,14 +133,14 @@ func (self *SSenderManager) send(args *apis.SendParams) error {
 	return nil
 }
 
-func (self *SSenderManager) restartSender() error {
+func (self *SEmailSender) restartSender() error {
 	for _, sender := range self.senders {
 		sender.stop()
 	}
 	return self.initSender()
 }
 
-func (self *SSenderManager) validateConfig(connInfo SConnectInfo) error {
+func (self *SEmailSender) validateConfig(connInfo SConnectInfo) error {
 	errChan := make(chan error)
 	go func() {
 		sender, err := gomail.NewDialer(connInfo.Hostname, connInfo.Hostport, connInfo.Username, connInfo.Password).Dial()
@@ -161,7 +161,7 @@ func (self *SSenderManager) validateConfig(connInfo SConnectInfo) error {
 	}
 }
 
-func (self *SSenderManager) initSender() error {
+func (self *SEmailSender) initSender() error {
 	vals, ok, noKey := self.configCache.BatchGet(HOSTNAME, PASSWORD, USERNAME, HOSTPORT)
 	if !ok {
 		return errors.Wrap(common.ErrConfigMiss, noKey)

@@ -18,7 +18,7 @@ import (
 	"yunion.io/x/notify-plugin/pkg/common"
 )
 
-var senderManager *SSenderManager
+var senderManager *SEmailSender
 
 func StartService() {
 	var config SEmailConfig

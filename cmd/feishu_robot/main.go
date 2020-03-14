@@ -14,8 +14,8 @@
 
 package main
 
-import "yunion.io/x/notify-plugin/pkg/feishu"
+import "yunion.io/x/notify-plugin/pkg/feishu_robot"
 
 func main() {
-	feishu.StartService()
+	feishu_robot.StartService()
 }

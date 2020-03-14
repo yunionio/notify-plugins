@@ -17,71 +17,91 @@ package dingtalk
 import (
 	"context"
 	"fmt"
+	"os"
+	"strings"
 	"sync"
 
 	"github.com/hugozhu/godingtalk"
-	"google.golang.org/grpc/codes"
 
 	"yunion.io/x/log"
 	"yunion.io/x/pkg/errors"
 
-	"yunion.io/x/notify-plugin/pkg/common"
 	"yunion.io/x/notify-plugin/pkg/apis"
+	"yunion.io/x/notify-plugin/pkg/common"
 )
 
-type sSendFunc func(*SSenderManager, string) error
+type SConnInfo struct {
+	AgentID   string
+	AppKey    string
+	AppSecret string
+}
 
-type SSenderManager struct {
+type sSendFunc func(*godingtalk.DingTalkClient, string) error
+
+type SDingtalkSender struct {
 	common.SSenderBase
 	client     *godingtalk.DingTalkClient // client to example sms
-	clientLock sync.RWMutex               // lock to protect client
+	clientLock sync.Mutex                 // lock to protect client
 }
 
-func init() {
-	common.RegisterErr(ErrAgentIDNotInit, codes.FailedPrecondition)
-	common.RegisterErr(ErrNoSuchUser, codes.NotFound)
-}
-
-func (self *SSenderManager) IsReady(ctx context.Context) bool {
+func (self *SDingtalkSender) IsReady(ctx context.Context) bool {
 	return self.client == nil
 }
 
-func (self *SSenderManager) CheckConfig(ctx context.Context, configs map[string]string) (interface{}, error) {
-	return nil, nil
+func (self *SDingtalkSender) CheckConfig(ctx context.Context, configs map[string]string) (interface{}, error) {
+	vals, ok, noKey := common.CheckMap(configs, AGENT_ID, APP_KEY, APP_SECRET)
+	if !ok {
+		return nil, fmt.Errorf("require %s", noKey)
+	}
+	return SConnInfo{vals[0], vals[1], vals[2]}, nil
 }
 
-func (self *SSenderManager) UpdateConfig(ctx context.Context, configs map[string]string) error {
+func (self *SDingtalkSender) UpdateConfig(ctx context.Context, configs map[string]string) error {
 	self.ConfigCache.BatchSet(configs)
 	return self.initClient()
 }
 
-func (self *SSenderManager) ValidateConfig(ctx context.Context, configs interface{}) (*apis.ValidateConfigReply, error) {
-	return nil, nil
+func (self *SDingtalkSender) ValidateConfig(ctx context.Context, configs interface{}) (*apis.ValidateConfigReply, error) {
+	info := configs.(SConnInfo)
+	cache_file := fmt.Sprintf(".%s_validate", info.AppKey)
+	defer os.Remove(cache_file)
+	client := godingtalk.NewDingTalkClient(info.AppKey, info.AppSecret)
+
+	//hack
+	client.Cache = godingtalk.NewFileCache(cache_file)
+	ret := &apis.ValidateConfigReply{}
+	err := client.RefreshAccessToken()
+	if err != nil {
+		if strings.Contains(err.Error(), "40089") {
+			ret.Msg = "invalid AppKey or AppSecret"
+			return ret, nil
+		}
+		return nil, err
+	}
+	ret.IsValid = true
+	return ret, nil
 }
 
-func (self *SSenderManager) FetchContact(ctx context.Context, related string) (string, error) {
+func (self *SDingtalkSender) FetchContact(ctx context.Context, related string) (string, error) {
 	return self.getUseridByMobile(related)
 }
 
-func (self *SSenderManager) Send(ctx context.Context, params *apis.SendParams) error {
+func (self *SDingtalkSender) Send(ctx context.Context, params *apis.SendParams) error {
 	sendFunc := self.getSendFunc(params)
-	return self.Do(func()error{
+	return self.Do(func() error {
 		return self.send(sendFunc)
 	})
 }
 
 func NewSender(config common.IServiceOptions) common.ISender {
-	return &SSenderManager{
+	return &SDingtalkSender{
 		SSenderBase: common.NewSSednerBase(config),
 	}
 }
 
-func (self *SSenderManager) getSendFunc(args *apis.SendParams) sSendFunc {
+func (self *SDingtalkSender) getSendFunc(args *apis.SendParams) sSendFunc {
 	if args.Title == args.Topic {
-		return func(manager *SSenderManager, agentID string) error {
-			manager.clientLock.RLock()
-			client := manager.client
-			manager.clientLock.RUnlock()
+		return func(client *godingtalk.DingTalkClient, agentID string) error {
 			err := client.SendAppMessage(agentID, args.Contact, args.Message)
 			if err != nil {
 				return fmt.Errorf("UserIDs: %s: %w", args.Contact, err)
@@ -93,10 +113,7 @@ func (self *SSenderManager) getSendFunc(args *apis.SendParams) sSendFunc {
 	message.Head.Text = args.Topic
 	message.Body.Title = args.Title
 	message.Body.Content = args.Message
-	return func(manager *SSenderManager, agentID string) error {
-		manager.clientLock.RLock()
-		client := manager.client
-		manager.clientLock.RUnlock()
+	return func(client *godingtalk.DingTalkClient, agentID string) error {
 		err := client.SendAppOAMessage(agentID, args.Contact, message)
 		if err != nil {
 			return fmt.Errorf("UserIDs: %s: %w", args.Contact, err)
@@ -105,7 +122,7 @@ func (self *SSenderManager) getSendFunc(args *apis.SendParams) sSendFunc {
 	}
 }
 
-func (self *SSenderManager) getUseridByMobile(mobile string) (string, error) {
+func (self *SDingtalkSender) getUseridByMobile(mobile string) (string, error) {
 	// get department list
 	userid, err := self.client.UseridByMobile(mobile)
 	if err != nil {
@@ -117,7 +134,7 @@ func (self *SSenderManager) getUseridByMobile(mobile string) (string, error) {
 	return userid, nil
 }
 
-func (self *SSenderManager) initClient() error {
+func (self *SDingtalkSender) initClient() error {
 	vals, ok, noKey := self.ConfigCache.BatchGet(APP_KEY, APP_SECRET)
 	if !ok {
 		return errors.Wrap(common.ErrConfigMiss, noKey)
@@ -136,7 +153,7 @@ func (self *SSenderManager) initClient() error {
 	return nil
 }
 
-func (self *SSenderManager) send(sendFunc sSendFunc) error {
+func (self *SDingtalkSender) send(sendFunc sSendFunc) error {
 	// get agentID
 	agentID, ok := self.ConfigCache.Get(AGENT_ID)
 	if !ok {
@@ -144,22 +161,10 @@ func (self *SSenderManager) send(sendFunc sSendFunc) error {
 	}
 
 	// example message
-	err := sendFunc(self, agentID)
+	err := sendFunc(self.client, agentID)
 	if err == nil {
 		log.Debugf("send message successfully.")
 		return nil
 	}
-
-	// access_token must not be expired
-	//if strings.Contains(err.Error(), "access_token") || strings.Contains(err.Error(), "accessToken") {
-	//	self.initClient()
-	//	// try again
-	//	err = sendFunc(self, agentID)
-	//	if err != nil {
-	//		fmt.Errorf("send failed after fetch access_token again: %w", err)
-	//	}
-	//	log.Debugf("send message successfully.")
-	//	return nil
-	//}
 	return errors.Wrap(err, "send failed")
 }

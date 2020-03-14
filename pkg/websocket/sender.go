@@ -30,48 +30,48 @@ import (
 	"yunion.io/x/notify-plugin/pkg/apis"
 )
 
-type SSenderManager struct {
+type SWebsocketSender struct {
 	common.SSenderBase
 	region     string
 	clientLock sync.RWMutex // lock to protect client
 	session    *mcclient.ClientSession
 }
 
-func (self *SSenderManager) IsReady(ctx context.Context) bool {
+func (self *SWebsocketSender) IsReady(ctx context.Context) bool {
 	return self.session == nil
 }
 
-func (self *SSenderManager) CheckConfig(ctx context.Context, configs map[string]string) (interface{}, error) {
+func (self *SWebsocketSender) CheckConfig(ctx context.Context, configs map[string]string) (interface{}, error) {
 	return nil, nil
 }
 
-func (self *SSenderManager) UpdateConfig(ctx context.Context, configs map[string]string) error {
+func (self *SWebsocketSender) UpdateConfig(ctx context.Context, configs map[string]string) error {
 	self.ConfigCache.BatchSet(configs)
 	return self.initClient()
 }
 
-func (self *SSenderManager) ValidateConfig(ctx context.Context, configs interface{}) (*apis.ValidateConfigReply, error) {
+func (self *SWebsocketSender) ValidateConfig(ctx context.Context, configs interface{}) (*apis.ValidateConfigReply, error) {
 	return nil, nil
 }
 
-func (self *SSenderManager) FetchContact(ctx context.Context, related string) (string, error) {
+func (self *SWebsocketSender) FetchContact(ctx context.Context, related string) (string, error) {
 	return "", nil
 }
 
-func (self *SSenderManager) Send(ctx context.Context, params *apis.SendParams) error {
+func (self *SWebsocketSender) Send(ctx context.Context, params *apis.SendParams) error {
 	return self.Do(func() error {
 		return self.send(params)
 	})
 }
 
 func NewSender(config common.IServiceOptions) common.ISender {
-	return &SSenderManager{
+	return &SWebsocketSender{
 		SSenderBase: common.NewSSednerBase(config),
 		region:     config.GetOthers().(string),
 	}
 }
 
-func (self *SSenderManager) initClient() error {
+func (self *SWebsocketSender) initClient() error {
 	vals, ok, noKey := self.ConfigCache.BatchGet(AUTH_URI, ADMIN_USER, ADMIN_PASSWORD, ADMIN_TENANT_NAME)
 	if !ok {
 		return errors.Wrap(common.ErrConfigMiss, noKey)
@@ -86,7 +86,7 @@ func (self *SSenderManager) initClient() error {
 	return nil
 }
 
-func (self *SSenderManager) send(args *apis.SendParams) error {
+func (self *SWebsocketSender) send(args *apis.SendParams) error {
 	// component request body
 	body := jsonutils.DeepCopy(params).(*jsonutils.JSONDict)
 	body.Add(jsonutils.NewString(args.Title), "action")
@@ -116,7 +116,7 @@ func (self *SSenderManager) send(args *apis.SendParams) error {
 	return nil
 }
 
-func (self *SSenderManager) isFailed(title, message string) bool {
+func (self *SWebsocketSender) isFailed(title, message string) bool {
 	for _, c := range []string{title, message} {
 		for _, k := range FAIL_KEY {
 			if strings.Contains(c, k) {

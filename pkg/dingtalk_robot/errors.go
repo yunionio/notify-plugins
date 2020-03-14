@@ -12,10 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package dingtalk_rebot
 
-import "yunion.io/x/notify-plugin/pkg/feishu"
+import (
+	"google.golang.org/grpc/codes"
 
-func main() {
-	feishu.StartService()
+	"yunion.io/x/pkg/errors"
+
+	"yunion.io/x/notify-plugin/pkg/common"
+)
+
+var (
+	ErrIPWhiteList         = errors.Error("Need to add ip to whtelist")
+	ErrNoSupportSecSetting = errors.Error("Only the IP address option in the security Settings is supported")
+)
+
+func init() {
+	common.RegisterErr(ErrIPWhiteList, codes.FailedPrecondition)
+	common.RegisterErr(ErrNoSupportSecSetting, codes.FailedPrecondition)
 }

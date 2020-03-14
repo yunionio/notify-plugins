@@ -15,9 +15,15 @@
 package common
 
 import (
+	"google.golang.org/grpc/codes"
 	"yunion.io/x/pkg/errors"
 )
 
 var (
 	ErrConfigMiss = errors.Error("Miss some necessary configs")
 )
+
+func init() {
+	RegisterErr(ErrConfigMiss, codes.FailedPrecondition)
+	RegisterErr(errors.ErrNotImplemented, codes.Unimplemented)
+}

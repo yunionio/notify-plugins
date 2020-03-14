@@ -12,15 +12,32 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package feishu
+package feishu_robot
 
 import (
+	"context"
+	"strings"
+
+	"yunion.io/x/onecloud/pkg/monitor/notifydrivers/feishu"
+
 	"yunion.io/x/notify-plugin/pkg/common"
+	"yunion.io/x/notify-plugin/pkg/robot"
 )
 
-var sendManager *SFeishuSender
+func NewSender(configs common.IServiceOptions) common.ISender {
+	return robot.NewSender(configs, Send, feishu.ApiWebhookRobotSendMessage)
+}
 
-func StartService() {
-	var config common.SBaseOptions
-	common.StartService(&config, NewSender, "feishu", "feishu.conf")
+func Send(ctx context.Context, token, title, msg string, contacts []string) error {
+	req := feishu.WebhookRobotMsgReq{
+		Title: title,
+		Text:  msg,
+	}
+	rep, err := feishu.SendWebhookRobotMessage(token, req)
+	if err != nil {
+		if strings.Contains(rep.Error, "token") {
+			return robot.ErrNoSuchWebhook
+		}
+	}
+	return err
 }

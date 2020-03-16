@@ -12,11 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package feishu_robot
+package main
 
-import "yunion.io/x/notify-plugin/pkg/common"
+import "yunion.io/x/notify-plugin/pkg/feishu-robot"
 
-func StartService() {
-	var config common.SBaseOptions
-	common.StartService(&config, NewSender, "dingtalk_robot", "dintalk_robot.conf")
+
+func main() {
+	feishu_robot.StartService()
 }

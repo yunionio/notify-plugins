@@ -87,5 +87,10 @@ func (self *SRebotSender) ValidateConfig(ctx context.Context, configs interface{
 
 func (self *SRebotSender) Send(ctx context.Context, params *apis.SendParams) error {
 	webhook, _ := self.ConfigCache.Get(WEBHOOK)
-	return self.send(ctx, webhook, params.Title, params.Message, params.Contacts)
+	// separate contacts
+	contacts := strings.Split(params.Contact, ",")
+	for i := range contacts {
+		contacts[i] = strings.TrimSpace(contacts[i])
+	}
+	return self.send(ctx, webhook, params.Title, params.Message, contacts)
 }

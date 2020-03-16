@@ -23,7 +23,6 @@ message SendParams {
     string Message = 4;
     string Priority = 5;
     string RemoteTemplate = 6;
-    repeated string Contacts = 7;
 }
 
 message UpdateConfigParams {

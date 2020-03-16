@@ -56,7 +56,7 @@ func (s *Server) Send(ctx context.Context, req *apis.SendParams) (*apis.Empty, e
 		err := status.Error(codes.FailedPrecondition, NOTINIT)
 		return empty, err
 	}
-	log.Debugf("recevie msg, contacts: %s, title: %s, content: %s", req.Contacts, req.Title, req.Message)
+	log.Debugf("recevie msg, contact: %s, title: %s, content: %s", req.Contact, req.Title, req.Message)
 	err := s.Sender.Send(ctx, req)
 	return empty, ConvertErr(err)
 }

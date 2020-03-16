@@ -70,6 +70,7 @@ func (input ZonalFilterListInput) ZoneList() []string {
 
 type CloudregionListInput struct {
 	apis.EnabledStatusStandaloneResourceListInput
+	apis.ExternalizedResourceBaseListInput
 	apis.DomainizedResourceListInput
 
 	ManagedResourceListInput
@@ -80,11 +81,14 @@ type CloudregionListInput struct {
 	City string `json:"city"`
 	// 过滤提供特定服务的区域
 	Service string `json:"service"`
+
+	// 云环境
+	Environment []string `json:"environment"`
 }
 
 type ZoneListInput struct {
 	apis.StatusStandaloneResourceListInput
-	apis.DomainizedResourceListInput
+	apis.ExternalizedResourceBaseListInput
 
 	ManagedResourceListInput
 
@@ -95,6 +99,9 @@ type ZoneListInput struct {
 
 	// 过滤提供特定服务的可用区
 	Service string `json:"service"`
+
+	Location []string `json:"location"`
+	Contacts []string `json:"contacts"`
 }
 
 type ZoneResourceInput struct {

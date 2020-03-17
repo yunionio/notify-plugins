@@ -25,20 +25,20 @@ type ISender interface {
 	IsReady(ctx context.Context) bool
 	CheckConfig(ctx context.Context, configs map[string]string) (interface{}, error)
 	UpdateConfig(ctx context.Context, configs map[string]string) error
-	ValidateConfig(ctx context.Context, configs interface{}) (*apis.ValidateConfigReply, error)
+	ValidateConfig(ctx context.Context, configs interface{}) (bool, string, error)
 	FetchContact(ctx context.Context, related string) (string, error)
 	Send(ctx context.Context, params *apis.SendParams) error
 }
 
 type SSenderBase struct {
 	ConfigCache *SConfigCache
-	workerChan chan struct{}
+	workerChan  chan struct{}
 }
 
 func (self *SSenderBase) Do(f func() error) error {
-	self.workerChan<- struct{}{}
+	self.workerChan <- struct{}{}
 	defer func() {
-		<- self.workerChan
+		<-self.workerChan
 	}()
 	return f()
 }
@@ -55,8 +55,8 @@ func (self *SSenderBase) UpdateConfig(ctx context.Context, configs map[string]st
 	return errors.ErrNotImplemented
 }
 
-func (self *SSenderBase) ValidateConfig(ctx context.Context, configs interface{}) (*apis.ValidateConfigReply, error) {
-	return nil, errors.ErrNotImplemented
+func (self *SSenderBase) ValidateConfig(ctx context.Context, configs interface{}) (bool, string, error) {
+	return false, "", errors.ErrNotImplemented
 }
 
 func (self *SSenderBase) FetchContact(ctx context.Context, related string) (string, error) {
@@ -73,4 +73,3 @@ func NewSSednerBase(config IServiceOptions) SSenderBase {
 		workerChan:  make(chan struct{}, config.GetSenderNum()),
 	}
 }
-

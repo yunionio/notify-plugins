@@ -38,7 +38,7 @@ type SWebsocketSender struct {
 }
 
 func (self *SWebsocketSender) IsReady(ctx context.Context) bool {
-	return self.session == nil
+	return self.session != nil
 }
 
 func (self *SWebsocketSender) CheckConfig(ctx context.Context, configs map[string]string) (interface{}, error) {
@@ -50,8 +50,8 @@ func (self *SWebsocketSender) UpdateConfig(ctx context.Context, configs map[stri
 	return self.initClient()
 }
 
-func (self *SWebsocketSender) ValidateConfig(ctx context.Context, configs interface{}) (*apis.ValidateConfigReply, error) {
-	return nil, nil
+func (self *SWebsocketSender) ValidateConfig(ctx context.Context, configs interface{}) (bool, string, error) {
+	return false, "", nil
 }
 
 func (self *SWebsocketSender) FetchContact(ctx context.Context, related string) (string, error) {

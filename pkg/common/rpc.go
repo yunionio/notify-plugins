@@ -53,8 +53,7 @@ func NewServer(sender ISender) *Server {
 func (s *Server) Send(ctx context.Context, req *apis.SendParams) (*apis.Empty, error) {
 	empty := &apis.Empty{}
 	if !s.Sender.IsReady(ctx) {
-		err := status.Error(codes.FailedPrecondition, NOTINIT)
-		return empty, err
+		return empty, status.Error(codes.FailedPrecondition, NOTINIT)
 	}
 	log.Debugf("recevie msg, contact: %s, title: %s, content: %s", req.Contact, req.Title, req.Message)
 	err := s.Sender.Send(ctx, req)
@@ -77,31 +76,34 @@ func (s *Server) UpdateConfig(ctx context.Context, req *apis.UpdateConfigParams)
 }
 
 func (s *Server) ValidateConfig(ctx context.Context, req *apis.UpdateConfigParams) (*apis.ValidateConfigReply, error) {
+	rep := &apis.ValidateConfigReply{}
 	if req.Configs == nil {
-		return nil, status.Error(codes.InvalidArgument, ConfigNil)
+		return rep, status.Error(codes.InvalidArgument, ConfigNil)
 	}
 	log.Debugf("validate configs: %v", req.Configs)
 	formatConfig, err := s.Sender.CheckConfig(ctx, req.Configs)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		log.Errorf(err.Error())
+		return rep, status.Error(codes.InvalidArgument, err.Error())
 	}
-	rep, err := s.Sender.ValidateConfig(ctx, formatConfig)
+	rep.IsValid, rep.Msg, err = s.Sender.ValidateConfig(ctx, formatConfig)
 	if err != nil {
-		return nil, ConvertErr(err)
+		log.Errorf(err.Error())
+		return rep, ConvertErr(err)
 	}
 	return rep, nil
 }
 
 func (s *Server) UseridByMobile(ctx context.Context, req *apis.UseridByMobileParams) (*apis.UseridByMobileReply, error) {
+	rep := &apis.UseridByMobileReply{}
 	if !s.Sender.IsReady(ctx) {
-		return nil, status.Error(codes.FailedPrecondition, NOTINIT)
+		return rep, status.Error(codes.FailedPrecondition, NOTINIT)
 	}
 	log.Debugf("fetch userid by mobile %s", req.Mobile)
 	userId, err := s.Sender.FetchContact(ctx, req.Mobile)
 	if err != nil {
-		return nil, ConvertErr(err)
+		return rep, ConvertErr(err)
 	}
-	return &apis.UseridByMobileReply{
-		Userid:               userId,
-	}, nil
+	rep.Userid = userId
+	return rep, nil
 }

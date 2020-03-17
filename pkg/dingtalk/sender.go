@@ -23,7 +23,6 @@ import (
 
 	"github.com/hugozhu/godingtalk"
 
-	"yunion.io/x/log"
 	"yunion.io/x/pkg/errors"
 
 	"yunion.io/x/notify-plugin/pkg/apis"
@@ -45,7 +44,7 @@ type SDingtalkSender struct {
 }
 
 func (self *SDingtalkSender) IsReady(ctx context.Context) bool {
-	return self.client == nil
+	return self.client != nil
 }
 
 func (self *SDingtalkSender) CheckConfig(ctx context.Context, configs map[string]string) (interface{}, error) {
@@ -61,7 +60,7 @@ func (self *SDingtalkSender) UpdateConfig(ctx context.Context, configs map[strin
 	return self.initClient()
 }
 
-func (self *SDingtalkSender) ValidateConfig(ctx context.Context, configs interface{}) (*apis.ValidateConfigReply, error) {
+func (self *SDingtalkSender) ValidateConfig(ctx context.Context, configs interface{}) (isValid bool, msg string, err error) {
 	info := configs.(SConnInfo)
 	cache_file := fmt.Sprintf(".%s_validate", info.AppKey)
 	defer os.Remove(cache_file)
@@ -69,17 +68,16 @@ func (self *SDingtalkSender) ValidateConfig(ctx context.Context, configs interfa
 
 	//hack
 	client.Cache = godingtalk.NewFileCache(cache_file)
-	ret := &apis.ValidateConfigReply{}
-	err := client.RefreshAccessToken()
+	err = client.RefreshAccessToken()
 	if err != nil {
 		if strings.Contains(err.Error(), "40089") {
-			ret.Msg = "invalid AppKey or AppSecret"
-			return ret, nil
+			msg, err = "invalid AppKey or AppSecret", nil
+			return
 		}
-		return nil, err
+		return
 	}
-	ret.IsValid = true
-	return ret, nil
+	isValid = true
+	return
 }
 
 func (self *SDingtalkSender) FetchContact(ctx context.Context, related string) (string, error) {
@@ -125,6 +123,9 @@ func (self *SDingtalkSender) getSendFunc(args *apis.SendParams) sSendFunc {
 func (self *SDingtalkSender) getUseridByMobile(mobile string) (string, error) {
 	// get department list
 	userid, err := self.client.UseridByMobile(mobile)
+	if self.needRetry(err) {
+		userid, err = self.client.UseridByMobile(mobile)
+	}
 	if err != nil {
 		return "", err
 	}
@@ -162,9 +163,26 @@ func (self *SDingtalkSender) send(sendFunc sSendFunc) error {
 
 	// example message
 	err := sendFunc(self.client, agentID)
+	if self.needRetry(err) {
+		err = sendFunc(self.client, agentID)
+	}
 	if err == nil {
-		log.Debugf("send message successfully.")
 		return nil
 	}
 	return errors.Wrap(err, "send failed")
+}
+
+func (self *SDingtalkSender) needRetry(err error) (retry bool) {
+	if err == nil {
+		return
+	}
+	if strings.Contains(err.Error(), "access_token") {
+		self.clientLock.Lock()
+		defer self.clientLock.Unlock()
+		err := self.client.RefreshAccessToken()
+		if err != nil {
+			return
+		}
+	}
+	return true
 }

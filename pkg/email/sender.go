@@ -47,7 +47,7 @@ type SEmailSender struct {
 }
 
 func (self *SEmailSender) IsReady(ctx context.Context) bool {
-	return self.msgChan == nil
+	return self.msgChan != nil
 }
 
 func (self *SEmailSender) CheckConfig(ctx context.Context, configs map[string]string) (interface{}, error) {
@@ -73,25 +73,25 @@ func (self *SEmailSender) UpdateConfig(ctx context.Context, configs map[string]s
 	return self.restartSender()
 }
 
-func (self *SEmailSender) ValidateConfig(ctx context.Context, configs interface{}) (*apis.ValidateConfigReply, error) {
+func (self *SEmailSender) ValidateConfig(ctx context.Context, configs interface{}) (isValid bool, msg string, err error) {
 	connInfo := configs.(SConnectInfo)
-	err := self.validateConfig(connInfo)
+	err = self.validateConfig(connInfo)
 	if err == nil {
-		return &apis.ValidateConfigReply{IsValid: true, Msg: ""}, nil
+		isValid = true
+		return
 	}
 
-	reply := apis.ValidateConfigReply{IsValid: false}
 	switch {
 	case strings.Contains(err.Error(), "535 Error"):
-		reply.Msg = "Authentication failed"
+		msg = "Authentication failed"
 	case strings.Contains(err.Error(), "timeout"):
-		reply.Msg = "Connect timeout"
+		msg = "Connect timeout"
 	case strings.Contains(err.Error(), "no such host"):
-		reply.Msg = "No such host"
+		msg = "No such host"
 	default:
-		reply.Msg = err.Error()
+		msg = err.Error()
 	}
-	return &reply, nil
+	return
 }
 
 func (self *SEmailSender) FetchContact(ctx context.Context, related string) (string, error) {

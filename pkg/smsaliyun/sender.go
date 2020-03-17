@@ -45,7 +45,7 @@ type SSMSAliyunSender struct {
 }
 
 func (self *SSMSAliyunSender) IsReady(ctx context.Context) bool {
-	return self.client == nil
+	return self.client != nil
 }
 
 func (self *SSMSAliyunSender) CheckConfig(ctx context.Context, configs map[string]string) (interface{}, error) {
@@ -70,20 +70,20 @@ func (self *SSMSAliyunSender) UpdateConfig(ctx context.Context, configs map[stri
 	return self.initClient()
 }
 
-func (self *SSMSAliyunSender) ValidateConfig(ctx context.Context, configs interface{}) (*apis.ValidateConfigReply, error) {
+func (self *SSMSAliyunSender) ValidateConfig(ctx context.Context, configs interface{}) (isValid bool, msg string, err error) {
 	connInfo := configs.(SConnectInfo)
 	client, err := sdk.NewClientWithAccessKey("default", connInfo.AccessKeyID, connInfo.AccessKeySecret)
 	if err != nil {
-		return nil, errors.Wrap(err, "NewClientWithAccessKey")
+		err = errors.Wrap(err, "NewClientWithAccessKey")
+		return
 	}
-	rep := apis.ValidateConfigReply{IsValid: true}
 	err = self.send(client, connInfo.Signature, "SMS_123456789", `{"code": "123456"}`, "12345678901", false)
 	if err == ErrSignnameInvalid || err == ErrSignatureDoesNotMatch || err == ErrAccessKeyIdNotFound {
-		rep.IsValid = false
-		rep.Msg = err.Error()
-		return &rep, nil
+		msg, err = err.Error(), nil
+		return
 	}
-	return &rep, nil
+	isValid, err = true, nil
+	return
 }
 
 func (self *SSMSAliyunSender) Send(ctx context.Context, params *apis.SendParams) error {

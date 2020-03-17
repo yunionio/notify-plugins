@@ -67,22 +67,22 @@ func (self *SRebotSender) UpdateConfig(ctx context.Context, configs map[string]s
 	return nil
 }
 
-func (self *SRebotSender) ValidateConfig(ctx context.Context, configs interface{}) (*apis.ValidateConfigReply, error) {
-	rep := &apis.ValidateConfigReply{IsValid: false}
+func (self *SRebotSender) ValidateConfig(ctx context.Context, configs interface{}) (isValid bool, msg string, err error) {
 	webhook := configs.(string)
 	if !strings.HasPrefix(webhook, self.WebhookPrefix) {
-		rep.Msg = "Invalid webhook"
+		msg = "Invalid webhook"
+		return
 	}
 	token := webhook[strings.Index(webhook, self.WebhookPrefix)+len(self.WebhookPrefix):]
-	err := self.send(ctx, token, "Validate", "This is a validate message.", []string{})
+	err = self.send(ctx, token, "Validate", "This is a validate message.", []string{})
 	if err == ErrNoSuchWebhook {
-		rep.Msg = "Invalid access token in webhook"
+		msg = "Invalid access token in webhook"
+		return
 	}
-	if err != nil {
-		return nil, err
+	if err == nil {
+		isValid = true
 	}
-	rep.IsValid = true
-	return rep, nil
+	return
 }
 
 func (self *SRebotSender) Send(ctx context.Context, params *apis.SendParams) error {

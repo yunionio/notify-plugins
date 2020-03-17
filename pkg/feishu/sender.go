@@ -17,9 +17,9 @@ package feishu
 import (
 	"context"
 	"fmt"
-	"sync"
-
 	"google.golang.org/grpc/codes"
+	"strings"
+	"sync"
 
 	"yunion.io/x/onecloud/pkg/monitor/notifydrivers/feishu"
 	"yunion.io/x/pkg/errors"
@@ -36,11 +36,11 @@ type SConnInfo struct {
 type SFeishuSender struct {
 	common.SSenderBase
 	client     *feishu.Tenant
-	clientLock sync.RWMutex
+	clientLock sync.Mutex
 }
 
 func (self *SFeishuSender) IsReady(ctx context.Context) bool {
-	return self.client == nil
+	return self.client != nil
 }
 
 func (self *SFeishuSender) CheckConfig(ctx context.Context, configs map[string]string) (interface{}, error) {
@@ -56,23 +56,20 @@ func (self *SFeishuSender) UpdateConfig(ctx context.Context, configs map[string]
 	return self.initClient()
 }
 
-func (self *SFeishuSender) ValidateConfig(ctx context.Context, configs interface{}) (*apis.ValidateConfigReply, error) {
+func (self *SFeishuSender) ValidateConfig(ctx context.Context, configs interface{}) (isValid bool, msg string, err error) {
 	info := configs.(SConnInfo)
-	ret := &apis.ValidateConfigReply{}
 	rep, err := feishu.GetTenantAccessTokenInternal(info.AppID, info.AppSecret)
-	if err != nil {
-		ret.IsValid = true
-		return ret, nil
+	if err == nil {
+		isValid = true
+		return
 	}
 	switch rep.Code {
 	case 10003:
-		ret.Msg = "invalid AppId"
+		msg = "invalid AppId"
 	case 10014:
-		ret.Msg = "invalid AppSecret"
-	default:
-		return nil, err
+		msg = "invalid AppSecret"
 	}
-	return ret, nil
+	return
 }
 
 func (self *SFeishuSender) FetchContact(ctx context.Context, related string) (string, error) {
@@ -102,6 +99,9 @@ func (self *SFeishuSender) send(args *apis.SendParams) error {
 		Content: &feishu.MsgContent{Text: args.Message},
 	}
 	_, err := self.client.SendMessage(req)
+	if self.needRetry(err) {
+		_, err = self.client.SendMessage(req)
+	}
 	if err != nil {
 		err = errors.Wrap(err, "SendMessage")
 	}
@@ -127,5 +127,24 @@ func (self *SFeishuSender) initClient() error {
 }
 
 func (self *SFeishuSender) userIdByMobile(mobile string) (string, error) {
-	return self.client.UserIdByMobile(mobile)
+	userid, err := self.client.UserIdByMobile(mobile)
+	if self.needRetry(err) {
+		userid, err = self.client.UserIdByMobile(mobile)
+	}
+	return userid, err
+}
+
+func (self *SFeishuSender) needRetry(err error) (retry bool) {
+	if err == nil {
+		return
+	}
+	if strings.Contains(err.Error(), "99991663") {
+		self.clientLock.Lock()
+		defer self.clientLock.Unlock()
+		err := self.client.RefreshAccessToken()
+		if err != nil {
+			return
+		}
+	}
+	return true
 }

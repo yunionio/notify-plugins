@@ -15,10 +15,14 @@
 package websocket
 
 import (
-	"yunion.io/x/notify-plugin/common"
+	"yunion.io/x/notify-plugin/pkg/common"
 )
 
 type SWebsocketConfig struct {
 	common.SBaseOptions
-	Region string `hekp:"region"`
+	Region string `help:"region"`
+}
+
+func (wc SWebsocketConfig) GetOthers() interface{} {
+	return wc.Region
 }

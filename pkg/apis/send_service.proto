@@ -30,7 +30,7 @@ message UpdateConfigParams {
 }
 
 message UseridByMobileParams {
-   string mobile = 1;
+    string mobile = 1;
 }
 
 message Empty {
@@ -46,8 +46,8 @@ message ValidateConfigReply {
 }
 
 service SendAgent {
-    rpc Send(SendParams) returns (Empty);
-    rpc UpdateConfig(UpdateConfigParams) returns (Empty);
-    rpc ValidateConfig(UpdateConfigParams) returns (ValidateConfigReply);
-    rpc UseridByMobile(UseridByMobileParams) returns (UseridByMobileReply);
+    rpc Send (SendParams) returns (Empty);
+    rpc UpdateConfig (UpdateConfigParams) returns (Empty);
+    rpc ValidateConfig (UpdateConfigParams) returns (ValidateConfigReply);
+    rpc UseridByMobile (UseridByMobileParams) returns (UseridByMobileReply);
 }

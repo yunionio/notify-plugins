@@ -73,6 +73,12 @@ type SCloudproviderUsage struct {
 	// 负载均衡器数量
 	// example: 2
 	LoadbalancerCount int `json:"loadbalancer_count"`
+	// 数据库实例数量
+	// example: 2
+	DBInstanceCount int `json:"dbinstance_count"`
+	// 弹性缓存实例数量
+	// example: 2
+	ElasticcacheCount int `json:"elasticcache_count"`
 	// 项目数量
 	ProjectCount int `json:"project_count"`
 	// 同步区域数量
@@ -209,10 +215,20 @@ type CloudproviderListInput struct {
 	UsableResourceListInput
 
 	CapabilityListInput
+
+	SyncableBaseResourceListInput
+
+	// 账号健康状态
+	HealthStatus []string `json:"health_status"`
 }
 
 func (input *CapabilityListInput) AfterUnmarshal() {
 	if input.HasObjectStorage != nil && *input.HasObjectStorage && !utils.IsInStringArray(cloudprovider.CLOUD_CAPABILITY_OBJECTSTORE, input.Capability) {
 		input.Capability = append(input.Capability, cloudprovider.CLOUD_CAPABILITY_OBJECTSTORE)
 	}
+}
+
+type SyncableBaseResourceListInput struct {
+	// 同步状态
+	SyncStatus []string `json:"sync_status"`
 }

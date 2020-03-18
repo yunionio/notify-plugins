@@ -15,47 +15,101 @@
 package feishu
 
 import (
+	"context"
+	"fmt"
+	"google.golang.org/grpc/codes"
+	"strings"
 	"sync"
 
-	"yunion.io/x/log"
 	"yunion.io/x/onecloud/pkg/monitor/notifydrivers/feishu"
 	"yunion.io/x/pkg/errors"
 
-	"yunion.io/x/notify-plugin/common"
 	"yunion.io/x/notify-plugin/pkg/apis"
+	"yunion.io/x/notify-plugin/pkg/common"
 )
 
-type sSendManager struct {
-	workerChan chan struct{}
-	client     *feishu.Tenant
-	clientLock sync.RWMutex
-
-	configCache *common.SConfigCache
+type SConnInfo struct {
+	AppID     string
+	AppSecret string
 }
 
-func newSSendManager(config *common.SBaseOptions) *sSendManager {
-	log.Debugf("sender num: %d", config.SenderNum)
-	return &sSendManager{
-		workerChan:  make(chan struct{}, config.SenderNum),
-		configCache: common.NewConfigCache(),
+type SFeishuSender struct {
+	common.SSenderBase
+	client     *feishu.Tenant
+	clientLock sync.Mutex
+}
+
+func (self *SFeishuSender) IsReady(ctx context.Context) bool {
+	return self.client != nil
+}
+
+func (self *SFeishuSender) CheckConfig(ctx context.Context, configs map[string]string) (interface{}, error) {
+	vals, ok, noKey := common.CheckMap(configs, APP_ID, APP_SECRET)
+	if !ok {
+		return nil, fmt.Errorf("require %s", noKey)
+	}
+	return SConnInfo{vals[0], vals[1]}, nil
+}
+
+func (self *SFeishuSender) UpdateConfig(ctx context.Context, configs map[string]string) error {
+	self.ConfigCache.BatchSet(configs)
+	return self.initClient()
+}
+
+func (self *SFeishuSender) ValidateConfig(ctx context.Context, configs interface{}) (isValid bool, msg string, err error) {
+	info := configs.(SConnInfo)
+	rep, err := feishu.GetTenantAccessTokenInternal(info.AppID, info.AppSecret)
+	if err == nil {
+		isValid = true
+		return
+	}
+	switch rep.Code {
+	case 10003:
+		msg = "invalid AppId"
+	case 10014:
+		msg = "invalid AppSecret"
+	}
+	return
+}
+
+func (self *SFeishuSender) FetchContact(ctx context.Context, related string) (string, error) {
+	return self.userIdByMobile(related)
+}
+
+func (self *SFeishuSender) Send(ctx context.Context, params *apis.SendParams) error {
+	return self.Do(func() error {
+		return self.send(params)
+	})
+}
+
+func init() {
+	common.RegisterErr(errors.ErrNotFound, codes.NotFound)
+}
+
+func NewSender(config common.IServiceOptions) common.ISender {
+	return &SFeishuSender{
+		SSenderBase: common.NewSSednerBase(config),
 	}
 }
 
-func (self *sSendManager) send(args *apis.SendParams) error {
+func (self *SFeishuSender) send(args *apis.SendParams) error {
 	req := feishu.MsgReq{
 		OpenId:  args.Contact,
 		MsgType: "text",
 		Content: &feishu.MsgContent{Text: args.Message},
 	}
 	_, err := self.client.SendMessage(req)
+	if self.needRetry(err) {
+		_, err = self.client.SendMessage(req)
+	}
 	if err != nil {
 		err = errors.Wrap(err, "SendMessage")
 	}
 	return err
 }
 
-func (self *sSendManager) initClient() error {
-	vals, ok, noKey := self.configCache.BatchGet(APP_ID, APP_SECRET)
+func (self *SFeishuSender) initClient() error {
+	vals, ok, noKey := self.ConfigCache.BatchGet(APP_ID, APP_SECRET)
 	if !ok {
 		return errors.Wrap(common.ErrConfigMiss, noKey)
 	}
@@ -72,6 +126,25 @@ func (self *sSendManager) initClient() error {
 	return nil
 }
 
-func (self *sSendManager) userIdByMobile(mobile string) (string, error) {
-	return self.client.UserIdByMobile(mobile)
+func (self *SFeishuSender) userIdByMobile(mobile string) (string, error) {
+	userid, err := self.client.UserIdByMobile(mobile)
+	if self.needRetry(err) {
+		userid, err = self.client.UserIdByMobile(mobile)
+	}
+	return userid, err
+}
+
+func (self *SFeishuSender) needRetry(err error) (retry bool) {
+	if err == nil {
+		return
+	}
+	if strings.Contains(err.Error(), "99991663") {
+		self.clientLock.Lock()
+		defer self.clientLock.Unlock()
+		err := self.client.RefreshAccessToken()
+		if err != nil {
+			return
+		}
+	}
+	return true
 }

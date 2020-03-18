@@ -14,7 +14,11 @@
 
 package dingtalk
 
-import "errors"
+import (
+	"errors"
+	"google.golang.org/grpc/codes"
+	"yunion.io/x/notify-plugin/pkg/common"
+)
 
 const (
 	APP_KEY = "app_key"
@@ -27,3 +31,9 @@ var (
 	ErrAgentIDNotInit = errors.New("AgentID has not been init")
 	ErrNoSuchUser     = errors.New("No such user")
 )
+
+
+func init() {
+	common.RegisterErr(ErrAgentIDNotInit, codes.FailedPrecondition)
+	common.RegisterErr(ErrNoSuchUser, codes.NotFound)
+}

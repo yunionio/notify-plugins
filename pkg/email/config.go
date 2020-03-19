@@ -15,10 +15,14 @@
 package email
 
 import (
-	"yunion.io/x/notify-plugin/common"
+	"yunion.io/x/notify-plugin/pkg/common"
 )
 
 type SEmailConfig struct {
 	ChannelSize int `help:"size of channel" default:"100"`
 	common.SBaseOptions
+}
+
+func (ec SEmailConfig) GetOthers() interface{} {
+	return ec.ChannelSize
 }

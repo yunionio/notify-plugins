@@ -14,14 +14,18 @@
 
 package apis
 
+type ScopedResourceInput struct {
+	// 指定查询的权限范围，可能值为project, domain or system
+	Scope string `json:"scope"`
+}
+
 type DomainizedResourceListInput struct {
 	// swagger:ignore
 	// Is an admin call? equivalent to scope=system
 	// Deprecated
 	Admin *bool `json:"admin"`
 
-	// 指定查询的权限范围，可能值为project, domain or system
-	Scope string `json:"scope"`
+	ScopedResourceInput
 
 	DomainizedResourceInput
 
@@ -115,6 +119,8 @@ type ModelBaseListInput struct {
 	Field []string `json:"field"`
 	// 用于数据导出，指定导出的数据字段
 	ExportKeys string `json:"export_keys"`
+	// 返回结果携带delete_fail_reason和update_fail_reason字段
+	ShowFailReason *bool `json:"show_fail_reason"`
 }
 
 type IncrementalListInput struct {
@@ -141,7 +147,7 @@ type ResourceBaseListInput struct {
 
 type SharableVirtualResourceListInput struct {
 	VirtualResourceListInput
-
+	SharableResourceBaseListInput
 	// 根据资源的共享范围过滤列表，可能值为：system, domain, project
 	PublicScope string `json:"public_scope"`
 }
@@ -162,10 +168,15 @@ type StandaloneResourceListInput struct {
 
 	// 通过标签过滤
 	Tags []STag `json:"tags"`
+
+	// 通过标签过滤
+	OrderByTag string `json:"order_by_tag"`
+
 	// 返回资源的标签不包含特定的用户标签
 	WithoutUserMeta bool `json:"without_user_meta"`
 	// 返回列表数据中包含资源的标签数据（Metadata）
 	WithMeta *bool `json:"with_meta"`
+
 	// 显示所有的资源，包括模拟的资源
 	ShowEmulated *bool `json:"show_emulated"`
 
@@ -213,4 +224,26 @@ type StatusDomainLevelResourceListInput struct {
 type EnabledStatusDomainLevelResourceListInput struct {
 	StatusDomainLevelResourceListInput
 	EnabledResourceBaseListInput
+}
+
+type JointResourceBaseListInput struct {
+	ResourceBaseListInput
+}
+
+type VirtualJointResourceBaseListInput struct {
+	JointResourceBaseListInput
+}
+
+type ExternalizedResourceBaseListInput struct {
+	// 以资源外部ID过滤
+	ExternalId string `json:"external_id"`
+}
+
+type DeletePreventableResourceBaseListInput struct {
+	// 是否禁止删除
+	DisableDelete *bool `json:"disable_delete"`
+}
+
+type ScopedResourceBaseListInput struct {
+	ProjectizedResourceListInput
 }

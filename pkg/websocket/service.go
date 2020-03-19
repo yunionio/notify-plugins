@@ -15,19 +15,10 @@
 package websocket
 
 import (
-	"yunion.io/x/log"
-
-	"yunion.io/x/notify-plugin/pkg/apis"
-	"yunion.io/x/notify-plugin/common"
+	"yunion.io/x/notify-plugin/pkg/common"
 )
 
 func StartService() {
 	var config SWebsocketConfig
-	common.StartService(&config, &Server{apis.UnimplementedSendAgentServer{}},
-		"webconsole", "websocket.conf",
-		func() {
-			log.Debugf("region: %s", config.Region)
-			senderManager = newSSenderManager(&config)
-		},
-	)
+	common.StartService(&config, NewSender, "webconsole", "websocket.conf")
 }

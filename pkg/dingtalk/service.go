@@ -15,16 +15,10 @@
 package dingtalk
 
 import (
-	"yunion.io/x/notify-plugin/pkg/apis"
-	"yunion.io/x/notify-plugin/common"
+	"yunion.io/x/notify-plugin/pkg/common"
 )
 
 func StartService() {
 	var config common.SBaseOptions
-	common.StartService(&config, &Server{apis.UnimplementedSendAgentServer{}},
-		"dingtalk", "dingtalk.conf",
-		func() {
-			senderManager = newSSenderManager(&config)
-		},
-	)
+	common.StartService(&config, NewSender, "dingtalk", "dingtalk.conf")
 }

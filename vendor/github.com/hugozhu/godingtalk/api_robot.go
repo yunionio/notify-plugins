@@ -52,3 +52,18 @@ func (c *DingTalkClient) SendRobotTextAtMessage(accessToken string, msg string, 
 	err = c.httpRPC("robot/send", params, request, &data)
 	return data, err
 }
+
+func (c *DingTalkClient) SendRobotMarkdownAtMessage(accessToken string, title string, msg string, at *RobotAtList) (data OAPIResponse, err error) {
+	params := url.Values{}
+	params.Add("access_token", accessToken)
+	request := map[string]interface{}{
+		"msgtype": "markdown",
+		"markdown": map[string]interface{}{
+			"title": title,
+			"text":  msg,
+		},
+		"at": at,
+	}
+	err = c.httpRPC("robot/send", params, request, &data)
+	return data, err
+}

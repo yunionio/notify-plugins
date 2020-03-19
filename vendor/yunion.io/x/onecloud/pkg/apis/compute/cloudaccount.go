@@ -211,6 +211,14 @@ type CloudaccountListInput struct {
 	ManagedResourceListInput
 
 	CapabilityListInput
+
+	SyncableBaseResourceListInput
+
+	// 账号健康状态
+	HealthStatus []string `json:"health_status"`
+
+	// 共享模式
+	ShareMode []string `json:"share_mode"`
 }
 
 type ProviderProject struct {

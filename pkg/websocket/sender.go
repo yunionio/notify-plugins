@@ -26,32 +26,53 @@ import (
 	"yunion.io/x/onecloud/pkg/mcclient/modules"
 	"yunion.io/x/pkg/errors"
 
-	"yunion.io/x/notify-plugin/common"
+	"yunion.io/x/notify-plugin/pkg/common"
 	"yunion.io/x/notify-plugin/pkg/apis"
 )
 
-var senderManager *sSenderManager
-
-type sSenderManager struct {
-	workerChan chan struct{}
+type SWebsocketSender struct {
+	common.SSenderBase
 	region     string
 	clientLock sync.RWMutex // lock to protect client
 	session    *mcclient.ClientSession
-
-	configCache *common.SConfigCache // config cache
 }
 
-func newSSenderManager(config *SWebsocketConfig) *sSenderManager {
-	return &sSenderManager{
-		workerChan: make(chan struct{}, config.SenderNum),
-		region:     config.Region,
+func (self *SWebsocketSender) IsReady(ctx context.Context) bool {
+	return self.session != nil
+}
 
-		configCache: common.NewConfigCache(),
+func (self *SWebsocketSender) CheckConfig(ctx context.Context, configs map[string]string) (interface{}, error) {
+	return nil, nil
+}
+
+func (self *SWebsocketSender) UpdateConfig(ctx context.Context, configs map[string]string) error {
+	self.ConfigCache.BatchSet(configs)
+	return self.initClient()
+}
+
+func (self *SWebsocketSender) ValidateConfig(ctx context.Context, configs interface{}) (bool, string, error) {
+	return false, "", nil
+}
+
+func (self *SWebsocketSender) FetchContact(ctx context.Context, related string) (string, error) {
+	return "", nil
+}
+
+func (self *SWebsocketSender) Send(ctx context.Context, params *apis.SendParams) error {
+	return self.Do(func() error {
+		return self.send(params)
+	})
+}
+
+func NewSender(config common.IServiceOptions) common.ISender {
+	return &SWebsocketSender{
+		SSenderBase: common.NewSSednerBase(config),
+		region:     config.GetOthers().(string),
 	}
 }
 
-func (self *sSenderManager) initClient() error {
-	vals, ok, noKey := self.configCache.BatchGet(AUTH_URI, ADMIN_USER, ADMIN_PASSWORD, ADMIN_TENANT_NAME)
+func (self *SWebsocketSender) initClient() error {
+	vals, ok, noKey := self.ConfigCache.BatchGet(AUTH_URI, ADMIN_USER, ADMIN_PASSWORD, ADMIN_TENANT_NAME)
 	if !ok {
 		return errors.Wrap(common.ErrConfigMiss, noKey)
 	}
@@ -65,7 +86,7 @@ func (self *sSenderManager) initClient() error {
 	return nil
 }
 
-func (self *sSenderManager) send(args *apis.SendParams) error {
+func (self *SWebsocketSender) send(args *apis.SendParams) error {
 	// component request body
 	body := jsonutils.DeepCopy(params).(*jsonutils.JSONDict)
 	body.Add(jsonutils.NewString(args.Title), "action")
@@ -95,7 +116,7 @@ func (self *sSenderManager) send(args *apis.SendParams) error {
 	return nil
 }
 
-func (self *sSenderManager) isFailed(title, message string) bool {
+func (self *SWebsocketSender) isFailed(title, message string) bool {
 	for _, c := range []string{title, message} {
 		for _, k := range FAIL_KEY {
 			if strings.Contains(c, k) {

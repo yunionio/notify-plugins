@@ -98,6 +98,17 @@ func (input *BucketMetadataInput) Validate() error {
 
 type BucketListInput struct {
 	apis.VirtualResourceListInput
+	apis.ExternalizedResourceBaseListInput
+
 	ManagedResourceListInput
 	RegionalFilterListInput
+
+	// STORAGE_CLASS
+	StorageClass []string `json:"storage_class"`
+
+	// 位置
+	Location []string `json:"location"`
+
+	// ACL
+	Acl []string `json:"acl"`
 }

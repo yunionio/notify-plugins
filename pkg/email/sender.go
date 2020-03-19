@@ -15,7 +15,10 @@
 package email
 
 import (
+	"context"
+	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	"gopkg.in/gomail.v2"
@@ -23,37 +26,94 @@ import (
 	"yunion.io/x/log"
 	"yunion.io/x/pkg/errors"
 
+	"yunion.io/x/notify-plugin/pkg/common"
 	"yunion.io/x/notify-plugin/pkg/apis"
-	"yunion.io/x/notify-plugin/common"
 )
 
-type sConnectInfo struct {
+type SConnectInfo struct {
 	Hostname string
 	Hostport int
 	Username string
 	Password string
 }
 
-type sSenderManager struct {
-	msgChan     chan *sSendUnit
-	senders     []sSender
-	senderNum   int
-	chanelSize  int
+type SEmailSender struct {
+	msgChan    chan *sSendUnit
+	senders    []sSender
+	senderNum  int
+	chanelSize int
 
 	configCache *common.SConfigCache
 }
 
-func newSSenderManager(config *SEmailConfig) *sSenderManager {
-	return &sSenderManager{
-		senders:    make([]sSender, config.SenderNum),
-		senderNum:  config.SenderNum,
-		chanelSize: config.ChannelSize,
+func (self *SEmailSender) IsReady(ctx context.Context) bool {
+	return self.msgChan != nil
+}
+
+func (self *SEmailSender) CheckConfig(ctx context.Context, configs map[string]string) (interface{}, error) {
+	vals, ok, noKey := common.CheckMap(configs, HOSTNAME, HOSTPORT, USERNAME, PASSWORD)
+	if !ok {
+		return nil, fmt.Errorf("require %s", noKey)
+	}
+
+	port, err := strconv.Atoi(vals[1])
+	if err != nil {
+		return nil, fmt.Errorf("invalid hostport %s", vals[1])
+	}
+	return SConnectInfo{
+		Hostname: vals[0],
+		Hostport: port,
+		Username: vals[2],
+		Password: vals[3],
+	}, nil
+}
+
+func (self *SEmailSender) UpdateConfig(ctx context.Context, configs map[string]string) error {
+	self.configCache.BatchSet(configs)
+	return self.restartSender()
+}
+
+func (self *SEmailSender) ValidateConfig(ctx context.Context, configs interface{}) (isValid bool, msg string, err error) {
+	connInfo := configs.(SConnectInfo)
+	err = self.validateConfig(connInfo)
+	if err == nil {
+		isValid = true
+		return
+	}
+
+	switch {
+	case strings.Contains(err.Error(), "535 Error"):
+		msg = "Authentication failed"
+	case strings.Contains(err.Error(), "timeout"):
+		msg = "Connect timeout"
+	case strings.Contains(err.Error(), "no such host"):
+		msg = "No such host"
+	default:
+		msg = err.Error()
+	}
+	return
+}
+
+func (self *SEmailSender) FetchContact(ctx context.Context, related string) (string, error) {
+	return "", nil
+}
+
+func (self *SEmailSender) Send(ctx context.Context, params *apis.SendParams) error {
+	log.Debugf("reviced msg for %s: %s", params.Contact, params.Message)
+	return senderManager.send(params)
+}
+
+func NewSender(config common.IServiceOptions) common.ISender {
+	return &SEmailSender{
+		senders:    make([]sSender, config.GetSenderNum()),
+		senderNum:  config.GetSenderNum(),
+		chanelSize: config.GetOthers().(int),
 
 		configCache: common.NewConfigCache(),
 	}
 }
 
-func (self *sSenderManager) send(args *apis.SendParams) error {
+func (self *SEmailSender) send(args *apis.SendParams) error {
 	gmsg := gomail.NewMessage()
 	username, _ := senderManager.configCache.Get(USERNAME)
 	gmsg.SetHeader("From", username)
@@ -73,14 +133,14 @@ func (self *sSenderManager) send(args *apis.SendParams) error {
 	return nil
 }
 
-func (self *sSenderManager) restartSender() error {
+func (self *SEmailSender) restartSender() error {
 	for _, sender := range self.senders {
 		sender.stop()
 	}
 	return self.initSender()
 }
 
-func (self *sSenderManager) validateConfig(connInfo sConnectInfo) error {
+func (self *SEmailSender) validateConfig(connInfo SConnectInfo) error {
 	errChan := make(chan error)
 	go func() {
 		sender, err := gomail.NewDialer(connInfo.Hostname, connInfo.Hostport, connInfo.Username, connInfo.Password).Dial()
@@ -101,7 +161,7 @@ func (self *sSenderManager) validateConfig(connInfo sConnectInfo) error {
 	}
 }
 
-func (self *sSenderManager) initSender() error {
+func (self *SEmailSender) initSender() error {
 	vals, ok, noKey := self.configCache.BatchGet(HOSTNAME, PASSWORD, USERNAME, HOSTPORT)
 	if !ok {
 		return errors.Wrap(common.ErrConfigMiss, noKey)

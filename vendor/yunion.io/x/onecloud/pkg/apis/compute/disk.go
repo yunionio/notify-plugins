@@ -91,10 +91,14 @@ type SnapshotPolicyFilterListInput struct {
 	// Deprecated
 	// filter disk by snapshotpolicy_id
 	SnapshotpolicyId string `json:"snapshotpolicy_id" deprecated-by:"snapshotpolicy"`
+
+	// 以快照策略名称排序
+	OrderBySnapshotpolicy string `json:"order_by_snapshotpolicy"`
 }
 
 type DiskListInput struct {
 	apis.VirtualResourceListInput
+	apis.ExternalizedResourceBaseListInput
 	billing.BillingResourceListInput
 	StorageFilterListInput
 
@@ -118,11 +122,29 @@ type DiskListInput struct {
 	// | volume      | 容器volumn盘   |
 	//
 	DiskType string `json:"disk_type"`
+
+	DiskFormat string `json:"disk_format"`
+
+	DiskSize int `json:"disk_size"`
+
+	AutoDelete *bool `json:"auto_delete"`
+
+	FsFormat string `json:"fs_format"`
+
+	// 镜像
+	Template string `json:"template"`
+	// swagger:ignore
+	// Deprecated
+	TemplateId string `json:"template_id" deprecated-by:"template"`
+
+	// 快照
+	Snapshot string `json:"snapshot"`
+	// swagger:ignore
+	// Deprecated
+	SnapshotId string `json:"snapshot_id" deprecated-by:"snapshot"`
 }
 
-type DiskFilterListInput struct {
-	StorageFilterListInput
-
+type DiskFilterListInputBase struct {
 	// 以指定虚拟磁盘（ID或Name）过滤列表结果
 	Disk string `json:"disk"`
 	// swagger:ignore
@@ -133,6 +155,12 @@ type DiskFilterListInput struct {
 	// 以磁盘名称排序
 	// pattern:asc|desc
 	OrderByDisk string `json:"order_by_disk"`
+}
+
+type DiskFilterListInput struct {
+	StorageFilterListInput
+
+	DiskFilterListInputBase
 }
 
 type SimpleGuest struct {

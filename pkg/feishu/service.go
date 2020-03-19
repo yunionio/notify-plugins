@@ -15,17 +15,12 @@
 package feishu
 
 import (
-	"yunion.io/x/notify-plugin/common"
-	"yunion.io/x/notify-plugin/pkg/apis"
+	"yunion.io/x/notify-plugin/pkg/common"
 )
 
-var sendManager *sSendManager
+var sendManager *SFeishuSender
 
 func StartService() {
 	var config common.SBaseOptions
-	common.StartService(&config, &Server{apis.UnimplementedSendAgentServer{}},
-		"feishu", "feishu.conf",
-		func() {
-			sendManager = newSSendManager(&config)
-		})
+	common.StartService(&config, NewSender, "feishu", "feishu.conf")
 }

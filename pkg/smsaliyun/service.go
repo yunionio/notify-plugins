@@ -15,18 +15,10 @@
 package smsaliyun
 
 import (
-	"yunion.io/x/notify-plugin/pkg/apis"
-	"yunion.io/x/notify-plugin/common"
+	"yunion.io/x/notify-plugin/pkg/common"
 )
-
-var senderManager *sSenderManager
 
 func StartService() {
 	var config common.SBaseOptions
-	common.StartService(&config, &Server{apis.UnimplementedSendAgentServer{}},
-		"mobile", "smsaliyun.conf",
-		func() {
-			senderManager = newSSenderManager(&config)
-		},
-	)
+	common.StartService(&config, NewSender, "mobile", "smsaliyun.conf")
 }

@@ -26,8 +26,8 @@ import (
 	"yunion.io/x/log"
 	"yunion.io/x/pkg/errors"
 
-	"yunion.io/x/notify-plugin/pkg/common"
 	"yunion.io/x/notify-plugin/pkg/apis"
+	"yunion.io/x/notify-plugin/pkg/common"
 )
 
 type SConnectInfo struct {
@@ -100,7 +100,7 @@ func (self *SEmailSender) FetchContact(ctx context.Context, related string) (str
 
 func (self *SEmailSender) Send(ctx context.Context, params *apis.SendParams) error {
 	log.Debugf("reviced msg for %s: %s", params.Contact, params.Message)
-	return senderManager.send(params)
+	return self.send(params)
 }
 
 func NewSender(config common.IServiceOptions) common.ISender {
@@ -115,17 +115,17 @@ func NewSender(config common.IServiceOptions) common.ISender {
 
 func (self *SEmailSender) send(args *apis.SendParams) error {
 	gmsg := gomail.NewMessage()
-	username, _ := senderManager.configCache.Get(USERNAME)
+	username, _ := self.configCache.Get(USERNAME)
 	gmsg.SetHeader("From", username)
 	gmsg.SetHeader("To", args.Contact)
 	gmsg.SetHeader("Subject", args.Topic)
 	gmsg.SetHeader("Subject", args.Title)
 	gmsg.SetBody("text/html", args.Message)
 	ret := make(chan bool)
-	senderManager.msgChan <- &sSendUnit{gmsg, ret}
+	self.msgChan <- &sSendUnit{gmsg, ret}
 	if suc := <-ret; !suc {
 		// try again
-		senderManager.msgChan <- &sSendUnit{gmsg, ret}
+		self.msgChan <- &sSendUnit{gmsg, ret}
 		if suc = <-ret; !suc {
 			return errors.Error("send error")
 		}
@@ -180,6 +180,7 @@ func (self *SEmailSender) initSender() error {
 			sender: nil,
 			open:   false,
 			stopC:  make(chan struct{}),
+			man:    self,
 		}
 		self.senders[i] = sender
 		go sender.Run()
@@ -195,6 +196,7 @@ type sSender struct {
 	sender gomail.SendCloser
 	open   bool
 	stopC  chan struct{}
+	man    *SEmailSender
 }
 
 func (self *sSender) Run() {
@@ -202,7 +204,7 @@ func (self *sSender) Run() {
 Loop:
 	for {
 		select {
-		case msg, ok := <-senderManager.msgChan:
+		case msg, ok := <-self.man.msgChan:
 			if !ok {
 				break Loop
 			}

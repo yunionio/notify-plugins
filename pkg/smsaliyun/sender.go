@@ -89,7 +89,7 @@ func (self *SSMSAliyunSender) ValidateConfig(ctx context.Context, configs interf
 func (self *SSMSAliyunSender) Send(ctx context.Context, params *apis.SendParams) error {
 	signature, _ := self.ConfigCache.Get(SIGNATURE)
 	if len(params.RemoteTemplate) == 0 {
-		return errors.Wrapf(common.ErrConfigMiss, "require %s", SIGNATURE)
+		return errors.Wrapf(common.ErrConfigMiss, "require remoteTemplate")
 	}
 	return self.Do(func() error {
 		return self.send(nil, signature, params.RemoteTemplate, params.Message, params.Contact, true)

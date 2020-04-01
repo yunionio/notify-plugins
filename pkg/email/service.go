@@ -18,8 +18,6 @@ import (
 	"yunion.io/x/notify-plugin/pkg/common"
 )
 
-var senderManager *SEmailSender
-
 func StartService() {
 	var config SEmailConfig
 	common.StartService(&config, NewSender, "email", "email.conf")

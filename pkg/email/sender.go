@@ -123,12 +123,15 @@ func (self *SEmailSender) send(args *apis.SendParams) error {
 	gmsg.SetBody("text/html", args.Message)
 	ret := make(chan bool)
 	self.msgChan <- &sSendUnit{gmsg, ret}
-	if suc := <-ret; !suc {
-		// try again
-		self.msgChan <- &sSendUnit{gmsg, ret}
-		if suc = <-ret; !suc {
+	timer := time.NewTimer(1 * time.Minute)
+	defer timer.Stop()
+	select {
+	case suc := <-ret:
+		if !suc {
 			return errors.Error("send error")
 		}
+	case <-timer.C:
+		return errors.Error("send error, time out")
 	}
 	return nil
 }
@@ -197,6 +200,8 @@ type sSender struct {
 	open   bool
 	stopC  chan struct{}
 	man    *SEmailSender
+
+	closeFailedTimes int
 }
 
 func (self *sSender) Run() {
@@ -218,6 +223,8 @@ Loop:
 				if err := gomail.Send(self.sender, msg.message); err != nil {
 					log.Errorf("No.%d sender send email failed because that %s.", self.number, err.Error())
 					self.open = false
+					msg.result <- false
+					continue Loop
 				}
 				log.Debugf("No.%d sender send email successfully.", self.number)
 				msg.result <- true
@@ -228,6 +235,14 @@ Loop:
 			if self.open {
 				if err = self.sender.Close(); err != nil {
 					log.Errorf("No.%d sender has be idle for 30 seconds and closed failed because that %s.", self.number, err.Error())
+					if self.closeFailedTimes > 2 {
+						log.Infof("No.%d sender has close failed 2 times so set open as false", self.number)
+						self.closeFailedTimes = 0
+						self.open = false
+					} else {
+						self.closeFailedTimes++
+					}
+					continue Loop
 				}
 				self.open = false
 				log.Infof("No.%d sender has be idle for 30 seconds so that closed temporarily.", self.number)

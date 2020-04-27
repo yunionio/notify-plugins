@@ -86,6 +86,12 @@ func (self *SWebsocketSender) initClient() error {
 	return nil
 }
 
+func (self *SWebsocketSender) refreshClient() {
+	self.clientLock.Lock()
+	defer self.clientLock.Unlock()
+	self.session = auth.GetAdminSession(context.Background(), self.region, "")
+}
+
 func (self *SWebsocketSender) send(args *apis.SendParams) error {
 	// component request body
 	body := jsonutils.DeepCopy(params).(*jsonutils.JSONDict)
@@ -105,7 +111,7 @@ func (self *SWebsocketSender) send(args *apis.SendParams) error {
 	_, err := modules.Websockets.Create(session, body)
 	if err != nil {
 		// failed
-		self.initClient()
+		self.refreshClient()
 		self.clientLock.RLock()
 		session = self.session
 		self.clientLock.RUnlock()

@@ -91,6 +91,7 @@ func (self *SSMSAliyunSender) Send(ctx context.Context, params *apis.SendParams)
 	if len(params.RemoteTemplate) == 0 {
 		return errors.Wrapf(common.ErrConfigMiss, "require remoteTemplate")
 	}
+	log.Debugf("reomte template: %s", params.RemoteTemplate)
 	return self.Do(func() error {
 		return self.send(nil, signature, params.RemoteTemplate, params.Message, params.Contact, true)
 	})

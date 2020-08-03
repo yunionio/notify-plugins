@@ -200,6 +200,8 @@ type sSender struct {
 	open   bool
 	stopC  chan struct{}
 	man    *SEmailSender
+
+	closeFailedTimes int
 }
 
 func (self *sSender) Run() {
@@ -233,6 +235,13 @@ Loop:
 			if self.open {
 				if err = self.sender.Close(); err != nil {
 					log.Errorf("No.%d sender has be idle for 30 seconds and closed failed because that %s.", self.number, err.Error())
+					if self.closeFailedTimes > 2 {
+						log.Infof("No.%d sender has close failed 2 times so set open as false", self.number)
+						self.closeFailedTimes = 0
+						self.open = false
+					} else {
+						self.closeFailedTimes++
+					}
 					continue Loop
 				}
 				self.open = false

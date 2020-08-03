@@ -28,7 +28,7 @@ import (
 	"yunion.io/x/notify-plugin/pkg/apis"
 )
 
-func StartService(opt IServiceOptions, generator func(IServiceOptions)ISender, service string, configFile string) {
+func StartService(opt IServiceOptions, generator func(IServiceOptions) ISender, service string, configFile string) {
 	// config parse:
 	ParseOptions(opt, os.Args, configFile)
 	log.SetLogLevelByString(log.Logger(), opt.GetLogLevel())

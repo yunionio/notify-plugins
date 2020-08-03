@@ -6,6 +6,7 @@ require (
 	github.com/aliyun/alibaba-cloud-sdk-go v0.0.0-20190815064209-a314889ae184
 	github.com/golang/protobuf v1.3.2
 	github.com/hugozhu/godingtalk v0.0.0-20190801052409-282448228972
+	github.com/xen0n/go-workwx v0.1.1
 	google.golang.org/grpc v1.26.0
 	gopkg.in/alexcesaro/quotedprintable.v3 v3.0.0-20150716171945-2caba252f4dc // indirect
 	gopkg.in/gomail.v2 v2.0.0-20160411212932-81ebce5c23df
@@ -18,6 +19,7 @@ require (
 
 replace (
 	github.com/hugozhu/godingtalk v0.0.0-20190801052409-282448228972 => github.com/rainzm/godingtalk v0.0.0-20200314083338-49c39549c62a
+	github.com/xen0n/go-workwx v0.1.1 => github.com/rainzm/go-workwx v0.1.2-0.20200804090836-68d89c034359
 
 	k8s.io/api => k8s.io/api v0.0.0-20190918155943-95b840bb6a1f
 	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.0.0-20190918161926-8f644eb6e783

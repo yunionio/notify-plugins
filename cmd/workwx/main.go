@@ -12,13 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package workwx
+package main
 
-const (
-	CORP_ID     = "corp_id"
-	CORP_SECRET = "corp_secret"
-	AGENT_ID    = "agent_id"
+import "yunion.io/x/notify-plugin/pkg/workwx"
 
-	INVALID_CORP_ID     = 40013
-	INVALID_CORP_SECRET = 40001
-)
+func main() {
+	workwx.StartService()
+}

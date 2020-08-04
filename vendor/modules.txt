@@ -9,6 +9,8 @@ github.com/aliyun/alibaba-cloud-sdk-go/sdk/errors
 github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests
 github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses
 github.com/aliyun/alibaba-cloud-sdk-go/sdk/utils
+# github.com/cenkalti/backoff/v4 v4.0.0
+github.com/cenkalti/backoff/v4
 # github.com/fatih/color v1.7.0
 github.com/fatih/color
 # github.com/ghodss/yaml v1.0.0
@@ -89,6 +91,14 @@ github.com/vishvananda/netlink
 github.com/vishvananda/netlink/nl
 # github.com/vishvananda/netns v0.0.0-20191106174202-0a2b9b5464df
 github.com/vishvananda/netns
+# github.com/xen0n/go-workwx v0.1.1 => github.com/rainzm/go-workwx v0.1.2-0.20200804090836-68d89c034359
+github.com/xen0n/go-workwx
+github.com/xen0n/go-workwx/errcodes
+github.com/xen0n/go-workwx/internal/lowlevel/encryptor
+github.com/xen0n/go-workwx/internal/lowlevel/envelope
+github.com/xen0n/go-workwx/internal/lowlevel/httpapi
+github.com/xen0n/go-workwx/internal/lowlevel/pkcs7
+github.com/xen0n/go-workwx/internal/lowlevel/signature
 # golang.org/x/crypto v0.0.0-20191206172530-e9b2fee46413
 golang.org/x/crypto/argon2
 golang.org/x/crypto/bcrypt
@@ -102,7 +112,7 @@ golang.org/x/crypto/internal/subtle
 golang.org/x/crypto/poly1305
 golang.org/x/crypto/ssh
 golang.org/x/crypto/ssh/terminal
-# golang.org/x/net v0.0.0-20191209160850-c0dbc17a3553
+# golang.org/x/net v0.0.0-20200202094626-16171245cfb2
 golang.org/x/net/http/httpguts
 golang.org/x/net/http2
 golang.org/x/net/http2/hpack

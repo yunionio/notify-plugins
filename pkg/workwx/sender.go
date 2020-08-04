@@ -21,9 +21,11 @@ import (
 	"sync"
 
 	wx "github.com/xen0n/go-workwx"
+
+	"yunion.io/x/pkg/errors"
+
 	"yunion.io/x/notify-plugin/pkg/apis"
 	"yunion.io/x/notify-plugin/pkg/common"
-	"yunion.io/x/pkg/errors"
 )
 
 type SConnInfo struct {
@@ -36,6 +38,7 @@ type SWorkwxSender struct {
 	common.SSenderBase
 	client     *wx.WorkwxApp
 	clientLock sync.Mutex
+	stop       context.CancelFunc
 }
 
 func (ws *SWorkwxSender) IsReady(ctx context.Context) bool {
@@ -59,16 +62,62 @@ func (ws *SWorkwxSender) UpdateConfig(ctx context.Context, configs map[string]st
 	return ws.initClient()
 }
 
-func (ws *SWorkwxSender) ValidateConfig(ctx context.Context, configs interface{}) (bool, string, error) {
-	panic("not implemented") // TODO: Implement
+func (ws *SWorkwxSender) ValidateConfig(ctx context.Context, configs interface{}) (isValid bool, msg string, e error) {
+	info := configs.(SConnInfo)
+
+	// check info.AgentID
+	_, err := strconv.Atoi(info.AgentID)
+	if err != nil {
+		msg = fmt.Sprint("the value of %s should be number format", AGENT_ID)
+		return
+	}
+	return ws.checkCropIDAndSecret(info.CorpID, info.CorpSecret)
 }
 
 func (ws *SWorkwxSender) FetchContact(ctx context.Context, related string) (string, error) {
-	panic("not implemented") // TODO: Implement
+	userid, err := ws.client.GetUserIDByMobile(related)
+	if err != nil {
+		return "", err
+	}
+	return userid, nil
 }
 
 func (ws *SWorkwxSender) Send(ctx context.Context, params *apis.SendParams) error {
-	panic("not implemented") // TODO: Implement
+	re := wx.Recipient{
+		UserIDs: []string{params.Contact},
+	}
+	content := fmt.Sprintf("# %s\n\n%s", params.Title, params.Message)
+	return ws.client.SendMarkdownMessage(&re, content, true)
+}
+
+func NewSender(config common.IServiceOptions) common.ISender {
+	return &SWorkwxSender{
+		SSenderBase: common.NewSSednerBase(config),
+	}
+}
+
+func (ws *SWorkwxSender) checkCropIDAndSecret(corpId, corpSecret string) (ok bool, msg string, err error) {
+	checkApp := wx.New(corpId).WithApp(corpSecret, 0)
+	err = checkApp.SyncAccessToken()
+	if err == nil {
+		ok = true
+		return
+	}
+	cErr, ok := err.(*wx.WorkwxClientError)
+	if !ok {
+		return
+	}
+	err = nil
+	if cErr.Code == INVALID_CORP_ID {
+		msg = "invalid corpid"
+		return
+	}
+	if cErr.Code == INVALID_CORP_SECRET {
+		msg = "invalid corpSecret"
+		return
+	}
+	msg = cErr.Msg
+	return
 }
 
 func (ws *SWorkwxSender) initClient() error {
@@ -80,13 +129,16 @@ func (ws *SWorkwxSender) initClient() error {
 	agentId, _ := strconv.Atoi(vals[2])
 
 	app := wx.New(corpId).WithApp(corpSecret, int64(agentId))
-	err := app.SyncAccessToken()
-	if err != nil {
-		return nil
-	}
-	app.SpawnAccessTokenRefresher()
+	ctx, cancel := context.WithCancel(context.Background())
+	app.SpawnAccessTokenRefresherWithContext(ctx)
+
 	ws.clientLock.Lock()
 	defer ws.clientLock.Unlock()
+	// stop previous one
+	if ws.stop != nil {
+		ws.stop()
+	}
+	ws.stop = cancel
 	ws.client = app
 	return nil
 }

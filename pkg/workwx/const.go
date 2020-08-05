@@ -16,8 +16,8 @@ package workwx
 
 const (
 	CORP_ID     = "corp_id"
-	CORP_SECRET = "corp_secret"
 	AGENT_ID    = "agent_id"
+	CORP_SECRET = "secret"
 
 	INVALID_CORP_ID     = 40013
 	INVALID_CORP_SECRET = 40001

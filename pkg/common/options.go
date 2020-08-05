@@ -17,7 +17,6 @@ package common
 import (
 	"fmt"
 	"os"
-	"path"
 
 	"yunion.io/x/log"
 	"yunion.io/x/pkg/util/reflectutils"
@@ -46,16 +45,6 @@ func ParseOptions(optStruct interface{}, args []string, configFileName string) {
 	if optionsRef.Help {
 		fmt.Println(parser.HelpString())
 		os.Exit(0)
-	}
-
-	if len(optionsRef.Config) == 0 {
-		for _, p := range []string{"./etc", "/etc/yunion/notify"} {
-			confTmp := path.Join(p, configFileName)
-			if _, err := os.Stat(confTmp); err == nil {
-				optionsRef.Config = confTmp
-				break
-			}
-		}
 	}
 
 	if len(optionsRef.Config) > 0 {

@@ -28,17 +28,18 @@ type ISender interface {
 	ValidateConfig(ctx context.Context, configs interface{}) (bool, string, error)
 	FetchContact(ctx context.Context, related string) (string, error)
 	Send(ctx context.Context, params *apis.SendParams) error
+	BatchSend(ctx context.Context, params *apis.BatchSendParams) ([]*apis.FailedRecord, error)
 }
 
 type SSenderBase struct {
 	ConfigCache *SConfigCache
-	workerChan  chan struct{}
+	WorkerChan  chan struct{}
 }
 
 func (self *SSenderBase) Do(f func() error) error {
-	self.workerChan <- struct{}{}
+	self.WorkerChan <- struct{}{}
 	defer func() {
-		<-self.workerChan
+		<-self.WorkerChan
 	}()
 	return f()
 }
@@ -67,9 +68,13 @@ func (self *SSenderBase) Send(ctx context.Context, params *apis.SendParams) erro
 	return errors.ErrNotImplemented
 }
 
+func (self *SSenderBase) BatchSend(ctx context.Context, params *apis.BatchSendParams) ([]*apis.FailedRecord, error) {
+	return nil, errors.ErrNotImplemented
+}
+
 func NewSSednerBase(config IServiceOptions) SSenderBase {
 	return SSenderBase{
 		ConfigCache: NewConfigCache(),
-		workerChan:  make(chan struct{}, config.GetSenderNum()),
+		WorkerChan:  make(chan struct{}, config.GetSenderNum()),
 	}
 }

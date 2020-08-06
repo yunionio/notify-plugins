@@ -17,9 +17,10 @@ package feishu
 import (
 	"context"
 	"fmt"
-	"google.golang.org/grpc/codes"
 	"strings"
 	"sync"
+
+	"google.golang.org/grpc/codes"
 
 	"yunion.io/x/onecloud/pkg/monitor/notifydrivers/feishu"
 	"yunion.io/x/pkg/errors"
@@ -82,6 +83,14 @@ func (self *SFeishuSender) Send(ctx context.Context, params *apis.SendParams) er
 	})
 }
 
+func (self *SFeishuSender) BatchSend(ctx context.Context, params *apis.BatchSendParams) ([]*apis.FailedRecord, error) {
+	self.WorkerChan <- struct{}{}
+	defer func() {
+		<-self.WorkerChan
+	}()
+	return self.batchSend(params)
+}
+
 func init() {
 	common.RegisterErr(errors.ErrNotFound, codes.NotFound)
 }
@@ -90,6 +99,30 @@ func NewSender(config common.IServiceOptions) common.ISender {
 	return &SFeishuSender{
 		SSenderBase: common.NewSSednerBase(config),
 	}
+}
+
+func (self *SFeishuSender) batchSend(args *apis.BatchSendParams) ([]*apis.FailedRecord, error) {
+	req := feishu.BatchMsgReq{
+		OpenIds: args.Contacts,
+		MsgType: "text",
+		Content: &feishu.MsgContent{Text: args.Message},
+	}
+	resp, err := self.client.BatchSendMessage(req)
+	if self.needRetry(err) {
+		_, err = self.client.BatchSendMessage(req)
+	}
+	if err != nil {
+		return nil, err
+	}
+	records := make([]*apis.FailedRecord, len(resp.Data.InvalidOpenIds))
+	for _, id := range resp.Data.InvalidOpenIds {
+		record := &apis.FailedRecord{
+			Contact: id,
+			Reason:  "invalid userid",
+		}
+		records = append(records, record)
+	}
+	return records, nil
 }
 
 func (self *SFeishuSender) send(args *apis.SendParams) error {

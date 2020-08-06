@@ -18,7 +18,7 @@ require (
 )
 
 replace (
-	github.com/hugozhu/godingtalk v0.0.0-20190801052409-282448228972 => github.com/rainzm/godingtalk v0.0.0-20200314083338-49c39549c62a
+	github.com/hugozhu/godingtalk v0.0.0-20190801052409-282448228972 => github.com/rainzm/godingtalk v0.0.0-20200806080839-ecc95df6df5f
 	github.com/xen0n/go-workwx v0.1.1 => github.com/rainzm/go-workwx v0.1.2-0.20200804090836-68d89c034359
 
 	k8s.io/api => k8s.io/api v0.0.0-20190918155943-95b840bb6a1f
@@ -45,4 +45,5 @@ replace (
 	k8s.io/sample-apiserver => k8s.io/sample-apiserver v0.0.0-20190918161442-d4c9c65c82af
 	k8s.io/sample-cli-plugin => k8s.io/sample-cli-plugin v0.0.0-20190918162410-e45c26d066f2
 	k8s.io/sample-controller => k8s.io/sample-controller v0.0.0-20190918161628-92eb3cb7496c
+	yunion.io/x/onecloud => ../../../../go/src/yunion.io/x/onecloud
 )

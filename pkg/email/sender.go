@@ -103,6 +103,10 @@ func (self *SEmailSender) Send(ctx context.Context, params *apis.SendParams) err
 	return self.send(params)
 }
 
+func (self *SEmailSender) BatchSend(ctx context.Context, params *apis.BatchSendParams) ([]*apis.FailedRecord, error) {
+	return nil, errors.ErrNotImplemented
+}
+
 func NewSender(config common.IServiceOptions) common.ISender {
 	return &SEmailSender{
 		senders:    make([]sSender, config.GetSenderNum()),

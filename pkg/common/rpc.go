@@ -47,7 +47,7 @@ type Server struct {
 }
 
 func NewServer(sender ISender) *Server {
-	return &Server{Sender:sender}
+	return &Server{Sender: sender}
 }
 
 func (s *Server) Send(ctx context.Context, req *apis.SendParams) (*apis.Empty, error) {
@@ -58,6 +58,20 @@ func (s *Server) Send(ctx context.Context, req *apis.SendParams) (*apis.Empty, e
 	log.Debugf("recevie msg, contact: %s, title: %s, content: %s", req.Contact, req.Title, req.Message)
 	err := s.Sender.Send(ctx, req)
 	return empty, ConvertErr(err)
+}
+
+func (s *Server) BatchSend(ctx context.Context, req *apis.BatchSendParams) (*apis.BatchSendReply, error) {
+	reply := &apis.BatchSendReply{}
+	if !s.Sender.IsReady(ctx) {
+		return reply, status.Error(codes.FailedPrecondition, NOTINIT)
+	}
+	log.Debugf("recevie msg, contacts: %v, title: %s, content: %s", req.Contacts, req.Title, req.Message)
+	records, err := s.Sender.BatchSend(ctx, req)
+	if err != nil {
+		return reply, ConvertErr(err)
+	}
+	reply.FailedRecords = records
+	return reply, nil
 }
 
 func (s *Server) UpdateConfig(ctx context.Context, req *apis.UpdateConfigParams) (empty *apis.Empty, err error) {

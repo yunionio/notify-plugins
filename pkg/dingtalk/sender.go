@@ -20,9 +20,10 @@ import (
 	"os"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/hugozhu/godingtalk"
-
+	"yunion.io/x/log"
 	"yunion.io/x/pkg/errors"
 
 	"yunion.io/x/notify-plugin/pkg/apis"
@@ -91,10 +92,80 @@ func (self *SDingtalkSender) Send(ctx context.Context, params *apis.SendParams) 
 	})
 }
 
+func (self *SDingtalkSender) BatchSend(ctx context.Context, params *apis.BatchSendParams) ([]*apis.FailedRecord, error) {
+	self.WorkerChan <- struct{}{}
+	defer func() {
+		<-self.WorkerChan
+	}()
+	return self.batchSendTopMsg(params)
+}
+
 func NewSender(config common.IServiceOptions) common.ISender {
 	return &SDingtalkSender{
 		SSenderBase: common.NewSSednerBase(config),
 	}
+}
+
+func (self *SDingtalkSender) batchSendTopMsg(args *apis.BatchSendParams) ([]*apis.FailedRecord, error) {
+	initInterval := time.Duration(len(args.Contacts)/5) * time.Second
+	getInterval := func() time.Duration {
+		return initInterval + time.Second
+	}
+	msg := map[string]interface{}{
+		"msgtype": "markdown",
+		"markdown": map[string]interface{}{
+			"title": args.GetTitle(),
+			"text":  args.GetMessage(),
+		},
+	}
+	taskID, err := self.client.TopAPIMsgSendv2(args.GetContacts(), msg)
+	if err != nil {
+		return nil, err
+	}
+	for {
+		time.Sleep(getInterval())
+		progress, err := self.client.TopAPIMsgGetSendProgressv2(taskID)
+		if err != nil {
+			log.Errorf("fail to get progress for task(%d): %v", taskID, err)
+		}
+		if progress.Status == 2 {
+			break
+		}
+		if progress.Status == 0 {
+			log.Debugf("Task(%d), progress: 0%%", taskID)
+			continue
+		}
+		if progress.Status == 1 {
+			log.Debugf("Task(%d), progress: %d%%", taskID, progress.Percent)
+		}
+	}
+	result, err := self.client.TopAPIMsgGetSendResultv2(taskID)
+	if err != nil {
+		return nil, err
+	}
+	ret := make([]*apis.FailedRecord, 0, len(result.FaildedUserIDList)+len(result.ForbiddenUserIDList)+len(result.InvalidUserIDList))
+	for _, id := range result.FaildedUserIDList {
+		record := &apis.FailedRecord{
+			Contact: id,
+			Reason:  "",
+		}
+		ret = append(ret, record)
+	}
+	for _, id := range result.ForbiddenUserIDList {
+		record := &apis.FailedRecord{
+			Contact: id,
+			Reason:  "forbidden user",
+		}
+		ret = append(ret, record)
+	}
+	for _, id := range result.InvalidUserIDList {
+		record := &apis.FailedRecord{
+			Contact: id,
+			Reason:  "invalid userid",
+		}
+		ret = append(ret, record)
+	}
+	return ret, nil
 }
 
 func (self *SDingtalkSender) getSendFunc(args *apis.SendParams) sSendFunc {
@@ -136,14 +207,14 @@ func (self *SDingtalkSender) getUseridByMobile(mobile string) (string, error) {
 }
 
 func (self *SDingtalkSender) initClient() error {
-	vals, ok, noKey := self.ConfigCache.BatchGet(APP_KEY, APP_SECRET)
+	vals, ok, noKey := self.ConfigCache.BatchGet(APP_KEY, APP_SECRET, AGENT_ID)
 	if !ok {
 		return errors.Wrap(common.ErrConfigMiss, noKey)
 	}
-	appKey, appSecret := vals[0], vals[1]
+	appKey, appSecret, agentID := vals[0], vals[1], vals[2]
 
 	// lock and update
-	client := godingtalk.NewDingTalkClient(appKey, appSecret)
+	client := godingtalk.NewDingTalkClient(appKey, appSecret).WithAgentID(agentID)
 	err := client.RefreshAccessToken()
 	if err != nil {
 		return err

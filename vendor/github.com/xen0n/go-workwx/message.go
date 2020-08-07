@@ -187,6 +187,10 @@ func (c *WorkwxApp) SendMarkdownMessage(
 	return c.sendMessage(recipient, "markdown", map[string]interface{}{"content": content}, isSafe)
 }
 
+func (c *WorkwxApp) SendMarkdownMessageWithResp(recipient *Recipient, content string, isSafe bool) (*RespMessageSend, error) {
+	return c.sendMessageWithResp(recipient, "markdown", map[string]interface{}{"content": content}, isSafe)
+}
+
 // sendMessage 发送消息底层接口
 //
 // 收件人参数如果仅设置了 `ChatID` 字段，则为【发送消息到群聊会话】接口调用；
@@ -197,11 +201,22 @@ func (c *WorkwxApp) sendMessage(
 	content map[string]interface{},
 	isSafe bool,
 ) error {
+	resp, err := c.sendMessageWithResp(recipient, msgtype, content, isSafe)
+	if err != nil {
+		return err
+	}
+
+	// TODO: what to do with resp?
+	_ = resp
+	return nil
+}
+
+func (c *WorkwxApp) sendMessageWithResp(recipient *Recipient, msgtype string, content map[string]interface{}, isSafe bool) (*RespMessageSend, error) {
 	isApichatSendRequest := false
 	if !recipient.isValidForMessageSend() {
 		if !recipient.isValidForAppchatSend() {
 			// TODO: better error
-			return errors.New("recipient invalid for message sending")
+			return nil, errors.New("recipient invalid for message sending")
 		}
 
 		// 发送给群聊
@@ -228,10 +243,8 @@ func (c *WorkwxApp) sendMessage(
 	}
 
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	// TODO: what to do with resp?
-	_ = resp
-	return nil
+	return &RespMessageSend{resp}, nil
 }

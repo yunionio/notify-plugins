@@ -552,6 +552,8 @@ github.com/prometheus/procfs v0.0.2/go.mod h1:TjEm7ze935MbeOT/UhFTIMYKhuLP4wbCsT
 github.com/quobyte/api v0.1.2/go.mod h1:jL7lIHrmqQ7yh05OJ+eEEdHr0u/kmT1Ff9iHd+4H6VI=
 github.com/rainzm/go-workwx v0.1.2-0.20200804090836-68d89c034359 h1:hCSmHS8sCKbSXqR+si9MHOUvmWcCtj+5tZB9vHA+Y2w=
 github.com/rainzm/go-workwx v0.1.2-0.20200804090836-68d89c034359/go.mod h1:RSyEgV2eJC4D123mRnFC2pMzu/duEylmtkt4ntaQkIQ=
+github.com/rainzm/go-workwx v0.1.2-0.20200807070454-4d9a3468bc37 h1:bh5BGvwtNojPFng0YVS2TZXsFur+C8k4pWEg5L9sQoE=
+github.com/rainzm/go-workwx v0.1.2-0.20200807070454-4d9a3468bc37/go.mod h1:RSyEgV2eJC4D123mRnFC2pMzu/duEylmtkt4ntaQkIQ=
 github.com/rainzm/godingtalk v0.0.0-20200314083338-49c39549c62a h1:WFqPas4vqWN6ln1nr+UyPeu9nDU1i6LZCIlGJPUUmXI=
 github.com/rainzm/godingtalk v0.0.0-20200314083338-49c39549c62a/go.mod h1:Je6PSjUH7IKCPpFq5ti2I9ak1szzSNgCIMlP0s+8pbQ=
 github.com/rainzm/godingtalk v0.0.0-20200806080839-ecc95df6df5f h1:0SoBMxRIQElTWoYUbupRPP2gJsCmOuJ+7K3T1qECvuE=

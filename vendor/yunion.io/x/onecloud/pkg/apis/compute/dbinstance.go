@@ -14,13 +14,18 @@
 
 package compute
 
-import "yunion.io/x/onecloud/pkg/apis"
+import (
+	"time"
+
+	"yunion.io/x/onecloud/pkg/apis"
+)
 
 type DBInstanceCreateInput struct {
 	apis.VirtualResourceCreateInput
 	DeletePreventableCreateInput
 
 	// Ip子网名称或Id,建议使用Id
+	// 谷歌云并不实际使用Ip子网,仅仅通过Ip子网确定Vpc
 	// required: true
 	Network string `json:"network"`
 	// swagger:ignore
@@ -74,6 +79,10 @@ type DBInstanceCreateInput struct {
 	Duration string `json:"duration"`
 
 	// swagger:ignore
+	ExpiredAt time.Time `json:"expired_at"`
+
+	// 计费方式
+	// enum: postpaid, prepaid
 	BillingType string
 	// swagger:ignore
 	BillingCycle string
@@ -96,10 +105,11 @@ type DBInstanceCreateInput struct {
 	//
 	//
 	//
-	// | 平台		| 支持类型	|
-	// | -----		| ------	|
-	// | 华为云		|ha, single, replica|
-	// | 阿里云		|basic, high_availability, always_on, finance|
+	// | 平台		| 支持类型	| 说明 |
+	// | -----		| ------	| --- |
+	// | 华为云		|ha, single, replica| |
+	// | 阿里云		|basic, high_availability, always_on, finance||
+	// | Google		|Zonal, Regional | |
 	// 翻译:
 	// basic: 基础版
 	// high_availability: 高可用
@@ -108,6 +118,8 @@ type DBInstanceCreateInput struct {
 	// ha: 高可用
 	// single: 单机
 	// replica: 只读
+	// Zonal: 单区域
+	// Regional: 区域级
 	// required: true
 	Category string `json:"category"`
 
@@ -118,6 +130,10 @@ type DBInstanceCreateInput struct {
 	// | 平台	| 支持类型	|
 	// | 华为云	|SSD, SAS, SATA|
 	// | 阿里云	|local_ssd, cloud_essd, cloud_ssd|
+	// | Google	|PD_SSD, PD_HDD|
+	// 翻译:
+	// PD_SSD: SSD
+	// PD_HDD: HDD
 	// required: true
 	StorageType string `json:"storage_type"`
 
@@ -129,7 +145,13 @@ type DBInstanceCreateInput struct {
 	// rds初始化密码
 	// 阿里云不需要此参数
 	// 华为云会默认创建一个用户,若不传此参数, 则为随机密码
+	// 谷歌云会默认创建一个用户,若不传此参数, 则为随机密码
 	Password string `json:"password"`
+
+	// 是否不设置初始密码
+	// 华为云不支持此参数
+	// 谷歌云仅mysql支持此参数
+	ResetPassword *bool `json:"reset_password"`
 
 	// rds实例cpu大小
 	// 若指定实例套餐，此参数将根据套餐设置
@@ -157,9 +179,22 @@ type SDBInstanceChangeConfigInput struct {
 type SDBInstanceRecoveryConfigInput struct {
 	apis.Meta
 
-	DBInstancebackup   string
-	DBInstancebackupId string            `json:"dbinstancebackup_id"`
-	Databases          map[string]string `json:"databases,allowempty"`
+	// swagger:ignore
+	DBInstancebackup string `json:"dbinstancebackup" "yunion:deprecated-by":"dbinstancebackup_id"`
+
+	// 备份Id
+	//
+	//
+	// | 平台		| 支持引擎								| 说明		|
+	// | -----		| ------								| ---		|
+	// | 华为云		|MySQL, SQL Server						| 仅SQL Server支持恢复到当前实例			|
+	// | 阿里云		|MySQL, SQL Server						| MySQL要求必须开启单库单表恢复功能 并且只能是MySQL 8.0 高可用版（本地SSD盘）MySQL 5.7 高可用版（本地SSD盘）或MySQL 5.6 高可用版, MySQL仅支持恢复到当前实例|
+	// | Google		|MySQL, PostgreSQL, SQL Server			| PostgreSQL备份恢复时，要求实例不能有副本			|
+	DBInstancebackupId string `json:"dbinstancebackup_id"`
+
+	// 数据库信息, 例如 {"src":"dest"} 是将备份中的src数据库恢复到目标实例的dest数据库中, 阿里云此参数为必传
+	// example: {"sdb1":"ddb1"}
+	Databases map[string]string `json:"databases,allowempty"`
 }
 
 type DBInstanceListInput struct {
@@ -271,6 +306,13 @@ type DBInstanceDetails struct {
 	// IP子网名称
 	// example: test-network
 	Network string `json:"network"`
+
+	// Zone1名称
+	Zone1Name string `json:"zone1_name"`
+	// Zone2名称
+	Zone2Name string `json:"zone2_name"`
+	// Zone3名称
+	Zone3Name string `json:"zone3_name"`
 }
 
 type DBInstanceResourceInfoBase struct {
@@ -287,9 +329,17 @@ type DBInstanceResourceInfo struct {
 	VpcResourceInfo
 }
 
+type DBInstanceResourceInput struct {
+	// RDS实例(ID or Name)
+	DBInstanceId string `json:"dbinstance_id"`
+
+	// swagger:ignore
+	// Deprecated
+	DBInstance string `json:"dbinstance" "yunion:deprecated-by":"dbinstance_id"`
+}
+
 type DBInstanceFilterListInputBase struct {
-	// 以RDS实例过滤
-	DBInstance string `json:"dbinstance"`
+	DBInstanceResourceInput
 
 	// 以RDS实例名字排序
 	OrderByDBInstance string `json:"order_by_dbinstance"`

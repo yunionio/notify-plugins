@@ -15,6 +15,7 @@
 package identity
 
 import (
+	"yunion.io/x/jsonutils"
 	"yunion.io/x/pkg/errors"
 
 	"yunion.io/x/onecloud/pkg/apis"
@@ -22,6 +23,7 @@ import (
 
 type IdentityBaseResourceCreateInput struct {
 	apis.StandaloneResourceCreateInput
+	apis.DomainizedResourceCreateInput
 }
 
 type EnabledIdentityBaseResourceCreateInput struct {
@@ -44,70 +46,70 @@ type EnabledIdentityBaseResourceListInput struct {
 
 type ProjectFilterListInput struct {
 	// 项目归属域
-	ProjectDomain string `json:"project_domain"`
+	ProjectDomainId string `json:"project_domain_id"`
 	// swagger:ignore
 	// Deprecated
-	ProjectDomainId string `json:"project_domain_id" deprecated-by:"project-domain"`
+	ProjectDomain string `json:"project_domain" "yunion:deprecated-by":"project_domain_id"`
 
 	// 以项目（ID或Name）过滤列表结果
-	Project string `json:"project"`
+	ProjectId string `json:"project_id"`
 	// swagger:ignore
 	// Deprecated
 	// filter by project_id
-	ProjectId string `json:"project_id" deprecated-by:"project"`
+	Project string `json:"project" "yunion:deprecated-by":"project_id"`
 	// swagger:ignore
 	// Deprecated
 	// filter by tenant
-	Tenant string `json:"tenant" deprecated-by:"project"`
+	Tenant string `json:"tenant" "yunion:deprecated-by":"project_id"`
 	// swagger:ignore
 	// Deprecated
 	// filter by tenant_id
-	TenantId string `json:"tenant_id" deprecated-by:"project"`
+	TenantId string `json:"tenant_id" "yunion:deprecated-by":"project_id"`
 }
 
 type UserFilterListInput struct {
 	// 用户归属域
-	UserDomain string `json:"user_domain"`
+	UserDomainId string `json:"user_domain_id"`
 	// swagger:ignore
 	// Deprecated
-	UserDomainId string `json:"user_domain_id"`
+	UserDomain string `json:"user_domain" "yunion:deprecated-by":"user_domain_id"`
 
 	// filter by user
-	User string `json:"user"`
+	UserId string `json:"user_id"`
 	// swagger:ignore
 	// Deprecated
 	// filter by user_id
-	UserId string `json:"user_id" deprecated-by:"user"`
+	User string `json:"user" "yunion:deprecated-by":"user_id"`
 }
 
 type GroupFilterListInput struct {
 	// 组归属域
-	GroupDomain string `json:"group_domain"`
+	GroupDomainId string `json:"group_domain_id"`
 	// swagger:ignore
 	// Deprecated
-	GroupDomainId string `json:"group_domain_id"`
+	GroupDomain string `json:"group_domain" "yunion:deprecated-by":"group_domain_id"`
 
 	// filter by group
-	Group string `json:"group"`
+	GroupId string `json:"group_id"`
 	// swagger:ignore
 	// Deprecated
 	// filter by group_id
-	GroupId string `json:"group_id" deprecated-by:"group"`
+	Group string `json:"group" "yunion:deprecated-by":"group_id"`
 }
 
 type RoleFilterListInput struct {
 	// 角色归属域
-	RoleDomain string `json:"role_domain"`
+	RoleDomainId string `json:"role_domain_id"`
 	// swagger:ignore
 	// Deprecated
-	RoleDomainId string `json:"role_domain_id"`
+	RoleDomain string `json:"role_domain" "yunion:deprecated-by":"role_domain_id"`
 
 	// filter by role
-	Role string `json:"role"`
+	RoleId string `json:"role_id"`
 	// swagger:ignore
 	// Deprecated
 	// filter by role_id
-	RoleId string `json:"role_id" deprecated-by:"role"`
+	Role string `json:"role" "yunion:deprecated-by":"role_id"`
 }
 
 type ServiceFilterListInput struct {
@@ -115,11 +117,11 @@ type ServiceFilterListInput struct {
 	ServiceType string `json:"service_type"`
 
 	// 服务名称或ID过滤
-	Service string `json:"service"`
+	ServiceId string `json:"service_id"`
 	// swagger:ignore
 	// Deprecated
 	// filter by service_id
-	ServiceId string `json:"service_id" deprecated-by:"service"`
+	Service string `json:"service" "yunion:deprecated-by":"service_id"`
 
 	// 以服务名称排序
 	OrderByService string `json:"order_by_service"`
@@ -149,6 +151,9 @@ type ProjectListInput struct {
 
 	UserFilterListInput
 	GroupFilterListInput
+
+	// 过滤出指定用户或者组可以加入的项目
+	Jointable *bool `json:"jointable"`
 }
 
 type DomainListInput struct {
@@ -192,8 +197,8 @@ type EndpointListInput struct {
 }
 
 type SJoinProjectsInput struct {
-	Projects []string
-	Roles    []string
+	Projects []string `json:"projects"`
+	Roles    []string `json:"roles"`
 }
 
 func (input SJoinProjectsInput) Validate() error {
@@ -207,11 +212,12 @@ func (input SJoinProjectsInput) Validate() error {
 }
 
 type SProjectRole struct {
-	Project string
-	Role    string
+	Project string `json:"project"`
+	Role    string `json:"role"`
 }
+
 type SLeaveProjectsInput struct {
-	ProjectRoles []SProjectRole
+	ProjectRoles []SProjectRole `json:"project_roles"`
 }
 
 func (input SLeaveProjectsInput) Validate() error {
@@ -285,6 +291,8 @@ func (input SProjectRemoveUserGroupInput) Validate() error {
 type IdentityProviderListInput struct {
 	apis.EnabledStatusStandaloneResourceListInput
 
+	apis.DomainizedResourceListInput
+
 	// 以驱动类型过滤
 	Driver []string `json:"driver"`
 
@@ -293,6 +301,13 @@ type IdentityProviderListInput struct {
 
 	// 以同步状态过滤
 	SyncStatus []string `json:"sync_status"`
+
+	// 过滤支持SSO的认证源，如果值为all，则列出所有的全局认证源，否则可出sso为域ID的域认证源
+	// example: all
+	SsoDomain string `json:"sso"`
+
+	AutoCreateProject *bool `json:"auto_create_project"`
+	AutoCreateUser    *bool `json:"auto_create_user"`
 }
 
 type CredentialListInput struct {
@@ -316,10 +331,10 @@ type PolicyListInput struct {
 
 type RegionFilterListInput struct {
 	// 以区域名称或ID过滤
-	Region string `json:"region"`
+	RegionId string `json:"region_id"`
 	// swagger:ignore
 	// Deprecated
-	RegionId string `json:"region_id" deprecated-by:"region"`
+	Region string `json:"region" "yunion:deprecated-by":"region_id"`
 }
 
 type RegionListInput struct {
@@ -335,3 +350,150 @@ type ServiceListInput struct {
 	// 是否启用/禁用
 	Enabled *bool `json:"enabled"`
 }
+
+type IdentityBaseUpdateInput struct {
+	apis.StandaloneResourceBaseUpdateInput
+}
+
+type EnabledIdentityBaseUpdateInput struct {
+	IdentityBaseUpdateInput
+
+	// 是否启用
+	Enabled *bool `json:"enabled"`
+}
+
+type GroupUpdateInput struct {
+	IdentityBaseUpdateInput
+
+	// display name
+	Displayname string `json:"displayname"`
+}
+
+type IdentityProviderUpdateInput struct {
+	apis.EnabledStatusStandaloneResourceBaseUpdateInput
+
+	// TargetDomainId string `json:"target_domain_id"`
+
+	// 当认证后用户加入项目不存在时是否自动创建项目
+	AutoCreateProject *bool `json:"auto_create_project"`
+	// 当认证后用户不存在时是否自动创建用户
+	AutoCreateUser *bool `json:"auto_create_user"`
+
+	SyncIntervalSeconds *int `json:"sync_interval_seconds"`
+
+	// 图标URL
+	IconUri string `json:"icon_uri"`
+}
+
+type PolicyUpdateInput struct {
+	EnabledIdentityBaseUpdateInput
+
+	Type string `json:"type"`
+
+	Blob jsonutils.JSONObject `json:"blob"`
+}
+
+type ProjectUpdateInput struct {
+	IdentityBaseUpdateInput
+
+	// 显示名称
+	Displayname string `json:"displayname"`
+}
+
+type RoleUpdateInput struct {
+	IdentityBaseUpdateInput
+}
+
+type UserUpdateInput struct {
+	EnabledIdentityBaseUpdateInput
+
+	Email string `json:"email"`
+
+	Mobile string `json:"mobile"`
+
+	Displayname string `json:"displayname"`
+
+	IsSystemAccount *bool `json:"is_system_account"`
+
+	AllowWebConsole *bool `json:"allow_web_console"`
+
+	EnableMfa *bool `json:"enable_mfa"`
+
+	Password string `json:"password"`
+}
+
+type UserCreateInput struct {
+	EnabledIdentityBaseResourceCreateInput
+
+	Email string `json:"email"`
+
+	Mobile string `json:"mobule"`
+
+	Displayname string `json:"displayname"`
+
+	IsSystemAccount *bool `json:"is_system_account"`
+
+	AllowWebConsole *bool `json:"allow_web_console"`
+
+	EnableMfa *bool `json:"enable_mfa"`
+
+	Password string `json:"password"`
+
+	SkipPasswordComplexityCheck *bool `json:"skip_password_complexity_check"`
+
+	IdpId string `json:"idp_id"`
+
+	IdpEntityId string `json:"idp_entity_id"`
+}
+
+type ProjectCreateInput struct {
+	IdentityBaseResourceCreateInput
+
+	// 显示名称
+	Displayname string `json:"displayname"`
+}
+
+type GroupCreateInput struct {
+	IdentityBaseResourceCreateInput
+
+	// display name
+	Displayname string `json:"displayname"`
+}
+
+type PolicyCreateInput struct {
+	EnabledIdentityBaseResourceCreateInput
+	apis.SharableResourceBaseCreateInput
+
+	Type string `json:"type"`
+
+	Blob jsonutils.JSONObject `json:"blob"`
+}
+
+type RoleCreateInput struct {
+	IdentityBaseResourceCreateInput
+
+	apis.SharableResourceBaseCreateInput
+}
+
+type PerformGroupAddUsersInput struct {
+	// 待添加用户列表（ID或名称）
+	UserIds []string `json:"user_ids"`
+	// Deprecated
+	// swagger:ignore
+	User []string `json:"user" "yunion:deprecated-by":"user_ids"`
+}
+
+type PerformGroupRemoveUsersInput struct {
+	// 待删除用户列表（ID或名称）
+	UserIds []string `json:"user_ids"`
+	// Deprecated
+	// swagger:ignore
+	User []string `json:"user" "yunion:deprecated-by":"user_ids"`
+}
+
+type UserLinkIdpInput struct {
+	IdpId       string `json:"idp_id"`
+	IdpEntityId string `json:"idp_entity_id"`
+}
+
+type UserUnlinkIdpInput UserLinkIdpInput

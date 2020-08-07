@@ -17,28 +17,9 @@ package compute
 import (
 	"time"
 
-	"yunion.io/x/jsonutils"
-
 	"yunion.io/x/onecloud/pkg/apis"
 	"yunion.io/x/onecloud/pkg/apis/billing"
 )
-
-type ServerFilterListInput struct {
-	// 以关联主机（ID或Name）过滤列表
-	Server string `json:"server"`
-	// swagger:ignore
-	// Deprecated
-	// Filter by guest Id
-	ServerId string `json:"server_id" deprecated-by:"server"`
-	// swagger:ignore
-	// Deprecated
-	// Filter by guest Id
-	Guest string `json:"guest" deprecated-by:"server"`
-	// swagger:ignore
-	// Deprecated
-	// Filter by guest Id
-	GuestId string `json:"guest_id" deprecated-by:"server"`
-}
 
 type ServerListInput struct {
 	apis.VirtualResourceListInput
@@ -47,13 +28,14 @@ type ServerListInput struct {
 
 	HostFilterListInput
 
-	NetworkFilterListInput
+	NetworkFilterListInput `"yunion:ambiguous-prefix":"vpc_"`
 
 	billing.BillingResourceListInput
 
 	GroupFilterListInput
 	SecgroupFilterListInput
-	DiskFilterListInput
+	//DiskFilterListInput `"yunion:ambiguous-prefix":"storage_"`
+	ScalingGroupFilterListInput
 
 	// 只列出裸金属主机
 	Baremetal *bool `json:"baremetal"`
@@ -79,11 +61,17 @@ type ServerListInput struct {
 	// 列出可以挂载指定EIP的主机
 	UsableServerForEip string `json:"usable_server_for_eip"`
 
+	// 列出可以挂载磁盘的主机
+	AttachableServersForDisk string `json:"attachable_servers_for_disk"`
+	// Deprecated
+	// 列出可以挂载磁盘的主机
+	Disk string `json:"disk" "yunion:deprecated-by":"attachable_servers_for_disk"`
+
 	// 按主机资源类型进行排序
 	// enum: shared,prepaid,dedicated
 	ResourceType string `json:"resource_type"`
-	// 返回开启主备机功能的主机
-	GetBackupGuestsOnHost *bool `json:"get_backup_guests_on_host"`
+	// 返回该宿主机上的所有虚拟机，包括备份机
+	GetAllGuestsOnHost string `json:"get_all_guests_on_host"`
 
 	// 根据宿主机 SN 过滤
 	// HostSn string `json:"host_sn"`
@@ -169,7 +157,7 @@ type ServerDetails struct {
 	Disks string `json:"disks"`
 
 	// 磁盘详情
-	DisksInfo *jsonutils.JSONArray `json:"disks_info"`
+	DisksInfo []GuestDiskInfo `json:"disks_info"`
 	// 虚拟机Ip列表
 	VirtualIps string `json:"virtual_ips"`
 	// 安全组规则
@@ -182,7 +170,7 @@ type ServerDetails struct {
 	AdminSecurityRules string `json:"admin_security_rules"`
 
 	// list
-	AttachTime time.Time `attach_time`
+	AttachTime time.Time `json:"attach_time"`
 
 	// common
 	IsPrepaidRecycle bool `json:"is_prepaid_recycle"`
@@ -236,6 +224,32 @@ type ServerDetails struct {
 
 	// Cdrom信息
 	Cdrom string `json:"cdrom,allowempty"`
+
+	// 主机在伸缩组中的状态
+	ScalingStatus string `json:"scaling_status"`
+
+	// 伸缩组id
+	ScalingGroupId string `json:"scaling_group_id"`
+}
+
+// GuestDiskInfo describe the information of disk on the guest.
+type GuestDiskInfo struct {
+	Id          string `json:"id"`
+	Name        string `json:"name"`
+	FsFormat    string `json:"fs,omitempty"`
+	DiskType    string `json:"disk_type"`
+	Index       int8   `json:"index"`
+	SizeMb      int    `json:"size"`
+	DiskFormat  string `json:"disk_format"`
+	Driver      string `json:"driver"`
+	CacheMode   string `json:"cache_mode"`
+	AioMode     string `json:"aio_mode"`
+	MediumType  string `json:"medium_type"`
+	StorageType string `json:"storage_type"`
+	Iops        int    `json:"iops"`
+	Bps         int    `json:"bps"`
+	ImageId     string `json:"image_id,omitempty"`
+	Image       string `json:"image,omitemtpy"`
 }
 
 type GuestJointResourceDetails struct {
@@ -250,7 +264,7 @@ type GuestJointResourceDetails struct {
 type GuestJointsListInput struct {
 	apis.VirtualJointResourceBaseListInput
 
-	GuestFilterListInput
+	ServerFilterListInput
 }
 
 type GuestResourceInfo struct {
@@ -266,22 +280,79 @@ type GuestResourceInfo struct {
 	HostResourceInfo
 }
 
-type GuestFilterListInput struct {
+type ServerResourceInput struct {
+	// 主机（ID或Name）
+	ServerId string `json:"server_id"`
+	// swagger:ignore
+	// Deprecated
+	// Filter by guest Id
+	Server string `json:"server" "yunion:deprecated-by":"server_id"`
+	// swagger:ignore
+	// Deprecated
+	// Filter by guest Id
+	Guest string `json:"guest" "yunion:deprecated-by":"server_id"`
+	// swagger:ignore
+	// Deprecated
+	// Filter by guest Id
+	GuestId string `json:"guest_id" "yunion:deprecated-by":"server_id"`
+}
+
+type ServerFilterListInput struct {
 	HostFilterListInput
 
-	// 以指定虚拟主机（ID或Name）过滤列表结果
-	Server string `json:"server"`
-	// swagger:ignore
-	// Deprecated
-	ServerId string `json:"server_id" deprecated-by:"server"`
-	// swagger:ignore
-	// Deprecated
-	Guest string `json:"guest" deprecated-by:"server"`
-	// swagger:ignore
-	// Deprecated
-	GuestId string `json:"guest_id" deprecated-by:"server"`
+	ServerResourceInput
 
-	// 以虚拟主机名称排序
-	// pattern:asc|desc
+	// 以主机名称排序
 	OrderByServer string `json:"order_by_server"`
+}
+
+type GuestJointBaseUpdateInput struct {
+	apis.VirtualJointResourceBaseUpdateInput
+}
+
+type GuestPublicipToEipInput struct {
+	// 转换完成后是否自动启动
+	// default: false
+	AutoStart bool `json:"auto_start"`
+}
+
+type GuestAutoRenewInput struct {
+
+	// 设置自动续费
+	// default: false
+	// 自动续费分为本地和云上两种模式
+	// 若公有云本身支持自动续费功能, 则使用云上设置
+	// 若公有云本身不支持自动续费, 则在本地周期(默认三小时)检查快过期虚拟机并进行续费一个月
+	AutoRenew bool `json:"auto_renew"`
+}
+
+type ConvertEsxiToKvmInput struct {
+	apis.Meta
+
+	// target hypervisor
+	TargetHypervisor string `json:"target_hypervisor"`
+	// 指定转换的宿主机
+	PreferHost string `json:"prefer_host"`
+}
+
+type GuestSaveToTemplateInput struct {
+	// The name of guest template
+	Name string `json:"name"`
+	// The generate name of guest template
+	GenerateName string `json:"generate_name"`
+}
+
+type GuestSyncFixNicsInput struct {
+	// 需要修正的IP地址列表
+	Ip []string `json:"ip"`
+}
+
+type GuestMigrateInput struct {
+	PreferHost   string `json:"prefer_host"`
+	AutoStart    bool   `json:"auto_start"`
+	IsRescueMode bool   `json:"rescue_mode"`
+}
+
+type GuestLiveMigrateInput struct {
+	PreferHost string `json:"prefer_host"`
 }

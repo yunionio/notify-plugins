@@ -132,10 +132,10 @@ type SSecgroupCreateInput struct {
 type SecgroupListInput struct {
 	apis.SharableVirtualResourceListInput
 
+	ServerFilterListInput
+
 	// equals
 	Equals string
-
-	ServerFilterListInput
 
 	// 按缓存数量排序
 	// pattern:asc|desc
@@ -145,8 +145,18 @@ type SecgroupListInput struct {
 	// pattern:asc|desc
 	OrderByGuestCnt string `json:"order_by_guest_cnt"`
 
-	// 是否被修改
-	IsDirty *bool `json:"is_dirty"`
+	// 模糊过滤规则中含有指定ip的安全组
+	// example: 10.10.2.1
+	Ip string `json:"ip"`
+
+	// 精确匹配规则中含有指定端口的安全组
+	// example: 100-200
+	Ports string `json:"ports"`
+
+	// 指定过滤规则的方向(仅在指定ip或ports时生效) choices: all|in|out
+	// default: all
+	// example: in
+	Direction string `json:"direction"`
 }
 
 type SecurityGroupCacheListInput struct {
@@ -164,21 +174,34 @@ type SecurityGroupRuleListInput struct {
 	apis.ResourceBaseListInput
 	SecgroupFilterListInput
 
+	Projects []string `json:"projects"`
+
 	// 以direction字段过滤安全组规则
 	Direction string `json:"direction"`
 	// 以action字段过滤安全组规则
 	Action string `json:"action"`
 	// 以protocol字段过滤安全组规则
 	Protocol string `json:"protocol"`
+	// 以ports字段过滤安全组规则
+	Ports string `json:"ports"`
+	// 根据ip模糊匹配安全组规则
+	Ip string `json:"ip"`
 }
 
-type SecgroupFilterListInput struct {
+type SecgroupResourceInput struct {
 	// 过滤关联指定安全组（ID或Name）的列表结果
-	Secgroup string `json:"secgroup"`
+	SecgroupId string `json:"secgroup_id"`
 	// swagger:ignore
 	// Deprecated
 	// filter by secgroup_id
-	SecgroupId string `json:"secgroup_id" deprecated-by:"secgroup"`
+	Secgroup string `json:"secgroup" "yunion:deprecated-by":"secgroup_id"`
+
+	// 模糊匹配安全组规则名称
+	SecgroupName string `json:"secgroup_name"`
+}
+
+type SecgroupFilterListInput struct {
+	SecgroupResourceInput
 
 	// 以安全组排序
 	OrderBySecgroup string `json:"order_by_secgroup"`
@@ -189,15 +212,22 @@ type SecgroupDetails struct {
 	SSecurityGroup
 
 	// 关联云主机数量
-	GuestCnt int `json:"guest_cnt"`
+	GuestCnt int `json:"guest_cnt,allowempty"`
+
+	// 关联此安全组的云主机is_system为true数量
+	SystemGuestCnt int `json:"system_guest_cnt,allowempty"`
+
+	// admin_secgrp_id为此安全组的云主机数量
+	AdminGuestCnt int `json:"admin_guest_cnt,allowempty"`
+
 	// 安全组缓存数量
-	CacheCnt int `json:"cache_cnt"`
+	CacheCnt int `json:"cache_cnt,allowempty"`
 	// 规则信息
-	Rules string `json:"rules"`
+	Rules []SSecurityGroupRule `json:"rules"`
 	// 入方向规则信息
-	InRules string `json:"in_rules"`
+	InRules []SSecurityGroupRule `json:"in_rules"`
 	// 出方向规则信息
-	OutRules string `json:"out_rules"`
+	OutRules []SSecurityGroupRule `json:"out_rules"`
 }
 
 type SecurityGroupResourceInfo struct {
@@ -208,4 +238,13 @@ type SecurityGroupResourceInfo struct {
 type GuestsecgroupListInput struct {
 	GuestJointsListInput
 	SecgroupFilterListInput
+}
+
+type GuestsecgroupDetails struct {
+	GuestJointResourceDetails
+
+	SGuestsecgroup
+
+	// 安全组名称
+	Secgroup string `json:"secgroup"`
 }

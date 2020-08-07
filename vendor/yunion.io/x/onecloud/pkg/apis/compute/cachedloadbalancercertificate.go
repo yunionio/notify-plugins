@@ -31,20 +31,3 @@ type CachedLoadbalancerCertificateListInput struct {
 	RegionalFilterListInput
 	LoadbalancerCertificateFilterListInput
 }
-
-type LoadbalancerCertificateResourceInfo struct {
-	// 负载均衡证书名称
-	Certificate string `json:"certificate"`
-}
-
-type LoadbalancerCertificateFilterListInput struct {
-	// 证书名称或ID
-	Certificate string `json:"certificate"`
-
-	// swagger:ignore
-	// Deprecated
-	CertificateId string `json:"certificate_id" deprecated-by:"certificate"`
-
-	// 以证书名称排序
-	OrderByCertificate string `json:"order_by_certificate"`
-}

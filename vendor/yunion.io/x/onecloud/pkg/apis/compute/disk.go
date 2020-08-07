@@ -62,10 +62,8 @@ func (req *DiskCreateInput) ToServerCreateInput() *ServerCreateInput {
 		},
 	}
 	input.Name = req.Name
-	input.Project = req.Project
 	input.ProjectId = req.ProjectId
-	input.Domain = req.Domain
-	input.DomainId = req.DomainId
+	input.ProjectDomainId = req.ProjectDomainId
 	return &input
 }
 
@@ -79,18 +77,22 @@ func (req *ServerCreateInput) ToDiskCreateInput() *DiskCreateInput {
 		Hypervisor:   req.Hypervisor,
 	}
 	input.Name = req.Name
-	input.Project = req.Project
-	input.Domain = req.Domain
+	input.ProjectId = req.ProjectId
+	input.ProjectDomainId = req.ProjectDomainId
 	return &input
 }
 
-type SnapshotPolicyFilterListInput struct {
+type SnapshotPolicyResourceInput struct {
 	// filter disk by snapshotpolicy
-	Snapshotpolicy string `json:"snapshotpolicy"`
+	SnapshotpolicyId string `json:"snapshotpolicy_id"`
 	// swagger:ignore
 	// Deprecated
 	// filter disk by snapshotpolicy_id
-	SnapshotpolicyId string `json:"snapshotpolicy_id" deprecated-by:"snapshotpolicy"`
+	Snapshotpolicy string `json:"snapshotpolicy" "yunion:deprecated-by":"snapshotpolicy_id"`
+}
+
+type SnapshotPolicyFilterListInput struct {
+	SnapshotPolicyResourceInput
 
 	// 以快照策略名称排序
 	OrderBySnapshotpolicy string `json:"order_by_snapshotpolicy"`
@@ -111,7 +113,7 @@ type DiskListInput struct {
 	// swagger:ignore
 	// Deprecated
 	// filter by disk type
-	Type string `json:"type" deprecated-by:"disk_type"`
+	Type string `json:"type" "yunion:deprecated-by":"disk_type"`
 	// 过滤指定disk_type的磁盘列表，可能的值为：sys, data, swap. volume
 	//
 	// | disk_type值 | 说明 |
@@ -132,25 +134,32 @@ type DiskListInput struct {
 	FsFormat string `json:"fs_format"`
 
 	// 镜像
-	Template string `json:"template"`
+	ImageId string `json:"image_id"`
 	// swagger:ignore
 	// Deprecated
-	TemplateId string `json:"template_id" deprecated-by:"template"`
+	Template string `json:"template" "yunion:deprecated-by":"image_id"`
+	// swagger:ignore
+	// Deprecated
+	TemplateId string `json:"template_id" "yunion:deprecated-by":"image_id"`
 
 	// 快照
-	Snapshot string `json:"snapshot"`
+	SnapshotId string `json:"snapshot_id"`
 	// swagger:ignore
 	// Deprecated
-	SnapshotId string `json:"snapshot_id" deprecated-by:"snapshot"`
+	Snapshot string `json:"snapshot" "yunion:deprecated-by":"snapshot_id"`
 }
 
-type DiskFilterListInputBase struct {
-	// 以指定虚拟磁盘（ID或Name）过滤列表结果
-	Disk string `json:"disk"`
+type DiskResourceInput struct {
+	// 虚拟磁盘（ID或Name）
+	DiskId string `json:"disk_id"`
 	// swagger:ignore
 	// Deprecated
 	// filter by disk_id
-	DiskId string `json:"disk_id" deprecated-by:"disk"`
+	Disk string `json:"disk" "yunion:deprecated-by":"disk_id"`
+}
+
+type DiskFilterListInputBase struct {
+	DiskResourceInput
 
 	// 以磁盘名称排序
 	// pattern:asc|desc
@@ -170,8 +179,10 @@ type SimpleGuest struct {
 }
 
 type SimpleSnapshotPolicy struct {
-	RepeatWeekdays []int `json:"repeat_weekdays"`
-	TimePoints     []int `json:"time_points"`
+	Id             string `json:"id"`
+	Name           string `json:"name"`
+	RepeatWeekdays []int  `json:"repeat_weekdays"`
+	TimePoints     []int  `json:"time_points"`
 }
 
 type DiskDetails struct {
@@ -215,4 +226,14 @@ type DiskResourceInfo struct {
 	StorageId string `json:"storage_id"`
 
 	StorageResourceInfo
+}
+
+type DiskSyncstatusInput struct {
+}
+
+type DiskUpdateInput struct {
+	apis.VirtualResourceBaseUpdateInput
+
+	// 磁盘类型
+	DiskType string `json:"disk_type"`
 }

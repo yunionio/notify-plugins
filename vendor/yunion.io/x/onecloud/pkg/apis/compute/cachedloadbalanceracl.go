@@ -28,4 +28,5 @@ type CachedLoadbalancerAclListInput struct {
 	apis.SharableVirtualResourceListInput
 	RegionalFilterListInput
 	ManagedResourceListInput
+	LoadbalancerAclFilterListInput
 }

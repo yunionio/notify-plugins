@@ -10,11 +10,11 @@ require (
 	google.golang.org/grpc v1.26.0
 	gopkg.in/alexcesaro/quotedprintable.v3 v3.0.0-20150716171945-2caba252f4dc // indirect
 	gopkg.in/gomail.v2 v2.0.0-20160411212932-81ebce5c23df
-	yunion.io/x/jsonutils v0.0.0-20200303051356-aa609aba0cda
-	yunion.io/x/log v0.0.0-20190629062853-9f6483a7103d
-	yunion.io/x/onecloud v0.0.0-20200314124527-bce6ad8e9a4f
-	yunion.io/x/pkg v0.0.0-20200304112442-9dae9351325e
-	yunion.io/x/structarg v0.0.0-20190809075558-115bed041de3
+	yunion.io/x/jsonutils v0.0.0-20200710080709-7ca71cdb9383
+	yunion.io/x/log v0.0.0-20200313080802-57a4ce5966b3
+	yunion.io/x/onecloud v0.0.0-20200807061934-b0505ba5fdc0
+	yunion.io/x/pkg v0.0.0-20200713121502-18154120c49b
+	yunion.io/x/structarg v0.0.0-20200720093445-9f850fa222ce
 )
 
 replace (
@@ -45,5 +45,4 @@ replace (
 	k8s.io/sample-apiserver => k8s.io/sample-apiserver v0.0.0-20190918161442-d4c9c65c82af
 	k8s.io/sample-cli-plugin => k8s.io/sample-cli-plugin v0.0.0-20190918162410-e45c26d066f2
 	k8s.io/sample-controller => k8s.io/sample-controller v0.0.0-20190918161628-92eb3cb7496c
-	yunion.io/x/onecloud => ../../../../go/src/yunion.io/x/onecloud
 )

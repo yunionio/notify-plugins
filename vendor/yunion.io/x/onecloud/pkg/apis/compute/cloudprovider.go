@@ -18,6 +18,7 @@ import (
 	"yunion.io/x/pkg/utils"
 
 	"yunion.io/x/onecloud/pkg/apis"
+	proxyapi "yunion.io/x/onecloud/pkg/apis/cloudcommon/proxy"
 	"yunion.io/x/onecloud/pkg/cloudprovider"
 )
 
@@ -120,6 +121,8 @@ type CloudproviderDetails struct {
 	apis.EnabledStatusStandaloneResourceDetails
 	apis.ProjectizedResourceInfo
 
+	ProxySetting proxyapi.SProxySetting `json:"proxy_setting"`
+
 	SCloudprovider
 
 	// 云账号名称
@@ -136,44 +139,49 @@ type CloudproviderDetails struct {
 	Brand string `json:"brand"`
 }
 
-type ManagedResourceListInput struct {
-	apis.DomainizedResourceListInput
-	CloudenvResourceListInput
-
+// 云订阅输入参数
+type CloudproviderResourceInput struct {
 	// 列出关联指定云订阅(ID或Name)的资源
-	Cloudprovider string `json:"cloudprovider"`
+	CloudproviderId string `json:"cloudprovider_id"`
 	// List objects belonging to the cloud provider
 	// swagger:ignore
 	// Deprecated
 	// description: this param will be deprecate at 3.0
-	Manager string `json:"manager" deprecated-by:"cloudprovider"`
+	Manager string `json:"manager" "yunion:deprecated-by":"cloudprovider_id"`
 	// swagger:ignore
 	// Deprecated
 	// description: this param will be deprecate at 3.0
-	ManagerId string `json:"manager_id" deprecated-by:"cloudprovider"`
+	ManagerId string `json:"manager_id" "yunion:deprecated-by":"cloudprovider_id"`
 	// swagger:ignore
 	// Deprecated
 	// description: this param will be deprecate at 3.0
-	CloudproviderId string `json:"cloudprovider_id" deprecated-by:"cloudprovider"`
+	Cloudprovider string `json:"cloudprovider" "yunion:deprecated-by":"cloudprovider_id"`
+}
+
+type ManagedResourceListInput struct {
+	apis.DomainizedResourceListInput
+	CloudenvResourceListInput
+
+	CloudproviderResourceInput
 
 	// 列出关联指定云账号(ID或Name)的资源
-	Cloudaccount string `json:"cloudaccount"`
+	CloudaccountId []string `json:"cloudaccount_id"`
 	// swagger:ignore
 	// Deprecated
 	// description: this param will be deprecate at 3.0
-	CloudaccountId string `json:"cloudaccount_id" deprecated-by:"cloudaccount"`
+	Cloudaccount []string `json:"cloudaccount" "yunion:deprecated-by":"cloudaccount_id"`
 	// swagger:ignore
 	// Deprecated
 	// description: this param will be deprecate at 3.0
-	Account string `json:"account" deprecated-by:"cloudaccount"`
+	Account []string `json:"account" "yunion:deprecated-by":"cloudaccount_id"`
 	// swagger:ignore
 	// Deprecated
 	// description: this param will be deprecate at 3.0
-	AccountId string `json:"account_id" deprecated-by:"cloudaccount"`
+	AccountId []string `json:"account_id" "yunion:deprecated-by":"cloudaccount_id"`
 
 	// 过滤资源，是否为非OneCloud内置私有云管理的资源
 	// default: false
-	IsManaged bool `json:"is_managed"`
+	IsManaged *bool `json:"is_managed"`
 
 	// 以云账号名称排序
 	// pattern:asc|desc
@@ -214,6 +222,10 @@ type CloudproviderListInput struct {
 
 	UsableResourceListInput
 
+	CloudregionResourceInput
+
+	ZoneResourceInput
+
 	CapabilityListInput
 
 	SyncableBaseResourceListInput
@@ -231,4 +243,31 @@ func (input *CapabilityListInput) AfterUnmarshal() {
 type SyncableBaseResourceListInput struct {
 	// 同步状态
 	SyncStatus []string `json:"sync_status"`
+}
+
+type CloudproviderUpdateInput struct {
+	apis.EnabledStatusStandaloneResourceBaseUpdateInput
+}
+
+type CloudproviderCreateInput struct {
+}
+
+type CloudproviderGetStorageClassInput struct {
+	CloudregionResourceInput
+}
+
+type CloudproviderGetStorageClassOutput struct {
+	// 对象存储存储类型
+	StorageClasses []string `json:"storage_classes"`
+}
+
+type CloudproviderGetCannedAclInput struct {
+	CloudregionResourceInput
+}
+
+type CloudproviderGetCannedAclOutput struct {
+	// Bucket支持的预置ACL列表
+	BucketCannedAcls []string `json:"bucket_canned_acls"`
+	// Object支持的预置ACL列表
+	ObjectCannedAcls []string `json:"object_canned_acls"`
 }

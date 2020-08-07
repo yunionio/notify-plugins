@@ -18,32 +18,17 @@ import (
 	"yunion.io/x/onecloud/pkg/apis"
 )
 
-type VpcFilterListInputBase struct {
-	// 过滤关联此VPC(ID或Name)的资源
-	Vpc string `json:"vpc"`
-	// swagger:ignore
-	// Deprecated
-	// filter by vpc Id
-	VpcId string `json:"vpc_id" deprecated-by:"vpc"`
-
-	// 按VPC名称排序
-	// pattern:asc|desc
-	OrderByVpc string `json:"order_by_vpc"`
-}
-
-type VpcFilterListInput struct {
-	VpcFilterListInputBase
-	RegionalFilterListInput
-	ManagedResourceListInput
-}
-
-type WireFilterListBase struct {
-	// 过滤连接此二层网络(ID或Name)的资源
-	Wire string `json:"wire"`
+type WireResourceInput struct {
+	// 二层网络(ID或Name)的资源
+	WireId string `json:"wire_id"`
 	// swagger:ignore
 	// Deprecated
 	// fitler by wire id
-	WireId string `json:"wire_id" deprecated-by:"wire"`
+	Wire string `json:"wire" "yunion:deprecated-by":"wire_id"`
+}
+
+type WireFilterListBase struct {
+	WireResourceInput
 
 	// 以二层网络名称排序
 	OrderByWire string `json:"order_by_wire"`
@@ -56,13 +41,17 @@ type WireFilterListInput struct {
 	WireFilterListBase
 }
 
-type NetworkFilterListBase struct {
-	// 过滤关联此IP子网（ID或Name）的资源
-	Network string `json:"network"`
+type NetworkResourceInput struct {
+	// IP子网（ID或Name）
+	NetworkId string `json:"network_id"`
 	// swagger:ignore
 	// Deprecated
 	// filter by networkId
-	NetworkId string `json:"network_id" deprecated-by:"network"`
+	Network string `json:"network" "yunion:deprecated-by":"network_id"`
+}
+
+type NetworkFilterListBase struct {
+	NetworkResourceInput
 
 	// 以IP子网的名称排序
 	OrderByNetwork string `json:"order_by_network"`
@@ -76,15 +65,20 @@ type NetworkFilterListInput struct {
 type NetworkListInput struct {
 	apis.SharableVirtualResourceListInput
 	apis.ExternalizedResourceBaseListInput
+	SchedtagResourceInput
 	WireFilterListInput
 
 	HostResourceInput
 
 	UsableResourceListInput
 
-	// description: search ip address in network.
+	// description: Exact matching ip address in network.
 	// example: 10.168.222.1
 	Ip string `json:"ip"`
+
+	// description: Fuzzy matching ip address in network.
+	// example: 10.168.222.1
+	IpMatch string `json:"ip_match"`
 
 	IfnameHint []string `json:"ifname_hint"`
 	// 起始IP地址
@@ -116,6 +110,10 @@ type NetworkListInput struct {
 	ServerType []string `json:"server_type"`
 	// 分配策略
 	AllocPolicy []string `json:"alloc_policy"`
+	// 是否加入自动分配地址池
+	IsAutoAlloc *bool `json:"is_auto_alloc"`
+	// 是否为基础网络（underlay）
+	IsClassic *bool `json:"is_classic"`
 }
 
 type NetworkResourceInfoBase struct {
@@ -183,6 +181,9 @@ type NetworkCreateInput struct {
 	// enum: guest,baremetal,pxe,ipmi
 	// default: guest
 	ServerType string `json:"server_type"`
+
+	// 是否加入自动分配地址池
+	IsAutoAlloc *bool `json:"is_auto_alloc"`
 }
 
 type NetworkDetails struct {
@@ -277,4 +278,35 @@ type NetworkTryCreateNetworkInput struct {
 
 type NetworkSyncInput struct {
 	apis.Meta
+}
+
+type NetworkUpdateInput struct {
+	apis.SharableVirtualResourceBaseUpdateInput
+
+	// 起始IP地址
+	GuestIpStart string `json:"guest_ip_start"`
+	// 接收IP地址
+	GuestIpEnd string `json:"guest_ip_end"`
+	// 掩码
+	GuestIpMask *int8 `json:"guest_ip_mask"`
+	// 网关地址
+	GuestGateway string `json:"guest_gateway"`
+	// DNS
+	GuestDns string `json:"guest_dns"`
+	// allow multiple dhcp, seperated by ","
+	GuestDhcp string `json:"guest_dhcp"`
+
+	GuestDomain string `json:"guest_domain"`
+
+	VlanId *int `json:"vlan_id"`
+
+	// 服务器类型
+	// example: server
+	ServerType string `json:"server_type"`
+
+	// 分配策略
+	AllocPolicy string `json:"alloc_policy"`
+
+	// 是否加入自动分配地址池
+	IsAutoAlloc *bool `json:"is_auto_alloc"`
 }

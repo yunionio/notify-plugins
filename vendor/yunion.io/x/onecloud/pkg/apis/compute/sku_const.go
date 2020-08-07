@@ -77,6 +77,12 @@ type ServerSkuListInput struct {
 	MemorySizeMb int `json:"memory_size_mb"`
 	// filter sku by CPU core count
 	CpuCoreCount []int `json:"cpu_core_count"`
+
+	// 后付费状态
+	PostpaidStatus string `json:"postpaid_status"`
+
+	// 预付费状态
+	PrepaidStatus string `json:"prepaid_status"`
 }
 
 type ElasticcacheSkuListInput struct {
@@ -144,4 +150,8 @@ type DBInstanceSkuListInput struct {
 	Engine []string `json:"engine"`
 
 	EngineVersion []string `json:"engine_version"`
+
+	Zone1 []string `json:"zone1"`
+	Zone2 []string `json:"zone2"`
+	Zone3 []string `json:"zone3"`
 }

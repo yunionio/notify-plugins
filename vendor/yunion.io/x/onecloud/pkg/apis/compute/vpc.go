@@ -17,12 +17,12 @@ package compute
 import "yunion.io/x/onecloud/pkg/apis"
 
 type VpcDetails struct {
-	SVpc
-
-	apis.EnabledStatusStandaloneResourceDetails
+	apis.EnabledStatusInfrasResourceBaseDetails
 	ManagedResourceInfo
 	CloudregionResourceInfo
 	GlobalVpcResourceInfo
+
+	SVpc
 
 	// 二层网络数量
 	// example: 1
@@ -58,4 +58,54 @@ type VpcResourceInfo struct {
 	ManagerId string `json:"manager_id"`
 
 	ManagedResourceInfo
+}
+
+type VpcSyncstatusInput struct {
+}
+
+type VpcCreateInput struct {
+	apis.EnabledStatusInfrasResourceBaseCreateInput
+
+	CloudregionResourceInput
+
+	CloudproviderResourceInput
+
+	// CIDR_BLOCK
+	CidrBlock string `json:"cidr_block"`
+
+	// Vpc外网访问模式
+	ExternalAccessMode string `json:"external_access_mode"`
+}
+
+type VpcUpdateInput struct {
+	apis.EnabledStatusInfrasResourceBaseUpdateInput
+
+	// Vpc外网访问模式
+	ExternalAccessMode string `json:"external_access_mode"`
+}
+
+type VpcResourceInput struct {
+	// 关联VPC(ID或Name)
+	VpcId string `json:"vpc_id"`
+	// swagger:ignore
+	// Deprecated
+	// filter by vpc Id
+	Vpc string `json:"vpc" "yunion:deprecated-by":"vpc_id"`
+
+	// Vpc外网访问模式
+	ExternalAccessMode string `json:"external_access_mode"`
+}
+
+type VpcFilterListInputBase struct {
+	VpcResourceInput
+
+	// 按VPC名称排序
+	// pattern:asc|desc
+	OrderByVpc string `json:"order_by_vpc"`
+}
+
+type VpcFilterListInput struct {
+	VpcFilterListInputBase
+	RegionalFilterListInput
+	ManagedResourceListInput
 }

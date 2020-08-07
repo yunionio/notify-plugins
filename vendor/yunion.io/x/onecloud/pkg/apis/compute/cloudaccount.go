@@ -19,6 +19,7 @@ import (
 	"yunion.io/x/pkg/utils"
 
 	"yunion.io/x/onecloud/pkg/apis"
+	proxyapi "yunion.io/x/onecloud/pkg/apis/cloudcommon/proxy"
 	"yunion.io/x/onecloud/pkg/cloudprovider"
 	"yunion.io/x/onecloud/pkg/httperrors"
 )
@@ -65,7 +66,7 @@ type CloudenvResourceListInput struct {
 	Providers []string `json:"providers"`
 	// swagger:ignore
 	// Deprecated
-	Provider []string `json:"provider" deprecated-by:"providers"`
+	Provider []string `json:"provider" "yunion:deprecated-by":"providers"`
 
 	// 列出指定云平台品牌的资源，一般来说brand和provider相同，除了以上支持的provider之外，还支持以下band
 	//
@@ -76,7 +77,7 @@ type CloudenvResourceListInput struct {
 	Brands []string `json:"brands"`
 	// swagger:ignore
 	// Deprecated
-	Brand []string `json:"brand" deprecated-by:"brands"`
+	Brand []string `json:"brand" "yunion:deprecated-by":"brands"`
 
 	// 列出指定云环境的资源，支持云环境如下：
 	//
@@ -130,7 +131,7 @@ type CloudaccountResourceInfo struct {
 }
 
 type CloudaccountCreateInput struct {
-	apis.EnabledStatusDomainLevelResourceCreateInput
+	apis.EnabledStatusInfrasResourceBaseCreateInput
 
 	// 指定云平台
 	// Qcloud: 腾讯云
@@ -166,10 +167,11 @@ type CloudaccountCreateInput struct {
 	IsOnPremise bool
 
 	// 指定云账号所属的项目
-	Tenant string `json:"tenant"`
-
+	// Tenant string `json:"tenant"`
 	// swagger:ignore
-	TenantId string
+	// TenantId string
+
+	apis.ProjectizedResourceInput
 
 	// 启用自动同步
 	// default: false
@@ -178,12 +180,14 @@ type CloudaccountCreateInput struct {
 	// 自动同步间隔时间
 	SyncIntervalSeconds int `json:"sync_interval_seconds"`
 
-	// 自动根据云上项目或订阅创建本地项目
+	// 自动根据云上项目或订阅创建本地项目, OpenStack此参数为true
 	// default: false
-	AutoCreateProject bool `json:"auto_create_project"`
+	AutoCreateProject *bool `json:"auto_create_project"`
 
 	// 额外信息,例如账单的access key
-	Options *jsonutils.JSONObject `json:"options"`
+	Options *jsonutils.JSONDict `json:"options"`
+
+	proxyapi.ProxySettingResourceInput
 
 	cloudprovider.SCloudaccount
 	cloudprovider.SCloudaccountCredential
@@ -206,7 +210,7 @@ func (i CloudaccountShareModeInput) Validate() error {
 }
 
 type CloudaccountListInput struct {
-	apis.EnabledStatusDomainLevelResourceListInput
+	apis.EnabledStatusInfrasResourceBaseListInput
 
 	ManagedResourceListInput
 
@@ -219,6 +223,11 @@ type CloudaccountListInput struct {
 
 	// 共享模式
 	ShareMode []string `json:"share_mode"`
+
+	// 代理
+	ProxySetting string `json:"proxy_setting"`
+	// swagger:ignore
+	ProxySettingId string `json:"proxy_setting_id" "yunion:deprecated-by":"proxy_setting"`
 }
 
 type ProviderProject struct {
@@ -232,7 +241,7 @@ type ProviderProject struct {
 }
 
 type CloudaccountDetail struct {
-	apis.EnabledStatusDomainLevelResourceDetails
+	apis.EnabledStatusInfrasResourceBaseDetails
 	SCloudaccount
 
 	// 子订阅项目信息
@@ -291,4 +300,102 @@ type CloudaccountDetail struct {
 	// 存储缓存数量
 	// example: 10
 	StoragecacheCount int `json:"storagecache_count,allowempty"`
+
+	ProxySetting proxyapi.SProxySetting `json:"proxy_setting"`
+}
+
+type CloudaccountUpdateInput struct {
+	apis.EnabledStatusInfrasResourceBaseUpdateInput
+
+	// 同步周期，单位为秒
+	SyncIntervalSeconds *int64 `json:"sync_interval_seconds"`
+
+	// 待更新的options key/value
+	Options *jsonutils.JSONDict `json:"options"`
+	// 带删除的options key
+	RemoveOptions []string `json:"remove_options"`
+
+	proxyapi.ProxySettingResourceInput
+}
+
+type CloudaccountPerformPublicInput struct {
+	apis.PerformPublicDomainInput
+
+	// 共享模式，可能值为provider_domain, system
+	// example: provider_domain
+	ShareMode string `json:"share_mode"`
+}
+
+type CloudaccountPerformPrepareNetsInput struct {
+	CloudaccountCreateInput
+}
+
+type CloudaccountPerformPrepareNetsOutput struct {
+	SuggestedWire CAWireConf  `json:"suggested_wire"`
+	SuitableWire  string      `json:"suitable_wire,allowempty"`
+	Hosts         []CAHostNet `json:"hosts"`
+	// description: 没有合适的已有网络，推荐的网络配置
+	HostSuggestedNetworks []CANetConf  `json:"host_suggested_networks"`
+	Guests                []CAGuestNet `json:"guests"`
+	// description: 没有合适的已有网络，推荐的网络配置
+	GuestSuggestedNetworks []CANetConf `json:"guest_suggested_networks"`
+}
+
+type CAWireConf struct {
+	// Zoneids to be selected
+	ZoneIds []string `json:"zone_ids"`
+	// description: wire name
+	Name string `json:"name"`
+	// description: wire description
+	Description string `json:"description"`
+}
+
+type CAHostNet struct {
+	// description: Host 的 Name
+	Name string `json:"name"`
+	// description: IP
+	IP string `json:"ip"`
+	// description: 合适的已有网络
+	SuitableNetwork string `json:"suitable_network,allowempty"`
+}
+
+type CAGuestNet struct {
+	// description: Host 的 Name
+	Name   string    `json:"name"`
+	IPNets []CAIPNet `json:"ip_nets"`
+}
+
+type CAIPNet struct {
+	// description: IP
+	IP string `json:"ip"`
+	// description: 合适的已有网络
+	SuitableNetwork string `json:"suitable_network,allowempty"`
+}
+
+type CASimpleNetConf struct {
+	GuestIpStart string `json:"guest_ip_start"`
+	GuestIpEnd   string `json:"guest_ip_end"`
+	GuestIpMask  int8   `json:"guest_ip_mask"`
+	GuestGateway string `json:"guest_gateway"`
+}
+
+type CANetConf struct {
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	CASimpleNetConf
+}
+
+type SubscriptonCreateInput struct {
+
+	// EA 账号id, 可通过 cloud-account-enrollment-accounts接口获取里面的id字段
+	EnrollmentAccountId string `json:"enrollment_account_id"`
+
+	// 订阅名称
+	Name string `json:"name"`
+
+	// 可选值: MS-AZR-0017P(生产用途), MS-AZR-0148P(开发测试)
+	OfferType string `json:"offer_type"`
+}
+
+type EnrollmentAccountQuery struct {
 }

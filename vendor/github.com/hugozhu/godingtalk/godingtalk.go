@@ -36,15 +36,23 @@ type Unmarshallable interface {
 	getWriter() io.Writer
 }
 
-//OAPIResponse is
-type OAPIResponse struct {
+type OAPIError struct {
 	ErrCode int    `json:"errcode"`
 	ErrMsg  string `json:"errmsg"`
 }
 
+func (e OAPIError) Error() string {
+	return fmt.Sprintf("%d: %s", e.ErrCode, e.ErrMsg)
+}
+
+//OAPIResponse is
+type OAPIResponse struct {
+	OAPIError
+}
+
 func (data *OAPIResponse) checkError() (err error) {
 	if data.ErrCode != 0 {
-		err = fmt.Errorf("%d: %s", data.ErrCode, data.ErrMsg)
+		return data.OAPIError
 	}
 	return err
 }
@@ -111,6 +119,11 @@ func NewDingTalkClient(corpID string, corpSecret string) *DingTalkClient {
 		Timeout: 10 * time.Second,
 	}
 	c.Cache = NewFileCache(".auth_file")
+	return c
+}
+
+func (c *DingTalkClient) WithAgentID(agentID string) *DingTalkClient {
+	c.AgentID = agentID
 	return c
 }
 

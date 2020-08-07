@@ -70,21 +70,24 @@ type SDBInstanceSetPrivilegesInput struct {
 
 type DBInstancePrivilege struct {
 	// 数据库名称
-	Database string
+	Database string `json:"database"`
 	// 账号名称
-	Account string
+	Account string `json:"account"`
 	// 数据库Id
-	DBInstancedatabaseId string
+	DBInstancedatabaseId string `json:"dbinstancedatabase_id"`
 	// 权限
-	Privileges string
+	Privileges string `json:"privileges"`
 }
 
 type DBInstanceAccountDetails struct {
 	apis.StatusStandaloneResourceDetails
+	apis.ProjectizedResourceInfo
 	DBInstanceResourceInfo
 
 	SDBInstanceAccount
 
 	// 账号权限列表
 	DBInstanceprivileges []DBInstancePrivilege `json:"dbinstanceprivileges,allowempty"`
+
+	ProjectId string `json:"tenant_id"`
 }

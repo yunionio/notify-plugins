@@ -86,10 +86,18 @@ func (self *SDingtalkSender) FetchContact(ctx context.Context, related string) (
 }
 
 func (self *SDingtalkSender) Send(ctx context.Context, params *apis.SendParams) error {
-	sendFunc := self.getSendFunc(params)
-	return self.Do(func() error {
-		return self.send(sendFunc)
-	})
+	sendFunc := func() error {
+		batchParams := &apis.BatchSendParams{
+			Contacts:       []string{params.Contact},
+			Title:          params.Title,
+			Message:        params.Message,
+			Priority:       params.Priority,
+			RemoteTemplate: params.RemoteTemplate,
+		}
+		_, err := self.batchSendTopMsg(batchParams)
+		return err
+	}
+	return self.Do(sendFunc)
 }
 
 func (self *SDingtalkSender) BatchSend(ctx context.Context, params *apis.BatchSendParams) ([]*apis.FailedRecord, error) {

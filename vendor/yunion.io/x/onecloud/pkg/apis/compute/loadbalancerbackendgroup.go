@@ -33,15 +33,19 @@ type LoadbalancerBackendGroupResourceInfo struct {
 	LoadbalancerId string `json:"loadbalancer_id"`
 }
 
-type LoadbalancerBackendGroupFilterListInput struct {
-	LoadbalancerFilterListInput
-
+type LoadbalancerBackendGroupResourceInput struct {
 	// 负载均衡后端组ID或名称
-	BackendGroup string `json:"backend_group"`
+	BackendGroupId string `json:"backend_group_id"`
 
 	// swagger:ignore
 	// Deprecated
-	BackendGroupId string `json:"backend_group_id" deprecated-by:"backend_group"`
+	BackendGroup string `json:"backend_group" "yunion:deprecated-by":"backend_group_id"`
+}
+
+type LoadbalancerBackendGroupFilterListInput struct {
+	LoadbalancerFilterListInput
+
+	LoadbalancerBackendGroupResourceInput
 
 	// 以负载均衡后端组名称排序
 	OrderByBackendGroup string `json:"order_by_backend_group"`

@@ -18,15 +18,17 @@ import (
 	"yunion.io/x/onecloud/pkg/apis"
 )
 
+/*
 type RegionalResourceCreateInput struct {
 	Cloudregion   string `json:"cloudregion"`
 	CloudregionId string `json:"cloudregion_id"`
 }
 
-type ManagedResourceCreateInput struct {
-	Manager   string `json:"manager"`
+type ManagedResourceInput struct {
+	Manager string `json:"manager"`
 	ManagerId string `json:"manager_id"`
 }
+*/
 
 type DeletePreventableCreateInput struct {
 	//删除保护,创建的资源默认不允许删除
@@ -35,12 +37,7 @@ type DeletePreventableCreateInput struct {
 }
 
 type KeypairListInput struct {
-	apis.StandaloneResourceListInput
-
 	apis.UserResourceListInput
-
-	// list in admin mode
-	Admin *bool `json:"admin"`
 
 	// 加密类型
 	// example: RSA
@@ -64,15 +61,14 @@ type CachedimageListInput struct {
 }
 
 type ExternalProjectListInput struct {
-	apis.StandaloneResourceListInput
-	apis.ProjectizedResourceListInput
+	apis.VirtualResourceListInput
 	apis.ExternalizedResourceBaseListInput
 
 	ManagedResourceListInput
 }
 
 type RouteTableListInput struct {
-	apis.VirtualResourceListInput
+	apis.StatusInfrasResourceBaseListInput
 	apis.ExternalizedResourceBaseListInput
 
 	VpcFilterListInput
@@ -94,7 +90,7 @@ type SnapshotPolicyCacheListInput struct {
 }
 
 type NetworkInterfaceListInput struct {
-	apis.StatusStandaloneResourceListInput
+	apis.StatusInfrasResourceBaseListInput
 	apis.ExternalizedResourceBaseListInput
 
 	ManagedResourceListInput
@@ -132,10 +128,6 @@ type DynamicschedtagListInput struct {
 	Enabled *bool `json:"enabled"`
 }
 
-type GuestTemplateListInput struct {
-	apis.SharableVirtualResourceListInput
-}
-
 type SchedpolicyListInput struct {
 	apis.StandaloneResourceListInput
 	SchedtagFilterListInput
@@ -149,10 +141,10 @@ type SchedpolicyListInput struct {
 
 type GuestTemplateFilterListInput struct {
 	// 主机镜像
-	GuestTemplate string `json:"guest_template"`
+	GuestTemplateId string `json:"guest_template_id"`
 	// swagger:ignore
 	// Deprecated
-	GuestTemplateId string `json:"guest_template_id" deprecated-by:"guest_template"`
+	GuestTemplate string `json:"guest_template" "yunion:deprecated-by":"guest_template_id"`
 }
 
 type ServiceCatalogListInput struct {

@@ -285,11 +285,11 @@ type ServerConfigs struct {
 	// swagger:ignore
 	// Deprecated
 	// alias for InstanceType
-	Sku string `json:"sku" deprecated-by:"instance_type"`
+	Sku string `json:"sku" "yunion:deprecated-by":"instance_type"`
 
 	// 虚拟机高可用(创建备机)
 	// default: false
-	// requried: false
+	// required: false
 	Backup bool `json:"backup"`
 
 	// 创建虚拟机数量
@@ -358,7 +358,8 @@ type ServerCreateInput struct {
 	UserData string `json:"user_data"`
 
 	// swagger:ignore
-	Keypair string `json:"keypair" deprecated-by:"keypair_id"`
+	// Deprecated
+	Keypair string `json:"keypair" "yunion:deprecated-by":"keypair_id"`
 
 	// 秘钥对Id
 	// required: false
@@ -368,6 +369,10 @@ type ServerCreateInput struct {
 	// 要求: 密码长度 >= 20, 至少包含一个数字一个小写字母一个大小字母及特殊字符~`!@#$%^&*()-_=+[]{}|:';\",./<>?中的一个
 	// requried: false
 	Password string `json:"password"`
+
+	// 登录账户
+	// required: false
+	LoginAccount string `json:"login_account"`
 
 	// 使用ISO光盘启动, 仅KVM平台支持
 	// required: false
@@ -433,6 +438,10 @@ type ServerCreateInput struct {
 	// |天翼云				|是			|
 	Duration string `json:"duration"`
 
+	// 是否自动续费
+	// default: false
+	AutoRenew bool `json:"auto_renew"`
+
 	// swagger:ignore
 	AutoPrepaidRecycle bool `json:"auto_prepaid_recycle,omitfalse"`
 
@@ -440,9 +449,10 @@ type ServerCreateInput struct {
 	// 指定此参数后会创建新的弹性公网IP并绑定到新建的虚拟机
 	// 私有云不支持此参数
 	EipBw int `json:"eip_bw,omitzero"`
-
 	// 弹性公网IP计费类型
 	EipChargeType string `json:"eip_charge_type,omitempty"`
+	// 是否跟随主机删除而自动释放
+	EipAutoDellocate bool `json:"eip_auto_dellocate,omitempty"`
 
 	// 弹性公网IP名称或ID
 	// 绑定已有弹性公网IP, 此参数会限制虚拟机再谈下公网IP所在的区域创建
@@ -501,7 +511,7 @@ type ServerCloneInput struct {
 	EipChargeType string `json:"eip_charge_type,omitempty"`
 	Eip           string `json:"eip,omitempty"`
 
-	PreferHost string `json:"prefer_host_id"`
+	PreferHostId string `json:"prefer_host_id"`
 }
 
 type ServerDeployInput struct {
@@ -520,8 +530,12 @@ type ServerDeployInput struct {
 type GuestBatchMigrateRequest struct {
 	apis.Meta
 
-	GuestIds   []string
-	PreferHost string
+	GuestIds []string `json:"guest_ids"`
+
+	PreferHostId string `json:"prefer_host_id"`
+	// Deprecated
+	// swagger:ignore
+	PreferHost string `json:"prefer_host" "yunion:deprecated-by":"prefer_host_id"`
 }
 
 type GuestBatchMigrateParams struct {

@@ -15,6 +15,8 @@
 package compute
 
 import (
+	"yunion.io/x/jsonutils"
+
 	"yunion.io/x/onecloud/pkg/apis"
 	"yunion.io/x/onecloud/pkg/util/ansible"
 )
@@ -45,6 +47,8 @@ type LoadbalancerListenerListInput struct {
 	ListenerPort []int    `json:"listener_port"`
 
 	Scheduler []string `json:"scheduler"`
+
+	Certificate []string `json:"certificate_id"`
 
 	SendProxy []string `json:"send_proxy"`
 
@@ -162,7 +166,13 @@ type LoadbalancerAclListInput struct {
 
 type LoadbalancerDetails struct {
 	apis.VirtualResourceDetails
-	VpcResourceInfo
+
+	ManagedResourceInfo
+	CloudregionResourceInfo
+
+	LoadbalancerClusterResourceInfo
+
+	VpcResourceInfoBase
 	ZoneResourceInfoBase
 	NetworkResourceInfoBase
 
@@ -194,18 +204,61 @@ type LoadbalancerResourceInfo struct {
 	ZoneResourceInfoBase
 }
 
+type LoadbalancerResourceInput struct {
+	// 负载均衡名称
+	LoadbalancerId string `json:"loadbalancer_id"`
+
+	// swagger:ignore
+	// Deprecated
+	Loadbalancer string `json:"loadbalancer" "yunion:deprecated-by":"loadbalancer_id"`
+}
+
 type LoadbalancerFilterListInput struct {
 	VpcFilterListInput
 
 	ZonalFilterListBase
 
-	// 负载均衡名称
-	Loadbalancer string `json:"loadbalancer"`
-
-	// swagger:ignore
-	// Deprecated
-	LoadbalancerId string `json:"loadbalancer_id" deprecated-by:"loadbalancer"`
+	LoadbalancerResourceInput
 
 	// 以负载均衡名称排序
 	OrderByLoadbalancer string `json:"order_by_loadbalancer"`
+}
+
+type LoadbalancerCreateInput struct {
+	apis.VirtualResourceCreateInput
+
+	// IP地址
+	Address string `json:"address"`
+	// 地址类型
+	AddressType string `json:"address_type"`
+	// 网络类型
+	NetworkType string `json:"network_type"`
+
+	// 负载均衡集群Id
+	ClusterId string `json:"cluster_id"`
+
+	// 计费类型
+	ChargeType string `json:"charge_type"`
+
+	// 套餐名称
+	LoadbalancerSpec string `json:"loadbalancer_spec"`
+
+	// EIP ID
+	Eip string `json:"eip"`
+
+	// LB的其他配置信息
+	LBInfo jsonutils.JSONObject `json:"lb_info"`
+
+	// SLoadbalancer
+
+	VpcResourceInput
+	// Vpc         string `json:"vpc"`
+	ZoneResourceInput
+	// Zone        string `json:"zone"`
+	CloudregionResourceInput
+	// Cloudregion string `json:"cloudregion"`
+	NetworkResourceInput
+	// Network     string `json:"network"`
+	CloudproviderResourceInput
+	// Manager     string `json:"manager"`
 }

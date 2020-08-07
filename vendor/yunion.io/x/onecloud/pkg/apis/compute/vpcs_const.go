@@ -28,8 +28,6 @@ const (
 	VPC_STATUS_DELETE_FAILED = "delete_failed"
 	VPC_STATUS_DELETED       = "deleted"
 	VPC_STATUS_UNKNOWN       = "unknown"
-	VPC_STATUS_START_SYNC    = "start_sync"
-	VPC_STATUS_SYNCING       = "sync"
 
 	MAX_VPC_PER_REGION = 3
 
@@ -48,7 +46,7 @@ type UsableVpcResourceListInput struct {
 }
 
 type VpcListInput struct {
-	apis.EnabledStatusStandaloneResourceListInput
+	apis.EnabledStatusInfrasResourceBaseListInput
 	apis.ExternalizedResourceBaseListInput
 
 	ManagedResourceListInput
@@ -68,21 +66,6 @@ type VpcListInput struct {
 	// CIDR地址段
 	// example: 192.168.222.0/24
 	CidrBlock []string `json:"cidr_block"`
-}
-
-type WireListInput struct {
-	apis.StandaloneResourceListInput
-	apis.ExternalizedResourceBaseListInput
-
-	VpcFilterListInput
-
-	ZonalFilterListBase
-
-	HostResourceInput
-}
-
-type GlobalVpcListInput struct {
-	apis.EnabledStatusStandaloneResourceListInput
 }
 
 const (

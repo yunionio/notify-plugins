@@ -47,13 +47,17 @@ type ElasticcacheResourceInfo struct {
 	ZoneResourceInfoBase
 }
 
-type ElasticcacheFilterListInput struct {
-	// 以弹性缓存实例过滤
-	Elasticcache string `json:"elasticcache"`
+type ELasticcacheResourceInput struct {
+	// 弹性缓存实例(ID or Name)
+	ElasticcacheId string `json:"elasticcache_id"`
 
 	// swagger:ignore
 	// Deprecated
-	ElasticcacheId string `json:"elasticcache_id" deprecated-by:"elasticcache"`
+	Elasticcache string `json:"elasticcache" "yunion:deprecated-by":"elasticcache_id"`
+}
+
+type ElasticcacheFilterListInput struct {
+	ELasticcacheResourceInput
 
 	// 以弹性缓存实例名称排序
 	OrderByElasticcache string `json:"order_by_elasticcache"`
@@ -65,16 +69,20 @@ type ElasticcacheFilterListInput struct {
 
 type ElasticcacheAccountDetails struct {
 	apis.StatusStandaloneResourceDetails
+	apis.ProjectizedResourceInfo
 	ElasticcacheResourceInfo
 
 	SElasticcacheAccount
+	ProjectId string `json:"tenant_id"`
 }
 
 type ElasticcacheAclDetails struct {
 	apis.StandaloneResourceDetails
+	apis.ProjectizedResourceInfo
 	ElasticcacheResourceInfo
 
 	SElasticcacheAcl
+	ProjectId string `json:"tenant_id"`
 }
 
 type ElasticcacheParameterDetails struct {
@@ -82,4 +90,7 @@ type ElasticcacheParameterDetails struct {
 	ElasticcacheResourceInfo
 
 	SElasticcacheParameter
+}
+
+type ElasticcacheSyncstatusInput struct {
 }

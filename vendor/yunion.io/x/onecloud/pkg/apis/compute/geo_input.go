@@ -18,24 +18,28 @@ import (
 	"yunion.io/x/onecloud/pkg/apis"
 )
 
+type CloudregionResourceInput struct {
+	// 区域名称或ID
+	CloudregionId string `json:"cloudregion_id"`
+	// swagger:ignore
+	// Deprecated
+	// description: this param will be deprecate at 3.0
+	Cloudregion string `json:"cloudregion" "yunion:deprecated-by":"cloudregion_id"`
+	// swagger:ignore
+	// Deprecated
+	// description: this param will be deprecate at 3.0
+	Region string `json:"region" "yunion:deprecated-by":"cloudregion_id"`
+	// swagger:ignore
+	// Deprecated
+	// description: this param will be deprecate at 3.0
+	RegionId string `json:"region_id" "yunion:deprecated-by":"cloudregion_id"`
+}
+
 type RegionalFilterListInput struct {
 	// 过滤位于指定城市区域的资源
 	City string `json:"city"`
 
-	// 过滤处于指定区域内的资源
-	Cloudregion string `json:"cloudregion"`
-	// swagger:ignore
-	// Deprecated
-	// description: this param will be deprecate at 3.0
-	CloudregionId string `json:"cloudregion_id" deprecated-by:"cloudregion"`
-	// swagger:ignore
-	// Deprecated
-	// description: this param will be deprecate at 3.0
-	Region string `json:"region" deprecated-by:"cloudregion"`
-	// swagger:ignore
-	// Deprecated
-	// description: this param will be deprecate at 3.0
-	RegionId string `json:"region_id" deprecated-by:"cloudregion"`
+	CloudregionResourceInput
 
 	// 按区域名称过滤
 	OrderByRegion string `json:"order_by_region"`
@@ -53,19 +57,35 @@ type ZonalFilterListBase struct {
 	ZoneResourceInput
 
 	// 过滤处于多个指定可用区内的资源
-	Zones []string `json:"zones"`
+	ZoneIds []string `json:"zone_ids"`
+	// Deprecated
+	// swagger:ignore
+	Zones []string `json:"zones" "yunion:deprecated-by":"zone_ids"`
 
 	// 按可用区名称排序
 	// pattern:asc|desc
 	OrderByZone string `json:"order_by_zone"`
 }
 
-func (input ZonalFilterListInput) ZoneList() []string {
-	zoneStr := input.Zone
-	if len(zoneStr) > 0 {
-		input.Zones = append(input.Zones, zoneStr)
+func (input ZonalFilterListBase) ZoneList() []string {
+	zones := make([]string, 0)
+	if len(input.ZoneIds) > 0 {
+		zones = append(zones, input.ZoneIds...)
 	}
-	return input.Zones
+	if len(input.ZoneId) > 0 {
+		zones = append(zones, input.ZoneId)
+	}
+	return input.ZoneIds
+}
+
+func (input ZonalFilterListBase) FirstZone() string {
+	if len(input.ZoneId) > 0 {
+		return input.ZoneId
+	}
+	if len(input.ZoneIds) > 0 {
+		return input.ZoneIds[0]
+	}
+	return ""
 }
 
 type CloudregionListInput struct {
@@ -76,6 +96,8 @@ type CloudregionListInput struct {
 	ManagedResourceListInput
 	UsableResourceListInput
 	UsableVpcResourceListInput
+
+	CapabilityListInput
 
 	// 过滤位于指定城市的区域
 	City string `json:"city"`
@@ -107,9 +129,9 @@ type ZoneListInput struct {
 type ZoneResourceInput struct {
 	// 可用区ID或名称
 	// example:zone1
-	Zone string `json:"zone"`
+	ZoneId string `json:"zone_id"`
 
 	// swagger:ignore
 	// Deprecated
-	ZoneId string `json:"zone_id" deprecated-by:"zone"`
+	Zone string `json:"zone" "yunion:deprecated-by":"zone_id"`
 }

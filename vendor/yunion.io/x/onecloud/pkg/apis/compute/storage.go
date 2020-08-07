@@ -21,7 +21,7 @@ import (
 )
 
 type StorageCreateInput struct {
-	apis.EnabledStatusStandaloneResourceCreateInput
+	apis.EnabledStatusInfrasResourceBaseCreateInput
 
 	// 存储类型
 	//
@@ -49,12 +49,7 @@ type StorageCreateInput struct {
 	// required: true
 	MediumType string `json:"medium_type"`
 
-	// 可用区名称或ID, 建议使用ID
-	// required: true
-	Zone string `json:"zone"`
-
-	// swagger:ignore
-	ZoneId string
+	ZoneResourceInput
 
 	// ceph认证主机, storage_type为 rbd 时,此参数为必传项
 	// 单个ip或以逗号分隔的多个ip具体可查询 /etc/ceph/ceph.conf 文件
@@ -112,25 +107,36 @@ type StorageCreateInput struct {
 	NfsSharedDir string `json:"nfs_shared_dir"`
 }
 
-type StorageDetails struct {
-	apis.EnabledStatusStandaloneResourceDetails
-	ManagedResourceInfo
-	ZoneResourceInfo
-
-	SStorage
-
+type SStorageCapacityInfo struct {
 	// 容量大小, 单位Mb
 	Capacity int64 `json:"capacity"`
 	// 已使用容量大小
-	Used int64 `json:"used"`
+	UsedCapacity int64 `json:"used_capacity"`
 	// 浪费容量大小(异常磁盘大小总和)
-	Wasted int64 `json:"wasted"`
+	WasteCapacity int64 `json:"waste_capacity"`
 	// 虚拟容量大小
-	VCapacity int64 `json:"vcapacity"`
+	VirtualCapacity int64 `json:"virtual_capacity"`
 	// 超分率
 	CommitRate float64 `json:"commit_rate"`
 	// 可使用容量
 	FreeCapacity int64 `json:"free_capacity"`
+}
+
+type StorageHost struct {
+	Id   string
+	Name string
+}
+
+type StorageDetails struct {
+	apis.EnabledStatusInfrasResourceBaseDetails
+	ManagedResourceInfo
+	ZoneResourceInfo
+
+	SStorageCapacityInfo
+
+	SStorage
+
+	Hosts []StorageHost `json:"hosts"`
 
 	Schedtags []SchedtagShortDescDetails `json:"schedtags"`
 

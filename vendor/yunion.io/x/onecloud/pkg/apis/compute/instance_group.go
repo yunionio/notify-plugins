@@ -44,13 +44,17 @@ type InstanceGroupDetail struct {
 	GuestCount int `json:"guest_count"`
 }
 
-type GroupFilterListInput struct {
-	// 以指定实例组（ID或Name）过滤列表结果
-	Group string `json:"group"`
+type GroupResourceInput struct {
+	// 实例组（ID或Name）
+	GroupId string `json:"group_id"`
 	// swagger:ignore
 	// Deprecated
 	// Filter by instance group Id
-	GroupId string `json:"group_id" deprecated-by:"group"`
+	Group string `json:"group" "yunion:deprecated-by":"group_id"`
+}
+
+type GroupFilterListInput struct {
+	GroupResourceInput
 
 	// 按组名排序
 	OrderByGroup string `json:"order_by_group"`

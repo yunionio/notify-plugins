@@ -127,7 +127,7 @@ var (
 		STORAGE_ZSTACK_LOCAL_STORAGE, STORAGE_ZSTACK_CEPH, STORAGE_GPFS,
 	}
 
-	HOST_STORAGE_LOCAL_TYPES = []string{STORAGE_LOCAL, STORAGE_BAREMETAL, STORAGE_ZSTACK_LOCAL_STORAGE}
+	HOST_STORAGE_LOCAL_TYPES = []string{STORAGE_LOCAL, STORAGE_BAREMETAL, STORAGE_ZSTACK_LOCAL_STORAGE, STORAGE_OPENSTACK_NOVA}
 
 	STORAGE_LIMITED_TYPES = []string{STORAGE_LOCAL, STORAGE_BAREMETAL, STORAGE_NAS, STORAGE_RBD, STORAGE_NFS, STORAGE_GPFS}
 
@@ -138,13 +138,17 @@ var (
 	SHARED_STORAGE = []string{STORAGE_NFS, STORAGE_GPFS, STORAGE_RBD}
 )
 
-type StorageFilterListInputBase struct {
-	// 过滤关联此存储（ID或Name）的列表结果
-	Storage string `json:"storage"`
+type StorageResourceInput struct {
+	// 存储（ID或Name）
+	StorageId string `json:"storage_id"`
 	// swagger:ignore
 	// Deprecated
 	// filter by storage_id
-	StorageId string `json:"storage_id" deprecated-by:"storage"`
+	Storage string `json:"storage" "yunion:deprecated-by":"storage_id"`
+}
+
+type StorageFilterListInputBase struct {
+	StorageResourceInput
 
 	// 以存储名称排序
 	// pattern:asc|desc
@@ -168,8 +172,9 @@ type StorageShareFilterListInput struct {
 }
 
 type StorageListInput struct {
-	apis.EnabledStatusStandaloneResourceListInput
+	apis.EnabledStatusInfrasResourceBaseListInput
 	apis.ExternalizedResourceBaseListInput
+	SchedtagResourceInput
 
 	ManagedResourceListInput
 	ZonalFilterListInput

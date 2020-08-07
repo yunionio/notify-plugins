@@ -21,9 +21,11 @@ import (
 	"time"
 
 	"yunion.io/x/jsonutils"
+	"yunion.io/x/pkg/errors"
 	"yunion.io/x/pkg/utils"
 
 	api "yunion.io/x/onecloud/pkg/apis/identity"
+	"yunion.io/x/onecloud/pkg/httperrors"
 	"yunion.io/x/onecloud/pkg/util/rbacutils"
 )
 
@@ -131,7 +133,7 @@ type KeystoneTokenV3 struct {
 	// 认证上下文
 	Context SAuthContext `json:"context"`
 
-	// 当用户认证时未指定scoepe时，会返回改用户所有的项目
+	// 当用户认证时未指定scope时，会返回该用户所有的项目
 	Projects []KeystoneProjectV3 `json:"projects"`
 	// 返回用户在所有项目的所有角色信息
 	RoleAssignments []api.SRoleAssignment `json:"role_assignments"`
@@ -249,16 +251,16 @@ func (this *TokenCredentialV3) GetServiceURLs(service, region, zone, endpointTyp
 	return this.Token.Catalog.GetServiceURLs(service, region, zone, endpointType)
 }
 
-func (this *TokenCredentialV3) GetServicesByInterface(region string, infType string) []ExternalService {
-	return this.Token.Catalog.GetServicesByInterface(region, infType)
-}
-
 func (this *TokenCredentialV3) GetInternalServices(region string) []string {
-	return this.Token.Catalog.getInternalServices(region)
+	return this.Token.Catalog.GetInternalServices(region)
 }
 
 func (this *TokenCredentialV3) GetExternalServices(region string) []ExternalService {
-	return this.Token.Catalog.getExternalServices(region)
+	return this.Token.Catalog.GetExternalServices(region)
+}
+
+func (this *TokenCredentialV3) GetServicesByInterface(region string, infType string) []ExternalService {
+	return this.Token.Catalog.GetServicesByInterface(region, infType)
 }
 
 func (this *TokenCredentialV3) GetEndpoints(region string, endpointType string) []Endpoint {
@@ -277,7 +279,7 @@ func (this *TokenCredentialV3) GetLoginIp() string {
 	return this.Token.Context.Ip
 }
 
-func (catalog KeystoneServiceCatalogV3) getInternalServices(region string) []string {
+func (catalog KeystoneServiceCatalogV3) GetInternalServices(region string) []string {
 	services := make([]string, 0)
 	for i := 0; i < len(catalog); i++ {
 		exit := false
@@ -295,7 +297,7 @@ func (catalog KeystoneServiceCatalogV3) getInternalServices(region string) []str
 	return services
 }
 
-func (catalog KeystoneServiceCatalogV3) getExternalServices(region string) []ExternalService {
+func (catalog KeystoneServiceCatalogV3) GetExternalServices(region string) []ExternalService {
 	return catalog.GetServicesByInterface(region, "console")
 }
 
@@ -427,7 +429,7 @@ func (catalog KeystoneServiceCatalogV3) GetServiceURLs(service, region, zone, en
 			return selected, nil
 		}
 	}
-	return nil, fmt.Errorf("No such service %s", service)
+	return nil, errors.Wrapf(httperrors.ErrNotFound, "No such service %s", service)
 }
 
 func (self *TokenCredentialV3) GetCatalogData(serviceTypes []string, region string) jsonutils.JSONObject {

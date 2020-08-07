@@ -184,7 +184,6 @@ func (lrw *loggingResponseWriter) Hijack() (rwc net.Conn, buf *bufio.ReadWriter,
 }
 
 func (lrw *loggingResponseWriter) WriteHeader(code int) {
-	log.Debugf("XXXX loggingResponseWriter WriteHeader %d", code)
 	if code < 100 || code >= 600 {
 		log.Errorf("Invalud status code %d, set code to 598", code)
 		code = 598
@@ -268,7 +267,7 @@ func (app *Application) defaultHandle(w http.ResponseWriter, r *http.Request, ri
 		hand, ok := handler.(*SHandlerInfo)
 		if ok {
 			fw := newResponseWriterChannel(w)
-			worker := make(chan *SWorker)
+			currentWorker := make(chan *SWorker, 1) // make it a buffered channel
 			to := hand.FetchProcessTimeout(r)
 			if to == 0 {
 				to = app.processTimeout
@@ -320,13 +319,13 @@ func (app *Application) defaultHandle(w http.ResponseWriter, r *http.Request, ri
 					} // otherwise, the task has been timeout
 					fw.closeChannels()
 				},
-				worker,
+				currentWorker,
 				func(err error) {
 					httperrors.InternalServerError(&fw, "Internal server error: %s", err)
 					fw.closeChannels()
 				},
 			)
-			runErr := fw.wait(ctx, worker)
+			runErr := fw.wait(ctx, currentWorker)
 			if runErr != nil {
 				switch runErr.(type) {
 				case *httputils.JSONClientError:

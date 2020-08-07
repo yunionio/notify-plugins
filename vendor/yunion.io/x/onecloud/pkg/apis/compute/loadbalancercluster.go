@@ -39,16 +39,20 @@ type LoadbalancerClusterResourceInfo struct {
 	Cluster string `json:"cluster"`
 }
 
+type LoadbalancerClusterResourceInput struct {
+	// 负载均衡集群ID或名称
+	ClusterId string `json:"cluster_id"`
+
+	// swagger:ignore
+	// Deprecated
+	Cluster string `json:"cluster" "yunion:deprecated-by":"cluster_id"`
+}
+
 type LoadbalancerClusterFilterListInput struct {
 	ZonalFilterListInput
 	WireFilterListBase
 
-	// 负载均衡集群ID或名称
-	Cluster string `json:"cluster"`
-
-	// swagger:ignore
-	// Deprecated
-	ClusterId string `json:"cluster_id" deprecated-by:"cluster"`
+	LoadbalancerClusterResourceInput
 
 	// 以负载均衡集群排序
 	OrderByCluster string `json:"order_by_cluster"`

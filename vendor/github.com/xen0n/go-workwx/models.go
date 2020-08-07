@@ -113,6 +113,10 @@ type respMessageSend struct {
 	InvalidTags    string `json:"invalidtag"`
 }
 
+type RespMessageSend struct {
+	respMessageSend
+}
+
 type reqUserGet struct {
 	UserID string
 }

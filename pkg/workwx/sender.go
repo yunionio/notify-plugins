@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 	"strconv"
+	"strings"
 	"sync"
 
 	wx "github.com/xen0n/go-workwx"
@@ -88,6 +89,27 @@ func (ws *SWorkwxSender) Send(ctx context.Context, params *apis.SendParams) erro
 	}
 	content := fmt.Sprintf("# %s\n\n%s", params.Title, params.Message)
 	return ws.client.SendMarkdownMessage(&re, content, true)
+}
+
+func (ws *SWorkwxSender) BatchSend(ctx context.Context, params *apis.BatchSendParams) ([]*apis.FailedRecord, error) {
+	re := wx.Recipient{
+		UserIDs: params.Contacts,
+	}
+	content := fmt.Sprintf("# %s\n\n%s", params.Title, params.Message)
+	resp, err := ws.client.SendMarkdownMessageWithResp(&re, content, true)
+	if err != nil {
+		return nil, err
+	}
+	invalidUsers := strings.Split(resp.InvalidUsers, ",")
+	records := make([]*apis.FailedRecord, len(invalidUsers))
+	for i := range records {
+		record := &apis.FailedRecord{
+			Contact: invalidUsers[i],
+			Reason:  "invalid user",
+		}
+		records[i] = record
+	}
+	return records, nil
 }
 
 func NewSender(config common.IServiceOptions) common.ISender {

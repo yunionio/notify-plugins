@@ -104,7 +104,38 @@ func (self *SEmailSender) Send(ctx context.Context, params *apis.SendParams) err
 }
 
 func (self *SEmailSender) BatchSend(ctx context.Context, params *apis.BatchSendParams) ([]*apis.FailedRecord, error) {
-	return nil, errors.ErrNotImplemented
+	ret := make([]*apis.FailedRecord, len(params.Contacts))
+	send := func(i int) {
+		param := apis.SendParams{
+			Contact:        params.Contacts[i],
+			Topic:          params.Title,
+			Title:          params.Title,
+			Message:        params.Message,
+			Priority:       params.Priority,
+			RemoteTemplate: params.RemoteTemplate,
+		}
+		err := self.send(&param)
+		if err == nil {
+			return
+		}
+		record := &apis.FailedRecord{
+			Contact: params.Contacts[i],
+			Reason:  err.Error(),
+		}
+		ret[i] = record
+	}
+	for i := range ret {
+		send(i)
+	}
+	// remove nil
+	processedRet := make([]*apis.FailedRecord, 0, len(ret))
+	for i := range ret {
+		if ret[i] == nil {
+			continue
+		}
+		processedRet = append(processedRet, ret[i])
+	}
+	return processedRet, nil
 }
 
 func NewSender(config common.IServiceOptions) common.ISender {
@@ -125,7 +156,7 @@ func (self *SEmailSender) send(args *apis.SendParams) error {
 	gmsg.SetHeader("Subject", args.Topic)
 	gmsg.SetHeader("Subject", args.Title)
 	gmsg.SetBody("text/html", args.Message)
-	ret := make(chan bool)
+	ret := make(chan bool, 1)
 	self.msgChan <- &sSendUnit{gmsg, ret}
 	timer := time.NewTimer(1 * time.Minute)
 	defer timer.Stop()

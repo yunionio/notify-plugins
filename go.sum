@@ -554,10 +554,14 @@ github.com/rainzm/go-workwx v0.1.2-0.20200804090836-68d89c034359 h1:hCSmHS8sCKbS
 github.com/rainzm/go-workwx v0.1.2-0.20200804090836-68d89c034359/go.mod h1:RSyEgV2eJC4D123mRnFC2pMzu/duEylmtkt4ntaQkIQ=
 github.com/rainzm/go-workwx v0.1.2-0.20200807070454-4d9a3468bc37 h1:bh5BGvwtNojPFng0YVS2TZXsFur+C8k4pWEg5L9sQoE=
 github.com/rainzm/go-workwx v0.1.2-0.20200807070454-4d9a3468bc37/go.mod h1:RSyEgV2eJC4D123mRnFC2pMzu/duEylmtkt4ntaQkIQ=
+github.com/rainzm/go-workwx v0.1.2-0.20200810035240-4b03e1755988 h1:JtzY5cmryEhwHHK9rlUu+GiqyDfu4M2OgqUNA0038Io=
+github.com/rainzm/go-workwx v0.1.2-0.20200810035240-4b03e1755988/go.mod h1:RSyEgV2eJC4D123mRnFC2pMzu/duEylmtkt4ntaQkIQ=
 github.com/rainzm/godingtalk v0.0.0-20200314083338-49c39549c62a h1:WFqPas4vqWN6ln1nr+UyPeu9nDU1i6LZCIlGJPUUmXI=
 github.com/rainzm/godingtalk v0.0.0-20200314083338-49c39549c62a/go.mod h1:Je6PSjUH7IKCPpFq5ti2I9ak1szzSNgCIMlP0s+8pbQ=
 github.com/rainzm/godingtalk v0.0.0-20200806080839-ecc95df6df5f h1:0SoBMxRIQElTWoYUbupRPP2gJsCmOuJ+7K3T1qECvuE=
 github.com/rainzm/godingtalk v0.0.0-20200806080839-ecc95df6df5f/go.mod h1:Je6PSjUH7IKCPpFq5ti2I9ak1szzSNgCIMlP0s+8pbQ=
+github.com/rainzm/godingtalk v0.0.0-20200814070325-9ef7f16afffc h1:78aVWeKO4TLyYtS8weAmL6MmoN8Qo44QZey3nM0I628=
+github.com/rainzm/godingtalk v0.0.0-20200814070325-9ef7f16afffc/go.mod h1:Je6PSjUH7IKCPpFq5ti2I9ak1szzSNgCIMlP0s+8pbQ=
 github.com/rcrowley/go-metrics v0.0.0-20181016184325-3113b8401b8a/go.mod h1:bCqnVzQkZxMG4s8nGwiZ5l3QUCyqpo9Y+/ZMZ9VjZe4=
 github.com/remyoudompheng/bigfft v0.0.0-20170806203942-52369c62f446/go.mod h1:uYEyJGbgTkfkS4+E/PavXkNJcbFIpEtjt2B0KDQ5+9M=
 github.com/robfig/cron v1.1.0/go.mod h1:JGuDeoQd7Z6yL4zQhZ3OPEVHB7fL6Ka6skscFHfmt2k=

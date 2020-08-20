@@ -20,6 +20,7 @@ func (c *DingTalkClient) TopAPIMsgSendv2(userList []string, msg map[string]inter
 		"userid_list": strings.Join(userList, ","),
 		"msg":         msg,
 	}
+	c.RefreshAccessToken()
 	err := c.httpRPC(topAPIMsgAsyncSendv2, nil, request, &resp)
 	if err != nil {
 		return 0, err
@@ -43,6 +44,7 @@ func (c *DingTalkClient) TopAPIMsgGetSendProgressv2(taskID int) (TopAPIMsgSendPr
 		"agent_id": c.AgentID,
 		"task_id":  taskID,
 	}
+	c.RefreshAccessToken()
 	err := c.httpRPC(topAPIMsgGetprogress, nil, request, &resp)
 	if err != nil {
 		return TopAPIMsgSendProgress{}, err
@@ -70,6 +72,7 @@ func (c *DingTalkClient) TopAPIMsgGetSendResultv2(taskID int) (TopAPIMsgSendResu
 		"agent_id": c.AgentID,
 		"task_id":  taskID,
 	}
+	c.RefreshAccessToken()
 	err := c.httpRPC(topAPIMsgGetResult, nil, request, &resp)
 	if err != nil {
 		return TopAPIMsgSendResult{}, err

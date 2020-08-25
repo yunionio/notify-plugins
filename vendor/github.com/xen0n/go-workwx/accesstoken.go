@@ -2,6 +2,7 @@ package workwx
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
@@ -28,6 +29,7 @@ func (c *WorkwxApp) syncAccessToken() error {
 	c.tokenMu.Lock()
 	defer c.tokenMu.Unlock()
 
+	fmt.Printf("change accessToken: %s  ==>  %s\n", c.accessToken, tok.AccessToken)
 	c.accessToken = tok.AccessToken
 	c.tokenExpiresIn = time.Duration(tok.ExpiresInSecs) * time.Second
 	c.lastRefresh = time.Now()

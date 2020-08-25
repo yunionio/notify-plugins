@@ -15,9 +15,9 @@
 package email
 
 const (
-	USERNAME  = "mail.username"
-	PASSWORD  = "mail.password"
-	HOSTNAME  = "mail.smtp.hostname"
-	HOSTPORT  = "mail.smtp.hostport"
-	GLOBALSSL = "mail.global.ssl"
+	USERNAME  = "username"
+	PASSWORD  = "password"
+	HOSTNAME  = "hostname"
+	HOSTPORT  = "hostport"
+	GLOBALSSL = "ssl"
 )

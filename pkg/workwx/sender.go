@@ -88,7 +88,7 @@ func (ws *SWorkwxSender) Send(ctx context.Context, params *apis.SendParams) erro
 		UserIDs: []string{params.Contact},
 	}
 	content := fmt.Sprintf("# %s\n\n%s", params.Title, params.Message)
-	return ws.client.SendMarkdownMessage(&re, content, true)
+	return ws.client.SendMarkdownMessage(&re, content, false)
 }
 
 func (ws *SWorkwxSender) BatchSend(ctx context.Context, params *apis.BatchSendParams) ([]*apis.FailedRecord, error) {
@@ -96,11 +96,14 @@ func (ws *SWorkwxSender) BatchSend(ctx context.Context, params *apis.BatchSendPa
 		UserIDs: params.Contacts,
 	}
 	content := fmt.Sprintf("# %s\n\n%s", params.Title, params.Message)
-	resp, err := ws.client.SendMarkdownMessageWithResp(&re, content, true)
+	resp, err := ws.client.SendMarkdownMessageWithResp(&re, content, false)
 	if err != nil {
 		return nil, err
 	}
-	invalidUsers := strings.Split(resp.InvalidUsers, ",")
+	var invalidUsers []string
+	if len(resp.InvalidUsers) > 0 {
+		invalidUsers = strings.Split(resp.InvalidUsers, ",")
+	}
 	records := make([]*apis.FailedRecord, len(invalidUsers))
 	for i := range records {
 		record := &apis.FailedRecord{

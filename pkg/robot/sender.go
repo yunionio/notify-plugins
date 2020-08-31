@@ -33,14 +33,14 @@ type SendFunc func(ctx context.Context, token, title, msg string, contacts []str
 
 type SRebotSender struct {
 	common.SSenderBase
-	send       SendFunc
+	send          SendFunc
 	WebhookPrefix string
 }
 
 func NewSender(config common.IServiceOptions, send SendFunc, prefix string) common.ISender {
 	return &SRebotSender{
 		SSenderBase:   common.NewSSednerBase(config),
-		send: send,
+		send:          send,
 		WebhookPrefix: prefix,
 	}
 }
@@ -76,6 +76,7 @@ func (self *SRebotSender) ValidateConfig(ctx context.Context, configs interface{
 	token := webhook[strings.Index(webhook, self.WebhookPrefix)+len(self.WebhookPrefix):]
 	err = self.send(ctx, token, "Validate", "This is a validate message.", []string{})
 	if err == ErrNoSuchWebhook {
+		err = nil
 		msg = "Invalid access token in webhook"
 		return
 	}

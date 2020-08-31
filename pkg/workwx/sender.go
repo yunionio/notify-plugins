@@ -128,8 +128,9 @@ func (ws *SWorkwxSender) checkCropIDAndSecret(corpId, corpSecret string) (ok boo
 		ok = true
 		return
 	}
-	cErr, ok := err.(*wx.WorkwxClientError)
-	if !ok {
+	ok = false
+	cErr, iok := err.(*wx.WorkwxClientError)
+	if !iok {
 		return
 	}
 	err = nil

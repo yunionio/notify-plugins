@@ -26,8 +26,8 @@ import (
 	"yunion.io/x/onecloud/pkg/mcclient/modules"
 	"yunion.io/x/pkg/errors"
 
-	"yunion.io/x/notify-plugin/pkg/common"
 	"yunion.io/x/notify-plugin/pkg/apis"
+	"yunion.io/x/notify-plugin/pkg/common"
 )
 
 type SWebsocketSender struct {
@@ -64,10 +64,14 @@ func (self *SWebsocketSender) Send(ctx context.Context, params *apis.SendParams)
 	})
 }
 
+func (self *SWebsocketSender) BatchSend(ctx context.Context, params *apis.BatchSendParams) ([]*apis.FailedRecord, error) {
+	return common.BatchSend(ctx, params, self.Send)
+}
+
 func NewSender(config common.IServiceOptions) common.ISender {
 	return &SWebsocketSender{
 		SSenderBase: common.NewSSednerBase(config),
-		region:     config.GetOthers().(string),
+		region:      config.GetOthers().(string),
 	}
 }
 

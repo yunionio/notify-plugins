@@ -72,6 +72,41 @@ func (self *SSenderBase) BatchSend(ctx context.Context, params *apis.BatchSendPa
 	return nil, errors.ErrNotImplemented
 }
 
+func BatchSend(ctx context.Context, params *apis.BatchSendParams, singleSend func(context.Context, *apis.SendParams) error) ([]*apis.FailedRecord, error) {
+	ret := make([]*apis.FailedRecord, len(params.Contacts))
+	send := func(i int) {
+		param := &apis.SendParams{
+			Contact:        params.Contacts[i],
+			Topic:          params.Title,
+			Title:          params.Title,
+			Message:        params.Message,
+			Priority:       params.Priority,
+			RemoteTemplate: params.RemoteTemplate,
+		}
+		err := singleSend(ctx, param)
+		if err != nil {
+			return
+		}
+		record := &apis.FailedRecord{
+			Contact: param.Contact,
+			Reason:  err.Error(),
+		}
+		ret[i] = record
+	}
+	for i := range ret {
+		send(i)
+	}
+	// remove nil
+	processedRet := make([]*apis.FailedRecord, 0, len(ret))
+	for i := range ret {
+		if ret[i] == nil {
+			continue
+		}
+		processedRet = append(processedRet, ret[i])
+	}
+	return processedRet, nil
+}
+
 func NewSSednerBase(config IServiceOptions) SSenderBase {
 	return SSenderBase{
 		ConfigCache: NewConfigCache(),

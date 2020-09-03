@@ -84,7 +84,7 @@ func BatchSend(ctx context.Context, params *apis.BatchSendParams, singleSend fun
 			RemoteTemplate: params.RemoteTemplate,
 		}
 		err := singleSend(ctx, param)
-		if err != nil {
+		if err == nil {
 			return
 		}
 		record := &apis.FailedRecord{

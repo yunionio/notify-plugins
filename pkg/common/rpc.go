@@ -26,6 +26,16 @@ import (
 	"yunion.io/x/notify-plugin/pkg/apis"
 )
 
+var (
+	ErrNoSuchMobile     = errors.Error("No such mobile")
+	ErrIncompleteConfig = errors.Error("Incomplete config")
+)
+
+func init() {
+	RegisterErr(ErrNoSuchMobile, codes.NotFound)
+	RegisterErr(ErrIncompleteConfig, codes.PermissionDenied)
+}
+
 var ErrCodeMap = make(map[error]codes.Code)
 
 func RegisterErr(originErr error, errCode codes.Code) {
@@ -39,6 +49,8 @@ func ConvertErr(err error) error {
 	if code, ok := ErrCodeMap[errors.Cause(err)]; ok {
 		return status.Error(code, err.Error())
 	}
+	st := status.New(codes.Internal, "test")
+	st.WithDetails()
 	return status.Error(codes.Internal, err.Error())
 }
 

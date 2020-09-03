@@ -40,6 +40,10 @@ type SFeishuSender struct {
 	clientLock sync.Mutex
 }
 
+func init() {
+	common.RegisterErr(errors.ErrNotFound, codes.NotFound)
+}
+
 func (self *SFeishuSender) IsReady(ctx context.Context) bool {
 	return self.client != nil
 }
@@ -164,7 +168,13 @@ func (self *SFeishuSender) userIdByMobile(mobile string) (string, error) {
 	if self.needRetry(err) {
 		userid, err = self.client.UserIdByMobile(mobile)
 	}
-	return userid, err
+	if err == nil {
+		return userid, nil
+	}
+	if strings.Contains(err.Error(), "99991672") || strings.Contains(err.Error(), "99991401") {
+		return "", errors.Wrap(common.ErrIncompleteConfig, err.Error())
+	}
+	return "", err
 }
 
 func (self *SFeishuSender) needRetry(err error) (retry bool) {

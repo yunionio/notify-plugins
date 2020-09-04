@@ -46,7 +46,7 @@ build_bin() {
 		-v $SRC_DIR/_output/alpine-build/_cache:/root/.cache \
 		registry.cn-beijing.aliyuncs.com/yunionio/alpine-build:1.0-3 \
 		/bin/sh -c "set -ex; cd /root/go/src/yunion.io/x/$PROJ;
-			$BUILD_ARCH $BUILD_CC $BUILD_CGO GOOS=linux make cmd/dingtalk cmd/dingtalk-robot cmd/email cmd/feishu cmd/feishu-robot cmd/smsaliyun cmd/websocket;
+			$BUILD_ARCH $BUILD_CC $BUILD_CGO GOOS=linux make all;
 			chown -R $(id -u):$(id -g) _output;
 			find _output/bin/ -type f | xargs ls -lah"
 }

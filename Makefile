@@ -27,10 +27,10 @@ cmd/%: fmt
 	go build $(GO_BUILD_FLAGS) -o $(BIN_DIR)/$(shell basename $@) yunion.io/x/notify-plugin/$@
 
 image:
-	sudo REGISTRY=${REGISTRY} TAG=${VERSION} ARCH=${ARCH} ${ROOT_DIR}/scripts/docker_push.sh
+	REGISTRY=${REGISTRY} TAG=${VERSION} ARCH=${ARCH} ${ROOT_DIR}/scripts/docker_push.sh
 
 image-push:
-	sudo PUSH=true REGISTRY=${REGISTRY} TAG=${VERSION} ARCH=${ARCH} ${ROOT_DIR}/scripts/docker_push.sh
+	PUSH=true REGISTRY=${REGISTRY} TAG=${VERSION} ARCH=${ARCH} ${ROOT_DIR}/scripts/docker_push.sh
 
 rpm/%: cmd/%
 	$(BUILD_SCRIPT) $*

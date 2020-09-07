@@ -65,11 +65,13 @@ buildx_and_push() {
     local arch=$4
     local push=()
     docker buildx build -t "$tag" --platform "linux/$arch" -f "$2" "$3" --push
+    docker pull "$tag"
 }
 
 push_image() {
     local tag=$1
     docker push "$tag"
+    docker pull "$tag"
 }
 
 build_process() {

@@ -95,3 +95,8 @@ func (self *SRebotSender) Send(ctx context.Context, params *apis.SendParams) err
 	}
 	return self.send(ctx, webhook, params.Title, params.Message, contacts)
 }
+
+func (self *SRebotSender) BatchSend(ctx context.Context, params *apis.BatchSendParams) ([]*apis.FailedRecord, error) {
+	webhook, _ := self.ConfigCache.Get(WEBHOOK)
+	return nil, self.send(ctx, webhook, params.Title, params.Message, params.Contacts)
+}

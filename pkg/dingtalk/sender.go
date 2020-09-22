@@ -205,6 +205,9 @@ func (self *SDingtalkSender) getUseridByMobile(mobile string) (string, error) {
 	if self.needRetry(err) {
 		userid, err = self.client.UseridByMobile(mobile)
 	}
+	if err == nil {
+		return userid, nil
+	}
 	oErr, ok := err.(godingtalk.OAPIError)
 	if !ok {
 		return "", err
@@ -215,10 +218,7 @@ func (self *SDingtalkSender) getUseridByMobile(mobile string) (string, error) {
 	if oErr.ErrCode == 60020 || oErr.ErrCode == 60011 {
 		return "", errors.Wrap(common.ErrIncompleteConfig, err.Error())
 	}
-	if err != nil {
-		return "", err
-	}
-	return userid, nil
+	return "", err
 }
 
 func (self *SDingtalkSender) initClient() error {

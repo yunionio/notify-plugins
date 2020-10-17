@@ -55,48 +55,69 @@ func (self *SRebotSender) CheckConfig(ctx context.Context, configs map[string]st
 	if !ok {
 		return nil, fmt.Errorf("require %s", nokey)
 	}
-	return vals[0], nil
+	webhooks := strings.Split(vals[0], ";")
+	for i := range webhooks {
+		webhooks[i] = strings.TrimSpace(webhooks[i])
+	}
+	return webhooks, nil
 }
 
 func (self *SRebotSender) UpdateConfig(ctx context.Context, configs map[string]string) error {
-	url, _ := configs[WEBHOOK]
-	if index := strings.Index(url, self.WebhookPrefix); index >= 0 {
-		configs[WEBHOOK] = url[index+len(self.WebhookPrefix):]
+	config, _ := configs[WEBHOOK]
+	urls := strings.Split(config, ";")
+	webhooks := make([]string, len(urls))
+	for i, url := range urls {
+		url = strings.TrimSpace(url)
+		webhooks[i] = url[len(self.WebhookPrefix):]
 	}
-	self.ConfigCache.BatchSet(configs)
+	self.ConfigCache.BatchSet(map[string]string{WEBHOOK: strings.Join(webhooks, ";")})
 	return nil
 }
 
 func (self *SRebotSender) ValidateConfig(ctx context.Context, configs interface{}) (isValid bool, msg string, err error) {
-	webhook := configs.(string)
-	if !strings.HasPrefix(webhook, self.WebhookPrefix) {
-		msg = "Invalid webhook"
-		return
-	}
-	token := webhook[strings.Index(webhook, self.WebhookPrefix)+len(self.WebhookPrefix):]
-	err = self.send(ctx, token, "Validate", "This is a validate message.", []string{})
-	if err == ErrNoSuchWebhook {
-		err = nil
-		msg = "Invalid access token in webhook"
-		return
-	}
-	if err == nil {
+	webhooks := configs.([]string)
+	for _, webhook := range webhooks {
+		urlOrToken := webhook[len(self.WebhookPrefix):]
+		err = self.send(ctx, urlOrToken, "Validate", "This is a validate message.", []string{})
+		if err == ErrNoSuchWebhook {
+			isValid = false
+			err = nil
+			msg = fmt.Sprintf("Invalid webhook %q", webhook)
+			break
+		}
+		if err != nil {
+			return isValid, msg, err
+		}
 		isValid = true
 	}
-	return
+	return isValid, msg, nil
 }
 
 func (self *SRebotSender) Send(ctx context.Context, params *apis.SendParams) error {
-	webhook, _ := self.ConfigCache.Get(WEBHOOK)
+	config, _ := self.ConfigCache.Get(WEBHOOK)
+	webhooks := strings.Split(config, ";")
 	// separate contacts
 	contacts := strings.Split(params.Contact, ",")
 	for i := range contacts {
 		contacts[i] = strings.TrimSpace(contacts[i])
 	}
-	return self.send(ctx, webhook, params.Title, params.Message, contacts)
+	for _, webhook := range webhooks {
+		err := self.send(ctx, webhook, params.Title, params.Message, contacts)
+		if err != nil {
+			return errors.Wrapf(err, "unable to send message to webhook %q", webhook)
+		}
+	}
+	return nil
 }
 
 func (self *SRebotSender) BatchSend(ctx context.Context, params *apis.BatchSendParams) ([]*apis.FailedRecord, error) {
-	webhook, _ := self.ConfigCache.Get(WEBHOOK)
-	return nil, self.send(ctx, webhook, params.Title, params.Message, params.Contacts)
+	config, _ := self.ConfigCache.Get(WEBHOOK)
+	webhooks := strings.Split(config, ";")
+	for _, webhook := range webhooks {
+		err := self.send(ctx, webhook, params.Title, params.Message, params.Contacts)
+		if err != nil {
+			return nil, errors.Wrapf(err, "unable to send message to webhook %q", webhook)
+		}
+	}
+	return nil, nil
 }

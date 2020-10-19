@@ -107,7 +107,7 @@ case "$ARCH" in
 			build_process_with_buildx $arch
 		done
 		;;
-	arm64|amd64)
+	arm64)
 		build_process_with_buildx $ARCH
 		;;
 	*)

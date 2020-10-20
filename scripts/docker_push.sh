@@ -3,6 +3,11 @@
 set -o errexit
 set -o pipefail
 
+if [[ "$DEBUG" == "true" ]]; then
+    set -ex
+    export PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
+fi
+
 readlink_mac() {
   cd `dirname $1`
   TARGET_FILE=`basename $1`

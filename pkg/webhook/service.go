@@ -18,7 +18,8 @@ import "yunion.io/x/notify-plugin/pkg/common"
 
 type SOptions struct {
 	common.SBaseOptions
-	Insecure bool
+	Insecure bool `help:"insecure for http client"`
+	Timeout  int  `help:"timeout for http client" default:"60"`
 }
 
 func StartService() {

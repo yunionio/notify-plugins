@@ -18,6 +18,7 @@ import (
 	"context"
 	"net/http"
 	"strings"
+	"time"
 
 	"yunion.io/x/jsonutils"
 	"yunion.io/x/log"
@@ -29,7 +30,7 @@ import (
 
 func NewSender(configs common.IServiceOptions) common.ISender {
 	option := configs.(*SOptions)
-	initHttpClient(option.Insecure)
+	initHttpClient(option)
 	return robot.NewSender(configs, Send, "")
 }
 
@@ -37,9 +38,10 @@ var (
 	cli *http.Client
 )
 
-func initHttpClient(insecure bool) {
+func initHttpClient(opt *SOptions) {
 	cli = &http.Client{
-		Transport: httputils.GetTransport(false),
+		Transport: httputils.GetTransport(opt.Insecure),
+		Timeout:   time.Duration(opt.Timeout) * time.Second,
 	}
 }
 

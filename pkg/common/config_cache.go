@@ -18,7 +18,7 @@ import "sync"
 
 type SConfigCache struct {
 	configs map[string]string
-	lock sync.RWMutex
+	lock    sync.RWMutex
 }
 
 func NewConfigCache() *SConfigCache {
@@ -43,6 +43,12 @@ func (cc *SConfigCache) IsExist(key string) bool {
 	defer cc.lock.RUnlock()
 	_, ok := cc.configs[key]
 	return ok
+}
+
+func (cc *SConfigCache) Clean() {
+	cc.lock.Lock()
+	defer cc.lock.Unlock()
+	cc.configs = make(map[string]string, len(cc.configs))
 }
 
 func (cc *SConfigCache) BatchSet(configs map[string]string) {

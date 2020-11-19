@@ -19,5 +19,6 @@ const (
 	PASSWORD  = "password"
 	HOSTNAME  = "hostname"
 	HOSTPORT  = "hostport"
-	GLOBALSSL = "ssl"
+	GLOBALSSL = "ssl_global"
+	SSL       = "ssl"
 )

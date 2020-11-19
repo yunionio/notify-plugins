@@ -16,6 +16,7 @@ package email
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"strconv"
 	"strings"
@@ -35,6 +36,7 @@ type SConnectInfo struct {
 	Hostport int
 	Username string
 	Password string
+	Ssl      bool
 }
 
 type SEmailSender struct {
@@ -60,15 +62,23 @@ func (self *SEmailSender) CheckConfig(ctx context.Context, configs map[string]st
 	if err != nil {
 		return nil, fmt.Errorf("invalid hostport %s", vals[1])
 	}
-	return SConnectInfo{
+	conn := SConnectInfo{
 		Hostname: vals[0],
 		Hostport: port,
 		Username: vals[2],
 		Password: vals[3],
-	}, nil
+	}
+
+	if sslg, _ := configs[GLOBALSSL]; sslg == "true" {
+		conn.Ssl = true
+	} else if ssl, _ := configs[SSL]; ssl == "true" {
+		conn.Ssl = true
+	}
+	return conn, nil
 }
 
 func (self *SEmailSender) UpdateConfig(ctx context.Context, configs map[string]string) error {
+	self.configCache.Clean()
 	self.configCache.BatchSet(configs)
 	return self.restartSender()
 }
@@ -150,7 +160,16 @@ func (self *SEmailSender) restartSender() error {
 func (self *SEmailSender) validateConfig(connInfo SConnectInfo) error {
 	errChan := make(chan error)
 	go func() {
-		sender, err := gomail.NewDialer(connInfo.Hostname, connInfo.Hostport, connInfo.Username, connInfo.Password).Dial()
+		dialer := gomail.NewDialer(connInfo.Hostname, connInfo.Hostport, connInfo.Username, connInfo.Password)
+		if connInfo.Ssl {
+			dialer.SSL = true
+		} else {
+			// StartTLS process in dialer.Dial() will use TLSConfig
+			dialer.TLSConfig = &tls.Config{
+				InsecureSkipVerify: true,
+			}
+		}
+		sender, err := dialer.Dial()
 		if err != nil {
 			errChan <- err
 			return
@@ -176,6 +195,18 @@ func (self *SEmailSender) initSender() error {
 	hostName, password, userName, hostPortStr := vals[0], vals[1], vals[2], vals[3]
 	hostPort, _ := strconv.Atoi(hostPortStr)
 	dialer := gomail.NewDialer(hostName, hostPort, userName, password)
+	sslg, _ := self.configCache.Get(GLOBALSSL)
+	ssl, _ := self.configCache.Get(SSL)
+	if sslg == "true" || ssl == "true" {
+		dialer.SSL = true
+		log.Infof("enable ssl")
+	} else {
+		// StartTLS process in dialer.Dial() will use TLSConfig
+		dialer.TLSConfig = &tls.Config{
+			InsecureSkipVerify: true,
+		}
+		log.Infof("disable ssl")
+	}
 	// Configs are obtained successfully, it's time to init msgChan.
 	if self.msgChan == nil {
 		self.msgChan = make(chan *sSendUnit, self.chanelSize)

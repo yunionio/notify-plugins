@@ -16,16 +16,22 @@ package feishu_robot
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	"yunion.io/x/onecloud/pkg/monitor/notifydrivers/feishu"
+	"yunion.io/x/pkg/errors"
 
 	"yunion.io/x/notify-plugin/pkg/common"
 	"yunion.io/x/notify-plugin/pkg/robot"
 )
 
+const (
+	ApiWebhookRobotV2SendMessage = "https://open.feishu.cn/open-apis/bot/v2/hook/"
+)
+
 func NewSender(configs common.IServiceOptions) common.ISender {
-	return robot.NewSender(configs, Send, feishu.ApiWebhookRobotSendMessage)
+	return robot.NewSender(configs, Send, feishu.ApiWebhookRobotSendMessage, ApiWebhookRobotV2SendMessage)
 }
 
 func Send(ctx context.Context, token, title, msg string, contacts []string) error {
@@ -35,8 +41,13 @@ func Send(ctx context.Context, token, title, msg string, contacts []string) erro
 	}
 	rep, err := feishu.SendWebhookRobotMessage(token, req)
 	if err != nil {
+		return errors.Wrap(err, "SendWebhookRobotMessage")
+	}
+	if !rep.Ok {
 		if strings.Contains(rep.Error, "token") {
 			return robot.ErrNoSuchWebhook
+		} else {
+			return fmt.Errorf("SendWebhookRobotMessage failed: %s", rep.Error)
 		}
 	}
 	return err

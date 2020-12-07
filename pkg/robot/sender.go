@@ -33,15 +33,15 @@ type SendFunc func(ctx context.Context, token, title, msg string, contacts []str
 
 type SRebotSender struct {
 	common.SSenderBase
-	send          SendFunc
-	WebhookPrefix string
+	send           SendFunc
+	WebhookPrefixs []string
 }
 
-func NewSender(config common.IServiceOptions, send SendFunc, prefix string) common.ISender {
+func NewSender(config common.IServiceOptions, send SendFunc, prefixs ...string) common.ISender {
 	return &SRebotSender{
-		SSenderBase:   common.NewSSednerBase(config),
-		send:          send,
-		WebhookPrefix: prefix,
+		SSenderBase:    common.NewSSednerBase(config),
+		send:           send,
+		WebhookPrefixs: prefixs,
 	}
 }
 
@@ -67,17 +67,33 @@ func (self *SRebotSender) UpdateConfig(ctx context.Context, configs map[string]s
 	urls := strings.Split(config, ";")
 	webhooks := make([]string, len(urls))
 	for i, url := range urls {
-		url = strings.TrimSpace(url)
-		webhooks[i] = url[len(self.WebhookPrefix):]
+		token := self.tokenFromWebhookUrl(url)
+		if len(token) == 0 {
+			return fmt.Errorf("invalid webhook: %s", url)
+		}
+		webhooks[i] = token
 	}
 	self.ConfigCache.BatchSet(map[string]string{WEBHOOK: strings.Join(webhooks, ";")})
 	return nil
 }
 
+func (self *SRebotSender) tokenFromWebhookUrl(url string) string {
+	for _, prefix := range self.WebhookPrefixs {
+		if strings.HasPrefix(url, prefix) {
+			return url[len(prefix):]
+		}
+	}
+	return ""
+}
+
 func (self *SRebotSender) ValidateConfig(ctx context.Context, configs interface{}) (isValid bool, msg string, err error) {
 	webhooks := configs.([]string)
 	for _, webhook := range webhooks {
-		urlOrToken := webhook[len(self.WebhookPrefix):]
+		urlOrToken := self.tokenFromWebhookUrl(webhook)
+		if len(urlOrToken) == 0 {
+			isValid, msg, err = false, fmt.Sprintf("invalid webhook: %s", webhook), nil
+			return
+		}
 		err = self.send(ctx, urlOrToken, "Validate", "This is a validate message.", []string{})
 		if err == ErrNoSuchWebhook {
 			isValid = false

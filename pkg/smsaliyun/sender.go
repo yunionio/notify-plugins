@@ -18,6 +18,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"regexp"
 	"sync"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk"
@@ -125,7 +126,17 @@ func (self *SSMSAliyunSender) initClient() error {
 	return nil
 }
 
+var parser = regexp.MustCompile(`\+(\d*) (.*)`)
+
 func (self *SSMSAliyunSender) send(client *sdk.Client, signature, templateCode, templateParam, phoneNumber string, retry bool) error {
+	m := parser.FindStringSubmatch(phoneNumber)
+	if len(m) > 0 {
+		if m[1] == "86" {
+			phoneNumber = m[2]
+		} else {
+			phoneNumber = m[1] + m[2]
+		}
+	}
 	request := requests.NewCommonRequest()
 	request.Method = "POST"
 	request.Scheme = "https" // https | http

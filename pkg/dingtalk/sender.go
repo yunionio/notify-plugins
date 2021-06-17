@@ -26,7 +26,6 @@ import (
 	"yunion.io/x/log"
 	"yunion.io/x/pkg/errors"
 
-	"yunion.io/x/notify-plugin/pkg/apis"
 	"yunion.io/x/notify-plugin/pkg/common"
 )
 
@@ -48,24 +47,21 @@ func (self *SDingtalkSender) IsReady(ctx context.Context) bool {
 	return self.client != nil
 }
 
-func (self *SDingtalkSender) CheckConfig(ctx context.Context, configs map[string]string) (interface{}, error) {
-	vals, ok, noKey := common.CheckMap(configs, AGENT_ID, APP_KEY, APP_SECRET)
-	if !ok {
-		return nil, fmt.Errorf("require %s", noKey)
-	}
-	return SConnInfo{vals[0], vals[1], vals[2]}, nil
-}
-
 func (self *SDingtalkSender) UpdateConfig(ctx context.Context, configs map[string]string) error {
 	self.ConfigCache.BatchSet(configs)
 	return self.initClient()
 }
 
-func (self *SDingtalkSender) ValidateConfig(ctx context.Context, configs interface{}) (isValid bool, msg string, err error) {
-	info := configs.(SConnInfo)
-	cache_file := fmt.Sprintf(".%s_validate", info.AppKey)
+func ValidateConfig(ctx context.Context, configs map[string]string) (isValid bool, msg string, err error) {
+	vals, ok, noKey := common.CheckMap(configs, AGENT_ID, APP_KEY, APP_SECRET)
+	if !ok {
+        err = fmt.Errorf("require %s", noKey)
+        return
+	}
+    _, appKey, appSecret := vals[0], vals[1], vals[2]
+	cache_file := fmt.Sprintf(".%s_validate", appKey)
 	defer os.Remove(cache_file)
-	client := godingtalk.NewDingTalkClient(info.AppKey, info.AppSecret)
+	client := godingtalk.NewDingTalkClient(appKey, appSecret)
 
 	//hack
 	client.Cache = godingtalk.NewFileCache(cache_file)
@@ -85,9 +81,9 @@ func (self *SDingtalkSender) FetchContact(ctx context.Context, related string) (
 	return self.getUseridByMobile(related)
 }
 
-func (self *SDingtalkSender) Send(ctx context.Context, params *apis.SendParams) error {
+func (self *SDingtalkSender) Send(ctx context.Context, params *common.SendParam) error {
 	sendFunc := func() error {
-		batchParams := &apis.BatchSendParams{
+		batchParams := &common.BatchSendParam{
 			Contacts:       []string{params.Contact},
 			Title:          params.Title,
 			Message:        params.Message,
@@ -96,11 +92,12 @@ func (self *SDingtalkSender) Send(ctx context.Context, params *apis.SendParams) 
 		}
 		_, err := self.batchSendTopMsg(batchParams)
 		return err
+
 	}
 	return self.Do(sendFunc)
 }
 
-func (self *SDingtalkSender) BatchSend(ctx context.Context, params *apis.BatchSendParams) ([]*apis.FailedRecord, error) {
+func (self *SDingtalkSender) BatchSend(ctx context.Context, params *common.BatchSendParam) ([]*common.FailedRecord, error) {
 	self.WorkerChan <- struct{}{}
 	defer func() {
 		<-self.WorkerChan
@@ -114,7 +111,7 @@ func NewSender(config common.IServiceOptions) common.ISender {
 	}
 }
 
-func (self *SDingtalkSender) batchSendTopMsg(args *apis.BatchSendParams) ([]*apis.FailedRecord, error) {
+func (self *SDingtalkSender) batchSendTopMsg(args *common.BatchSendParam) ([]*common.FailedRecord, error) {
 	initInterval := time.Duration(len(args.Contacts)/5) * time.Second
 	getInterval := func() time.Duration {
 		return initInterval + time.Second
@@ -122,11 +119,11 @@ func (self *SDingtalkSender) batchSendTopMsg(args *apis.BatchSendParams) ([]*api
 	msg := map[string]interface{}{
 		"msgtype": "markdown",
 		"markdown": map[string]interface{}{
-			"title": args.GetTitle(),
-			"text":  args.GetMessage(),
+			"title": args.Title,
+			"text":  args.Message,
 		},
 	}
-	taskID, err := self.client.TopAPIMsgSendv2(args.GetContacts(), msg)
+	taskID, err := self.client.TopAPIMsgSendv2(args.Contacts, msg)
 	if err != nil {
 		return nil, err
 	}
@@ -151,23 +148,23 @@ func (self *SDingtalkSender) batchSendTopMsg(args *apis.BatchSendParams) ([]*api
 	if err != nil {
 		return nil, err
 	}
-	ret := make([]*apis.FailedRecord, 0, len(result.FaildedUserIDList)+len(result.ForbiddenUserIDList)+len(result.InvalidUserIDList))
+	ret := make([]*common.FailedRecord, 0, len(result.FaildedUserIDList)+len(result.ForbiddenUserIDList)+len(result.InvalidUserIDList))
 	for _, id := range result.FaildedUserIDList {
-		record := &apis.FailedRecord{
+		record := &common.FailedRecord{
 			Contact: id,
 			Reason:  "",
 		}
 		ret = append(ret, record)
 	}
 	for _, id := range result.ForbiddenUserIDList {
-		record := &apis.FailedRecord{
+		record := &common.FailedRecord{
 			Contact: id,
 			Reason:  "forbidden user",
 		}
 		ret = append(ret, record)
 	}
 	for _, id := range result.InvalidUserIDList {
-		record := &apis.FailedRecord{
+		record := &common.FailedRecord{
 			Contact: id,
 			Reason:  "invalid userid",
 		}
@@ -176,7 +173,7 @@ func (self *SDingtalkSender) batchSendTopMsg(args *apis.BatchSendParams) ([]*api
 	return ret, nil
 }
 
-func (self *SDingtalkSender) getSendFunc(args *apis.SendParams) sSendFunc {
+func (self *SDingtalkSender) getSendFunc(args *common.SendParam) sSendFunc {
 	if args.Title == args.Topic {
 		return func(client *godingtalk.DingTalkClient, agentID string) error {
 			err := client.SendAppMessage(agentID, args.Contact, args.Message)

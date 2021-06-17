@@ -20,5 +20,5 @@ import (
 
 func StartService() {
 	var config SEmailConfig
-	common.StartService(&config, NewSender, "email", "email.conf")
+	common.StartService(&config, NewSender, ValidateConfig, "email", "email.conf")
 }

@@ -19,6 +19,7 @@ import (
 	"net"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 
 	"google.golang.org/grpc"
@@ -28,7 +29,30 @@ import (
 	"yunion.io/x/notify-plugin/pkg/apis"
 )
 
-func StartService(opt IServiceOptions, generator func(IServiceOptions) ISender, service string, configFile string) {
+func StartService(opt IServiceOptions, generator func(IServiceOptions) ISender, validateConfig ValidateConfig, service string, configFile string) {
+	startService(opt, generator, validateConfig, service, configFile, nil)
+}
+
+func StartServiceForRobot(opt IServiceOptions, generator func(IServiceOptions) ISender, validateConfig ValidateConfig, service string, configFile string) {
+	defaultSender := generator(opt)
+	wrapper := func(domainId string, senders *sync.Map) (ISender, bool) {
+		return defaultSender, true
+	}
+	startService(opt, generator, validateConfig, service, configFile, wrapper)
+}
+
+func StartServiceForWebconsole(opt IServiceOptions, generator func(IServiceOptions) ISender, validateConfig ValidateConfig, service string, configFile string) {
+	wrapper := func(domainId string, senders *sync.Map) (ISender, bool) {
+		obj, ok := senders.Load("default")
+		if !ok {
+			return nil, ok
+		}
+		return obj.(ISender), ok
+	}
+	startService(opt, generator, validateConfig, service, configFile, wrapper)
+}
+
+func startService(opt IServiceOptions, generator func(IServiceOptions) ISender, validateConfig ValidateConfig, service string, configFile string, wrapper SenderWapper) {
 	// config parse:
 	ParseOptions(opt, os.Args, configFile)
 	log.SetLogLevelByString(log.Logger(), opt.GetLogLevel())
@@ -41,7 +65,7 @@ func StartService(opt IServiceOptions, generator func(IServiceOptions) ISender, 
 
 	// init rpc Server
 	grpcServer := grpc.NewServer()
-	apis.RegisterSendAgentServer(grpcServer, NewServer(generator(opt)))
+	apis.RegisterSendAgentServer(grpcServer, NewServer(func() ISender { return generator(opt) }, validateConfig, wrapper))
 
 	socketFile := fmt.Sprintf("%s/%s.sock", opt.GetSockFileDir(), service)
 	log.Infof("Socket file path: %s", socketFile)

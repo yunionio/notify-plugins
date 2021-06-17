@@ -18,5 +18,5 @@ import "yunion.io/x/notify-plugin/pkg/common"
 
 func StartService() {
 	var config common.SBaseOptions
-	common.StartService(&config, NewSender, "workwx", "workwx.conf")
+	common.StartService(&config, NewSender, ValidateConfig, "workwx", "workwx.conf")
 }

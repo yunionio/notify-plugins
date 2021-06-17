@@ -31,7 +31,7 @@ import (
 func NewSender(configs common.IServiceOptions) common.ISender {
 	option := configs.(*SOptions)
 	initHttpClient(option)
-	return robot.NewSender(configs, Send, "")
+	return robot.NewSender(configs, Send)
 }
 
 var (
@@ -49,7 +49,7 @@ const (
 	EVENT_HEADER = "X-Yunion-Event"
 )
 
-func Send(ctx context.Context, webhook, event, msg string, contacts []string) error {
+func Send(ctx context.Context, webhook, event, msg string) error {
 	log.Infof("event: %s, msg: %s", event, msg)
 	body, err := jsonutils.ParseString(msg)
 	if err != nil {

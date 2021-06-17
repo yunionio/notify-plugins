@@ -18,21 +18,30 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"yunion.io/x/jsonutils"
+	"yunion.io/x/onecloud/pkg/util/httputils"
+	"yunion.io/x/pkg/errors"
+
 	"yunion.io/x/notify-plugin/pkg/common"
 	"yunion.io/x/notify-plugin/pkg/robot"
-	"yunion.io/x/onecloud/pkg/util/httputils"
 )
 
 func NewSender(configs common.IServiceOptions) common.ISender {
-	return robot.NewSender(configs, Send, webhookPrefix)
+	return robot.NewSender(configs, Send)
 }
 
-func Send(ctx context.Context, token, title, msg string, contacts []string) error {
+func Send(ctx context.Context, webhook, title, msg string) error {
+    // check webhook
+    var token string
+    if strings.HasPrefix(webhook, webhookPrefix) {
+        token = webhook[:len(webhookPrefix)]
+    } else {
+        return errors.Wrap(robot.InvalidWebhook, webhook)
+    }
 	req := WebhookTextMsgReq{
 		Content:             fmt.Sprintf("%s\n\n%s", title, msg),
-		MentionedMobileList: contacts,
 	}
 	resp, err := sendWebhookTextMessage(context.Background(), token, req)
 	if err != nil {

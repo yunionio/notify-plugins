@@ -20,5 +20,5 @@ import (
 
 func StartService() {
 	var config common.SBaseOptions
-	common.StartService(&config, NewSender, "mobile", "smsaliyun.conf")
+	common.StartService(&config, NewSender, ValidateConfig, "mobile", "smsaliyun.conf")
 }

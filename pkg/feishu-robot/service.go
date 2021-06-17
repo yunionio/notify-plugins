@@ -18,5 +18,5 @@ import "yunion.io/x/notify-plugin/pkg/common"
 
 func StartService() {
 	var config common.SBaseOptions
-	common.StartService(&config, NewSender, "feishu-robot", "feishu-robot.conf")
+	common.StartServiceForRobot(&config, NewSender, nil, "feishu-robot", "")
 }

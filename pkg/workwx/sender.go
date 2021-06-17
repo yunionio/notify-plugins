@@ -25,7 +25,6 @@ import (
 
 	"yunion.io/x/pkg/errors"
 
-	"yunion.io/x/notify-plugin/pkg/apis"
 	"yunion.io/x/notify-plugin/pkg/common"
 )
 
@@ -46,33 +45,31 @@ func (ws *SWorkwxSender) IsReady(ctx context.Context) bool {
 	return ws.client != nil
 }
 
-func (ws *SWorkwxSender) CheckConfig(ctx context.Context, configs map[string]string) (interface{}, error) {
-	vals, ok, noKey := common.CheckMap(configs, CORP_ID, CORP_SECRET, AGENT_ID)
-	if !ok {
-		return nil, fmt.Errorf("require %s", noKey)
-	}
-	_, err := strconv.Atoi(vals[2])
-	if err != nil {
-		return nil, fmt.Errorf("the value of %s should be number format", AGENT_ID)
-	}
-	return SConnInfo{CorpID: vals[0], CorpSecret: vals[1], AgentID: vals[2]}, nil
-}
-
 func (ws *SWorkwxSender) UpdateConfig(ctx context.Context, configs map[string]string) error {
 	ws.ConfigCache.BatchSet(configs)
 	return ws.initClient()
 }
 
-func (ws *SWorkwxSender) ValidateConfig(ctx context.Context, configs interface{}) (isValid bool, msg string, e error) {
-	info := configs.(SConnInfo)
+func ValidateConfig(ctx context.Context, configs map[string]string) (isValid bool, msg string, e error) {
+	vals, ok, noKey := common.CheckMap(configs, CORP_ID, CORP_SECRET, AGENT_ID)
+	if !ok {
+        e = fmt.Errorf("require %s", noKey)
+        return
+	}
+	_, err := strconv.Atoi(vals[2])
+	if err != nil {
+		e =  fmt.Errorf("the value of %s should be number format", AGENT_ID)
+        return
+	}
+    corpId, corpSecret, agentId := vals[0], vals[1], vals[2]
 
 	// check info.AgentID
-	_, err := strconv.Atoi(info.AgentID)
+	_, err = strconv.Atoi(agentId)
 	if err != nil {
 		msg = fmt.Sprintf("the value of %s should be number format", AGENT_ID)
 		return
 	}
-	return ws.checkCropIDAndSecret(info.CorpID, info.CorpSecret)
+	return checkCropIDAndSecret(corpId, corpSecret)
 }
 
 func (ws *SWorkwxSender) FetchContact(ctx context.Context, related string) (string, error) {
@@ -93,7 +90,7 @@ func (ws *SWorkwxSender) FetchContact(ctx context.Context, related string) (stri
 	return userid, nil
 }
 
-func (ws *SWorkwxSender) Send(ctx context.Context, params *apis.SendParams) error {
+func (ws *SWorkwxSender) Send(ctx context.Context, params *common.SendParam) error {
 	re := wx.Recipient{
 		UserIDs: []string{params.Contact},
 	}
@@ -101,7 +98,7 @@ func (ws *SWorkwxSender) Send(ctx context.Context, params *apis.SendParams) erro
 	return ws.client.SendMarkdownMessage(&re, content, false)
 }
 
-func (ws *SWorkwxSender) BatchSend(ctx context.Context, params *apis.BatchSendParams) ([]*apis.FailedRecord, error) {
+func (ws *SWorkwxSender) BatchSend(ctx context.Context, params *common.BatchSendParam) ([]*common.FailedRecord, error) {
 	re := wx.Recipient{
 		UserIDs: params.Contacts,
 	}
@@ -114,9 +111,9 @@ func (ws *SWorkwxSender) BatchSend(ctx context.Context, params *apis.BatchSendPa
 	if len(resp.InvalidUsers) > 0 {
 		invalidUsers = strings.Split(resp.InvalidUsers, ",")
 	}
-	records := make([]*apis.FailedRecord, len(invalidUsers))
+	records := make([]*common.FailedRecord, len(invalidUsers))
 	for i := range records {
-		record := &apis.FailedRecord{
+		record := &common.FailedRecord{
 			Contact: invalidUsers[i],
 			Reason:  "invalid user",
 		}
@@ -131,7 +128,7 @@ func NewSender(config common.IServiceOptions) common.ISender {
 	}
 }
 
-func (ws *SWorkwxSender) checkCropIDAndSecret(corpId, corpSecret string) (ok bool, msg string, err error) {
+func checkCropIDAndSecret(corpId, corpSecret string) (ok bool, msg string, err error) {
 	checkApp := wx.New(corpId).WithApp(corpSecret, 0)
 	err = checkApp.SyncAccessToken()
 	if err == nil {

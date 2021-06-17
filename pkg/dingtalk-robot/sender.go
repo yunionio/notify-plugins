@@ -32,23 +32,19 @@ const (
 )
 
 func NewSender(configs common.IServiceOptions) common.ISender {
-	return robot.NewSender(configs, Send, WEBHOOK_PREFIX)
+	return robot.NewSender(configs, Send)
 }
 
-func Send(ctx context.Context, token, title, msg string, contacts []string) error {
+func Send(ctx context.Context, webhook, title, msg string) error {
 	var atStr strings.Builder
-	if len(contacts) != 0 {
-		atStr.WriteString("\n\n")
-		for _, contact := range contacts {
-			if len(contact) == 0 {
-				continue
-			}
-			atStr.WriteString("@")
-			atStr.WriteString(contact)
-		}
+	var token string
+	if strings.HasPrefix(webhook, WEBHOOK_PREFIX) {
+		token = webhook[len(WEBHOOK_PREFIX):]
+	} else {
+		return errors.Wrap(robot.InvalidWebhook, webhook)
 	}
 	processText := fmt.Sprintf("### %s\n%s%s", title, msg, atStr.String())
-	atList := &godingtalk.RobotAtList{AtMobiles: contacts}
+	atList := &godingtalk.RobotAtList{}
 	client := godingtalk.NewDingTalkClient("", "")
 	rep, err := client.SendRobotMarkdownAtMessage(token, title, processText, atList)
 	if err == nil {

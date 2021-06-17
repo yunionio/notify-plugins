@@ -16,124 +16,54 @@ package robot
 
 import (
 	"context"
-	"fmt"
-	"strings"
 
+	"google.golang.org/grpc/codes"
 	"yunion.io/x/pkg/errors"
 
-	"yunion.io/x/notify-plugin/pkg/apis"
 	"yunion.io/x/notify-plugin/pkg/common"
 )
 
 const WEBHOOK = "webhook"
 
 var ErrNoSuchWebhook = errors.Error("No such webhook")
+var InvalidWebhook = errors.Error("Invalid webhook")
 
-type SendFunc func(ctx context.Context, token, title, msg string, contacts []string) error
+func init() {
+	common.RegisterErr(InvalidWebhook, codes.InvalidArgument)
+}
 
-type SRebotSender struct {
+type SendFunc func(ctx context.Context, webhook, title, msg string) error
+
+type SRobotSender struct {
 	common.SSenderBase
-	send           SendFunc
-	WebhookPrefixs []string
+	send SendFunc
 }
 
-func NewSender(config common.IServiceOptions, send SendFunc, prefixs ...string) common.ISender {
-	return &SRebotSender{
-		SSenderBase:    common.NewSSednerBase(config),
-		send:           send,
-		WebhookPrefixs: prefixs,
+func NewSender(config common.IServiceOptions, send SendFunc) common.ISender {
+	return &SRobotSender{
+		SSenderBase: common.NewSSednerBase(config),
+		send:        send,
 	}
 }
 
-func (self *SRebotSender) IsReady(ctx context.Context) bool {
-	_, ok := self.ConfigCache.Get(WEBHOOK)
-	return ok
+func (self *SRobotSender) IsReady(ctx context.Context) bool {
+	return true
 }
 
-func (self *SRebotSender) CheckConfig(ctx context.Context, configs map[string]string) (interface{}, error) {
-	vals, ok, nokey := common.CheckMap(configs, WEBHOOK)
-	if !ok {
-		return nil, fmt.Errorf("require %s", nokey)
-	}
-	webhooks := strings.Split(vals[0], ";")
-	for i := range webhooks {
-		webhooks[i] = strings.TrimSpace(webhooks[i])
-	}
-	return webhooks, nil
+func (self *SRobotSender) Send(ctx context.Context, params *common.SendParam) error {
+	return self.send(ctx, params.Contact, params.Title, params.Message)
 }
 
-func (self *SRebotSender) UpdateConfig(ctx context.Context, configs map[string]string) error {
-	config, _ := configs[WEBHOOK]
-	urls := strings.Split(config, ";")
-	webhooks := make([]string, len(urls))
-	for i, url := range urls {
-		token := self.tokenFromWebhookUrl(url)
-		if len(token) == 0 {
-			return fmt.Errorf("invalid webhook: %s", url)
-		}
-		webhooks[i] = token
-	}
-	self.ConfigCache.BatchSet(map[string]string{WEBHOOK: strings.Join(webhooks, ";")})
-	return nil
-}
-
-func (self *SRebotSender) tokenFromWebhookUrl(url string) string {
-	for _, prefix := range self.WebhookPrefixs {
-		if strings.HasPrefix(url, prefix) {
-			return url[len(prefix):]
-		}
-	}
-	return ""
-}
-
-func (self *SRebotSender) ValidateConfig(ctx context.Context, configs interface{}) (isValid bool, msg string, err error) {
-	webhooks := configs.([]string)
-	for _, webhook := range webhooks {
-		urlOrToken := self.tokenFromWebhookUrl(webhook)
-		if len(urlOrToken) == 0 {
-			isValid, msg, err = false, fmt.Sprintf("invalid webhook: %s", webhook), nil
-			return
-		}
-		err = self.send(ctx, urlOrToken, "Validate", "This is a validate message.", []string{})
-		if err == ErrNoSuchWebhook {
-			isValid = false
-			err = nil
-			msg = fmt.Sprintf("Invalid webhook %q", webhook)
-			break
-		}
+func (self *SRobotSender) BatchSend(ctx context.Context, params *common.BatchSendParam) ([]*common.FailedRecord, error) {
+	failedRecords := make([]*common.FailedRecord, 0)
+	for _, webhook := range params.Contacts {
+		err := self.send(ctx, webhook, params.Title, params.Message)
 		if err != nil {
-			return isValid, msg, err
-		}
-		isValid = true
-	}
-	return isValid, msg, nil
-}
-
-func (self *SRebotSender) Send(ctx context.Context, params *apis.SendParams) error {
-	config, _ := self.ConfigCache.Get(WEBHOOK)
-	webhooks := strings.Split(config, ";")
-	// separate contacts
-	contacts := strings.Split(params.Contact, ",")
-	for i := range contacts {
-		contacts[i] = strings.TrimSpace(contacts[i])
-	}
-	for _, webhook := range webhooks {
-		err := self.send(ctx, webhook, params.Title, params.Message, contacts)
-		if err != nil {
-			return errors.Wrapf(err, "unable to send message to webhook %q", webhook)
+			failedRecords = append(failedRecords, &common.FailedRecord{
+				Contact: webhook,
+				Reason:  err.Error(),
+			})
 		}
 	}
-	return nil
-}
-
-func (self *SRebotSender) BatchSend(ctx context.Context, params *apis.BatchSendParams) ([]*apis.FailedRecord, error) {
-	config, _ := self.ConfigCache.Get(WEBHOOK)
-	webhooks := strings.Split(config, ";")
-	for _, webhook := range webhooks {
-		err := self.send(ctx, webhook, params.Title, params.Message, params.Contacts)
-		if err != nil {
-			return nil, errors.Wrapf(err, "unable to send message to webhook %q", webhook)
-		}
-	}
-	return nil, nil
+	return failedRecords, nil
 }

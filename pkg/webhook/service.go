@@ -24,5 +24,5 @@ type SOptions struct {
 
 func StartService() {
 	var config SOptions
-	common.StartService(&config, NewSender, "webhook", "")
+	common.StartServiceForRobot(&config, NewSender, nil, "webhook", "")
 }

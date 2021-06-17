@@ -20,5 +20,5 @@ import (
 
 func StartService() {
 	var config common.SBaseOptions
-	common.StartService(&config, NewSender, "dingtalk", "dingtalk.conf")
+	common.StartService(&config, NewSender, ValidateConfig, "dingtalk", "dingtalk.conf")
 }

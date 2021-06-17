@@ -29,7 +29,6 @@ import (
 	"yunion.io/x/log"
 	"yunion.io/x/pkg/errors"
 
-	"yunion.io/x/notify-plugin/pkg/apis"
 	"yunion.io/x/notify-plugin/pkg/common"
 )
 
@@ -49,14 +48,6 @@ func (self *SSMSAliyunSender) IsReady(ctx context.Context) bool {
 	return self.client != nil
 }
 
-func (self *SSMSAliyunSender) CheckConfig(ctx context.Context, configs map[string]string) (interface{}, error) {
-	vals, ok, noKey := common.CheckMap(configs, ACCESS_KEY_ID, ACCESS_KEY_SECRET, SIGNATURE)
-	if !ok {
-		return nil, fmt.Errorf("require %s", noKey)
-	}
-	return SConnectInfo{vals[0], vals[1], vals[2]}, nil
-}
-
 func (self *SSMSAliyunSender) UpdateConfig(ctx context.Context, configs map[string]string) error {
 	for key, value := range configs {
 		if key == ACESS_KEY_SECRET_BP {
@@ -71,14 +62,19 @@ func (self *SSMSAliyunSender) UpdateConfig(ctx context.Context, configs map[stri
 	return self.initClient()
 }
 
-func (self *SSMSAliyunSender) ValidateConfig(ctx context.Context, configs interface{}) (isValid bool, msg string, err error) {
-	connInfo := configs.(SConnectInfo)
-	client, err := sdk.NewClientWithAccessKey("default", connInfo.AccessKeyID, connInfo.AccessKeySecret)
+func ValidateConfig(ctx context.Context, configs map[string]string) (isValid bool, msg string, err error) {
+	vals, ok, noKey := common.CheckMap(configs, ACCESS_KEY_ID, ACCESS_KEY_SECRET, SIGNATURE)
+	if !ok {
+		err = fmt.Errorf("require %s", noKey)
+		return
+	}
+	id, secret, signature := vals[0], vals[1], vals[2]
+	client, err := sdk.NewClientWithAccessKey("default", id, secret)
 	if err != nil {
 		err = errors.Wrap(err, "NewClientWithAccessKey")
 		return
 	}
-	err = self.send(client, connInfo.Signature, "SMS_123456789", `{"code": "123456"}`, "12345678901", false)
+	err = send(client, signature, "SMS_123456789", `{"code": "123456"}`, "12345678901")
 	if err == ErrSignnameInvalid || err == ErrSignatureDoesNotMatch || err == ErrAccessKeyIdNotFound {
 		msg, err = err.Error(), nil
 		return
@@ -87,18 +83,18 @@ func (self *SSMSAliyunSender) ValidateConfig(ctx context.Context, configs interf
 	return
 }
 
-func (self *SSMSAliyunSender) Send(ctx context.Context, params *apis.SendParams) error {
+func (self *SSMSAliyunSender) Send(ctx context.Context, params *common.SendParam) error {
 	signature, _ := self.ConfigCache.Get(SIGNATURE)
 	if len(params.RemoteTemplate) == 0 {
 		return errors.Wrapf(common.ErrConfigMiss, "require remoteTemplate")
 	}
 	log.Debugf("reomte template: %s", params.RemoteTemplate)
 	return self.Do(func() error {
-		return self.send(nil, signature, params.RemoteTemplate, params.Message, params.Contact, true)
+		return self.send(signature, params.RemoteTemplate, params.Message, params.Contact, true)
 	})
 }
 
-func (self *SSMSAliyunSender) BatchSend(ctx context.Context, params *apis.BatchSendParams) ([]*apis.FailedRecord, error) {
+func (self *SSMSAliyunSender) BatchSend(ctx context.Context, params *common.BatchSendParam) ([]*common.FailedRecord, error) {
 	return common.BatchSend(ctx, params, self.Send)
 }
 
@@ -128,7 +124,23 @@ func (self *SSMSAliyunSender) initClient() error {
 
 var parser = regexp.MustCompile(`\+(\d*) (.*)`)
 
-func (self *SSMSAliyunSender) send(client *sdk.Client, signature, templateCode, templateParam, phoneNumber string, retry bool) error {
+func (self *SSMSAliyunSender) send(signature, templateCode, templateParam, phoneNumber string, retry bool) error {
+	self.clientLock.RLock()
+    client := self.client
+	self.clientLock.RUnlock()
+    err := send(client, signature, templateCode, templateParam, phoneNumber)
+    if !retry || err == nil {
+        return err
+    }
+	self.initClient()
+	// try again
+	self.clientLock.RLock()
+	client = self.client
+	self.clientLock.RUnlock()
+    return send(client, signature, templateCode, templateParam, phoneNumber)
+}
+
+func send(client *sdk.Client, signature, templateCode, templateParam, phoneNumber string) error {
 	m := parser.FindStringSubmatch(phoneNumber)
 	if len(m) > 0 {
 		if m[1] == "86" {
@@ -150,25 +162,10 @@ func (self *SSMSAliyunSender) send(client *sdk.Client, signature, templateCode, 
 	request.QueryParams["TemplateCode"] = templateCode
 	request.QueryParams["TemplateParam"] = templateParam
 
-	if client == nil {
-		self.clientLock.RLock()
-		client = self.client
-		self.clientLock.RUnlock()
-	}
-	err := self.checkResponseAndError(client.ProcessCommonRequest(request))
-	if !retry || err == nil {
-		return err
-	}
-
-	self.initClient()
-	// try again
-	self.clientLock.RLock()
-	client = self.client
-	self.clientLock.RUnlock()
-	return self.checkResponseAndError(client.ProcessCommonRequest(request))
+	return checkResponseAndError(client.ProcessCommonRequest(request))
 }
 
-func (self *SSMSAliyunSender) checkResponseAndError(rep *responses.CommonResponse, err error) error {
+func checkResponseAndError(rep *responses.CommonResponse, err error) error {
 	if err != nil {
 		serr, ok := err.(*sdkerrors.ServerError)
 		if !ok {

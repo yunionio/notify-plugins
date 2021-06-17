@@ -27,7 +27,6 @@ import (
 	"yunion.io/x/log"
 	"yunion.io/x/pkg/errors"
 
-	"yunion.io/x/notify-plugin/pkg/apis"
 	"yunion.io/x/notify-plugin/pkg/common"
 )
 
@@ -52,15 +51,23 @@ func (self *SEmailSender) IsReady(ctx context.Context) bool {
 	return self.msgChan != nil
 }
 
-func (self *SEmailSender) CheckConfig(ctx context.Context, configs map[string]string) (interface{}, error) {
+func (self *SEmailSender) UpdateConfig(ctx context.Context, configs map[string]string) error {
+	self.configCache.Clean()
+	self.configCache.BatchSet(configs)
+	return self.restartSender()
+}
+
+func ValidateConfig(ctx context.Context, configs map[string]string) (isValid bool, msg string, err error) {
 	vals, ok, noKey := common.CheckMap(configs, HOSTNAME, HOSTPORT, USERNAME, PASSWORD)
 	if !ok {
-		return nil, fmt.Errorf("require %s", noKey)
+        err = fmt.Errorf("require %s", noKey)
+        return
 	}
 
 	port, err := strconv.Atoi(vals[1])
 	if err != nil {
-		return nil, fmt.Errorf("invalid hostport %s", vals[1])
+		err = fmt.Errorf("invalid hostport %s", vals[1])
+        return
 	}
 	conn := SConnectInfo{
 		Hostname: vals[0],
@@ -74,18 +81,7 @@ func (self *SEmailSender) CheckConfig(ctx context.Context, configs map[string]st
 	} else if ssl, _ := configs[SSL]; ssl == "true" {
 		conn.Ssl = true
 	}
-	return conn, nil
-}
-
-func (self *SEmailSender) UpdateConfig(ctx context.Context, configs map[string]string) error {
-	self.configCache.Clean()
-	self.configCache.BatchSet(configs)
-	return self.restartSender()
-}
-
-func (self *SEmailSender) ValidateConfig(ctx context.Context, configs interface{}) (isValid bool, msg string, err error) {
-	connInfo := configs.(SConnectInfo)
-	err = self.validateConfig(connInfo)
+	err = validateConfig(conn)
 	if err == nil {
 		isValid = true
 		return
@@ -108,12 +104,12 @@ func (self *SEmailSender) FetchContact(ctx context.Context, related string) (str
 	return "", nil
 }
 
-func (self *SEmailSender) Send(ctx context.Context, params *apis.SendParams) error {
+func (self *SEmailSender) Send(ctx context.Context, params *common.SendParam) error {
 	log.Debugf("reviced msg for %s: %s", params.Contact, params.Message)
 	return self.send(params)
 }
 
-func (self *SEmailSender) BatchSend(ctx context.Context, params *apis.BatchSendParams) ([]*apis.FailedRecord, error) {
+func (self *SEmailSender) BatchSend(ctx context.Context, params *common.BatchSendParam) ([]*common.FailedRecord, error) {
 	return common.BatchSend(ctx, params, self.Send)
 }
 
@@ -127,7 +123,8 @@ func NewSender(config common.IServiceOptions) common.ISender {
 	}
 }
 
-func (self *SEmailSender) send(args *apis.SendParams) error {
+
+func (self *SEmailSender) send(args *common.SendParam) error {
 	gmsg := gomail.NewMessage()
 	username, _ := self.configCache.Get(USERNAME)
 	gmsg.SetHeader("From", username)
@@ -157,7 +154,8 @@ func (self *SEmailSender) restartSender() error {
 	return self.initSender()
 }
 
-func (self *SEmailSender) validateConfig(connInfo SConnectInfo) error {
+
+func validateConfig(connInfo SConnectInfo) error {
 	errChan := make(chan error)
 	go func() {
 		dialer := gomail.NewDialer(connInfo.Hostname, connInfo.Hostport, connInfo.Username, connInfo.Password)

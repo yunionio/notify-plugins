@@ -31,10 +31,19 @@ const (
 )
 
 func NewSender(configs common.IServiceOptions) common.ISender {
-	return robot.NewSender(configs, Send, feishu.ApiWebhookRobotSendMessage, ApiWebhookRobotV2SendMessage)
+	return robot.NewSender(configs, Send)
 }
 
-func Send(ctx context.Context, token, title, msg string, contacts []string) error {
+func Send(ctx context.Context, webhook, title, msg string) error {
+	var token string
+	switch {
+	case strings.HasPrefix(webhook, ApiWebhookRobotV2SendMessage):
+		token = webhook[len(ApiWebhookRobotV2SendMessage):]
+	case strings.HasPrefix(webhook, feishu.ApiWebhookRobotSendMessage):
+		token = webhook[len(feishu.ApiWebhookRobotSendMessage):]
+	default:
+		return errors.Wrap(robot.InvalidWebhook, webhook)
+	}
 	req := feishu.WebhookRobotMsgReq{
 		Title: title,
 		Text:  msg,

@@ -20,5 +20,5 @@ import (
 
 func StartService() {
 	var config SWebsocketConfig
-	common.StartService(&config, NewSender, "webconsole", "websocket.conf")
+	common.StartServiceForWebconsole(&config, NewSender, nil, "webconsole", "websocket.conf")
 }

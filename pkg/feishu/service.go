@@ -22,5 +22,5 @@ var sendManager *SFeishuSender
 
 func StartService() {
 	var config common.SBaseOptions
-	common.StartService(&config, NewSender, "feishu", "feishu.conf")
+	common.StartService(&config, NewSender, ValidateConfig, "feishu", "feishu.conf")
 }

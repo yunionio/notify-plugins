@@ -26,7 +26,6 @@ import (
 	"yunion.io/x/onecloud/pkg/mcclient/modules"
 	"yunion.io/x/pkg/errors"
 
-	"yunion.io/x/notify-plugin/pkg/apis"
 	"yunion.io/x/notify-plugin/pkg/common"
 )
 
@@ -41,30 +40,22 @@ func (self *SWebsocketSender) IsReady(ctx context.Context) bool {
 	return self.session != nil
 }
 
-func (self *SWebsocketSender) CheckConfig(ctx context.Context, configs map[string]string) (interface{}, error) {
-	return nil, nil
-}
-
 func (self *SWebsocketSender) UpdateConfig(ctx context.Context, configs map[string]string) error {
 	self.ConfigCache.BatchSet(configs)
 	return self.initClient()
-}
-
-func (self *SWebsocketSender) ValidateConfig(ctx context.Context, configs interface{}) (bool, string, error) {
-	return false, "", nil
 }
 
 func (self *SWebsocketSender) FetchContact(ctx context.Context, related string) (string, error) {
 	return "", nil
 }
 
-func (self *SWebsocketSender) Send(ctx context.Context, params *apis.SendParams) error {
+func (self *SWebsocketSender) Send(ctx context.Context, params *common.SendParam) error {
 	return self.Do(func() error {
 		return self.send(params)
 	})
 }
 
-func (self *SWebsocketSender) BatchSend(ctx context.Context, params *apis.BatchSendParams) ([]*apis.FailedRecord, error) {
+func (self *SWebsocketSender) BatchSend(ctx context.Context, params *common.BatchSendParam) ([]*common.FailedRecord, error) {
 	return common.BatchSend(ctx, params, self.Send)
 }
 
@@ -96,7 +87,7 @@ func (self *SWebsocketSender) refreshClient() {
 	self.session = auth.GetAdminSession(context.Background(), self.region, "")
 }
 
-func (self *SWebsocketSender) send(args *apis.SendParams) error {
+func (self *SWebsocketSender) send(args *common.SendParam) error {
 	// component request body
 	body := jsonutils.DeepCopy(params).(*jsonutils.JSONDict)
 	body.Add(jsonutils.NewString(args.Title), "action")

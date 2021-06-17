@@ -25,7 +25,6 @@ import (
 	"yunion.io/x/onecloud/pkg/monitor/notifydrivers/feishu"
 	"yunion.io/x/pkg/errors"
 
-	"yunion.io/x/notify-plugin/pkg/apis"
 	"yunion.io/x/notify-plugin/pkg/common"
 )
 
@@ -48,22 +47,19 @@ func (self *SFeishuSender) IsReady(ctx context.Context) bool {
 	return self.client != nil
 }
 
-func (self *SFeishuSender) CheckConfig(ctx context.Context, configs map[string]string) (interface{}, error) {
-	vals, ok, noKey := common.CheckMap(configs, APP_ID, APP_SECRET)
-	if !ok {
-		return nil, fmt.Errorf("require %s", noKey)
-	}
-	return SConnInfo{vals[0], vals[1]}, nil
-}
-
 func (self *SFeishuSender) UpdateConfig(ctx context.Context, configs map[string]string) error {
 	self.ConfigCache.BatchSet(configs)
 	return self.initClient()
 }
 
-func (self *SFeishuSender) ValidateConfig(ctx context.Context, configs interface{}) (isValid bool, msg string, err error) {
-	info := configs.(SConnInfo)
-	rep, err := feishu.GetTenantAccessTokenInternal(info.AppID, info.AppSecret)
+func ValidateConfig(ctx context.Context, configs map[string]string) (isValid bool, msg string, err error) {
+    vals, ok, noKey := common.CheckMap(configs, APP_ID, APP_SECRET)
+    if !ok {
+        err = fmt.Errorf("require %s", noKey)
+        return
+    }
+    appId, appSecret := vals[0], vals[1]
+    rep, err := feishu.GetTenantAccessTokenInternal(appId, appSecret)
 	if err == nil {
 		isValid = true
 		return
@@ -81,13 +77,13 @@ func (self *SFeishuSender) FetchContact(ctx context.Context, related string) (st
 	return self.userIdByMobile(related)
 }
 
-func (self *SFeishuSender) Send(ctx context.Context, params *apis.SendParams) error {
+func (self *SFeishuSender) Send(ctx context.Context, params *common.SendParam) error {
 	return self.Do(func() error {
 		return self.send(params)
 	})
 }
 
-func (self *SFeishuSender) BatchSend(ctx context.Context, params *apis.BatchSendParams) ([]*apis.FailedRecord, error) {
+func (self *SFeishuSender) BatchSend(ctx context.Context, params *common.BatchSendParam) ([]*common.FailedRecord, error) {
 	self.WorkerChan <- struct{}{}
 	defer func() {
 		<-self.WorkerChan
@@ -105,7 +101,7 @@ func NewSender(config common.IServiceOptions) common.ISender {
 	}
 }
 
-func (self *SFeishuSender) batchSend(args *apis.BatchSendParams) ([]*apis.FailedRecord, error) {
+func (self *SFeishuSender) batchSend(args *common.BatchSendParam) ([]*common.FailedRecord, error) {
 	req := feishu.BatchMsgReq{
 		OpenIds: args.Contacts,
 		MsgType: "text",
@@ -118,9 +114,9 @@ func (self *SFeishuSender) batchSend(args *apis.BatchSendParams) ([]*apis.Failed
 	if err != nil {
 		return nil, err
 	}
-	records := make([]*apis.FailedRecord, len(resp.Data.InvalidOpenIds))
+	records := make([]*common.FailedRecord, len(resp.Data.InvalidOpenIds))
 	for _, id := range resp.Data.InvalidOpenIds {
-		record := &apis.FailedRecord{
+		record := &common.FailedRecord{
 			Contact: id,
 			Reason:  "invalid userid",
 		}
@@ -129,7 +125,7 @@ func (self *SFeishuSender) batchSend(args *apis.BatchSendParams) ([]*apis.Failed
 	return records, nil
 }
 
-func (self *SFeishuSender) send(args *apis.SendParams) error {
+func (self *SFeishuSender) send(args *common.SendParam) error {
 	req := feishu.MsgReq{
 		OpenId:  args.Contact,
 		MsgType: "text",

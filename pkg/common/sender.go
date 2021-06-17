@@ -16,6 +16,7 @@ package common
 
 import (
 	"context"
+	"sync"
 
 	"yunion.io/x/notify-plugin/pkg/apis"
 	"yunion.io/x/pkg/errors"
@@ -23,12 +24,36 @@ import (
 
 type ISender interface {
 	IsReady(ctx context.Context) bool
-	CheckConfig(ctx context.Context, configs map[string]string) (interface{}, error)
+	// CheckConfig(ctx context.Context, configs map[string]string) (interface{}, error)
 	UpdateConfig(ctx context.Context, configs map[string]string) error
-	ValidateConfig(ctx context.Context, configs interface{}) (bool, string, error)
+	// ValidateConfig(ctx context.Context, configs map[string]string) (bool, string, error)
 	FetchContact(ctx context.Context, related string) (string, error)
-	Send(ctx context.Context, params *apis.SendParams) error
-	BatchSend(ctx context.Context, params *apis.BatchSendParams) ([]*apis.FailedRecord, error)
+	Send(ctx context.Context, params *SendParam) error
+	BatchSend(ctx context.Context, params *BatchSendParam) ([]*FailedRecord, error)
+}
+
+type SenderWapper func(domainId string, senders *sync.Map) (ISender, bool)
+
+type FailedRecord struct {
+	Contact string
+	Reason  string
+}
+
+type SendParam struct {
+	Contact        string
+	Topic          string
+	Title          string
+	Message        string
+	Priority       string
+	RemoteTemplate string
+}
+
+type BatchSendParam struct {
+	Contacts       []string
+	Title          string
+	Message        string
+	Priority       string
+	RemoteTemplate string
 }
 
 type SSenderBase struct {
@@ -48,16 +73,8 @@ func (self *SSenderBase) IsReady(ctx context.Context) bool {
 	return true
 }
 
-func (self *SSenderBase) CheckConfig(ctx context.Context, configs map[string]string) (interface{}, error) {
-	return nil, errors.ErrNotImplemented
-}
-
 func (self *SSenderBase) UpdateConfig(ctx context.Context, configs map[string]string) error {
 	return errors.ErrNotImplemented
-}
-
-func (self *SSenderBase) ValidateConfig(ctx context.Context, configs interface{}) (bool, string, error) {
-	return false, "", errors.ErrNotImplemented
 }
 
 func (self *SSenderBase) FetchContact(ctx context.Context, related string) (string, error) {
@@ -72,10 +89,10 @@ func (self *SSenderBase) BatchSend(ctx context.Context, params *apis.BatchSendPa
 	return nil, errors.ErrNotImplemented
 }
 
-func BatchSend(ctx context.Context, params *apis.BatchSendParams, singleSend func(context.Context, *apis.SendParams) error) ([]*apis.FailedRecord, error) {
-	ret := make([]*apis.FailedRecord, len(params.Contacts))
+func BatchSend(ctx context.Context, params *BatchSendParam, singleSend func(context.Context, *SendParam) error) ([]*FailedRecord, error) {
+	ret := make([]*FailedRecord, len(params.Contacts))
 	send := func(i int) {
-		param := &apis.SendParams{
+		param := &SendParam{
 			Contact:        params.Contacts[i],
 			Topic:          params.Title,
 			Title:          params.Title,
@@ -87,7 +104,7 @@ func BatchSend(ctx context.Context, params *apis.BatchSendParams, singleSend fun
 		if err == nil {
 			return
 		}
-		record := &apis.FailedRecord{
+		record := &FailedRecord{
 			Contact: param.Contact,
 			Reason:  err.Error(),
 		}
@@ -97,7 +114,7 @@ func BatchSend(ctx context.Context, params *apis.BatchSendParams, singleSend fun
 		send(i)
 	}
 	// remove nil
-	processedRet := make([]*apis.FailedRecord, 0, len(ret))
+	processedRet := make([]*FailedRecord, 0, len(ret))
 	for i := range ret {
 		if ret[i] == nil {
 			continue

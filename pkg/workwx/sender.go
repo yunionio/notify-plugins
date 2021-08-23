@@ -87,10 +87,10 @@ func (ws *SWorkwxSender) FetchContact(ctx context.Context, related string) (stri
 	if cErr.Code == 48002 || cErr.Code == 60020 {
 		return "", errors.Wrap(common.ErrIncompleteConfig, err.Error())
 	}
-	if cErr.Code == 46004 {
+	if cErr.Code == 60103 {
 		return "", errors.Wrap(common.ErrNoSuchMobile, err.Error())
 	}
-	return userid, nil
+	return userid, cErr
 }
 
 func (ws *SWorkwxSender) Send(ctx context.Context, params *apis.SendParams) error {

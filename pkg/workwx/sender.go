@@ -84,7 +84,7 @@ func (ws *SWorkwxSender) FetchContact(ctx context.Context, related string) (stri
 	if cErr.Code == 48002 || cErr.Code == 60020 {
 		return "", errors.Wrap(common.ErrIncompleteConfig, err.Error())
 	}
-	if cErr.Code == 60103 {
+	if cErr.Code == 60103 || cErr.Code == 46004 {
 		return "", errors.Wrap(common.ErrNoSuchMobile, err.Error())
 	}
 	return userid, cErr

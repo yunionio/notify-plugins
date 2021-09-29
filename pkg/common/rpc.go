@@ -82,10 +82,17 @@ func NewServer(senderGenerator func() ISender, validateConfig ValidateConfig, wa
 
 func sender(domainId string, senders *sync.Map) (ISender, bool) {
 	obj, ok := senders.Load(domainId)
-	if !ok {
-		return nil, ok
+	if ok {
+		return obj.(ISender), ok
 	}
-	return obj.(ISender), ok
+	log.Infof("no sender for domainId %s", domainId)
+	// try "" domainId
+	obj, ok = senders.Load("")
+	if ok {
+		return obj.(ISender), ok
+	}
+	log.Infof("no sender for domainId %s", "")
+	return nil, ok
 }
 
 func (s *Server) Send(ctx context.Context, req *apis.SendParams) (*apis.Empty, error) {
@@ -95,7 +102,7 @@ func (s *Server) Send(ctx context.Context, req *apis.SendParams) (*apis.Empty, e
 	empty := &apis.Empty{}
 	sender, ok := s.senderWapper(req.Receiver.DomainId, s.senders)
 	if !ok || !sender.IsReady(ctx) {
-		return empty, status.Error(codes.FailedPrecondition, NOTINIT)
+		return empty, status.Error(codes.FailedPrecondition, fmt.Sprintf("no valid sender for domainId %s", req.Receiver.DomainId))
 	}
 	log.Debugf("recevie msg, contact: %s, title: %s, content: %s", req.Receiver.Contact, req.Title, req.Message)
 	err := sender.Send(ctx, &SendParam{
@@ -207,6 +214,7 @@ func (s *Server) CompleteConfig(ctx context.Context, req *apis.CompleteConfigInp
 			return empty, err
 		}
 	}
+	log.Infof("s.sender: %v", s.senders)
 	return empty, nil
 }
 
@@ -257,11 +265,8 @@ func (s *Server) ValidateConfig(ctx context.Context, req *apis.ValidateConfigInp
 func (s *Server) UseridByMobile(ctx context.Context, req *apis.UseridByMobileParams) (*apis.UseridByMobileReply, error) {
 	rep := &apis.UseridByMobileReply{}
 	sender, ok := s.senderWapper(req.DomainId, s.senders)
-	if !ok {
-		return rep, status.Error(codes.FailedPrecondition, NOTINIT)
-	}
-	if !sender.IsReady(ctx) {
-		return rep, status.Error(codes.FailedPrecondition, NOTINIT)
+	if !ok || !sender.IsReady(ctx) {
+		return rep, status.Error(codes.FailedPrecondition, fmt.Sprintf("No valid sender for domainId %s", req.DomainId))
 	}
 	log.Debugf("fetch userid by mobile %s", req.Mobile)
 	userId, err := sender.FetchContact(ctx, req.Mobile)

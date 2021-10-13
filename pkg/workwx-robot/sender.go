@@ -33,15 +33,15 @@ func NewSender(configs common.IServiceOptions) common.ISender {
 }
 
 func Send(ctx context.Context, webhook, title, msg string) error {
-    // check webhook
-    var token string
-    if strings.HasPrefix(webhook, webhookPrefix) {
-        token = webhook[:len(webhookPrefix)]
-    } else {
-        return errors.Wrap(robot.InvalidWebhook, webhook)
-    }
+	// check webhook
+	var token string
+	if strings.HasPrefix(webhook, webhookPrefix) {
+		token = webhook[len(webhookPrefix):]
+	} else {
+		return errors.Wrap(robot.InvalidWebhook, webhook)
+	}
 	req := WebhookTextMsgReq{
-		Content:             fmt.Sprintf("%s\n\n%s", title, msg),
+		Content: fmt.Sprintf("%s\n\n%s", title, msg),
 	}
 	resp, err := sendWebhookTextMessage(context.Background(), token, req)
 	if err != nil {

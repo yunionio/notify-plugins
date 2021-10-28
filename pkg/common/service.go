@@ -43,7 +43,7 @@ func StartServiceForRobot(opt IServiceOptions, generator func(IServiceOptions) I
 
 func StartServiceForWebconsole(opt IServiceOptions, generator func(IServiceOptions) ISender, validateConfig ValidateConfig, service string, configFile string) {
 	wrapper := func(domainId string, senders *sync.Map) (ISender, bool) {
-		obj, ok := senders.Load("default")
+		obj, ok := senders.Load("")
 		if !ok {
 			return nil, ok
 		}

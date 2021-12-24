@@ -164,6 +164,7 @@ func (self *SEmailSender) validateConfig(connInfo SConnectInfo) error {
 		if connInfo.Ssl {
 			dialer.SSL = true
 		} else {
+			dialer.SSL = false
 			// StartTLS process in dialer.Dial() will use TLSConfig
 			dialer.TLSConfig = &tls.Config{
 				InsecureSkipVerify: true,
@@ -201,6 +202,7 @@ func (self *SEmailSender) initSender() error {
 		dialer.SSL = true
 		log.Infof("enable ssl")
 	} else {
+		dialer.SSL = false
 		// StartTLS process in dialer.Dial() will use TLSConfig
 		dialer.TLSConfig = &tls.Config{
 			InsecureSkipVerify: true,

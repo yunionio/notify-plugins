@@ -60,14 +60,14 @@ func (self *SEmailSender) UpdateConfig(ctx context.Context, configs map[string]s
 func ValidateConfig(ctx context.Context, configs map[string]string) (isValid bool, msg string, err error) {
 	vals, ok, noKey := common.CheckMap(configs, HOSTNAME, HOSTPORT, USERNAME, PASSWORD)
 	if !ok {
-        err = fmt.Errorf("require %s", noKey)
-        return
+		err = fmt.Errorf("require %s", noKey)
+		return
 	}
 
 	port, err := strconv.Atoi(vals[1])
 	if err != nil {
 		err = fmt.Errorf("invalid hostport %s", vals[1])
-        return
+		return
 	}
 	conn := SConnectInfo{
 		Hostname: vals[0],
@@ -123,7 +123,6 @@ func NewSender(config common.IServiceOptions) common.ISender {
 	}
 }
 
-
 func (self *SEmailSender) send(args *common.SendParam) error {
 	gmsg := gomail.NewMessage()
 	username, _ := self.configCache.Get(USERNAME)
@@ -154,7 +153,6 @@ func (self *SEmailSender) restartSender() error {
 	return self.initSender()
 }
 
-
 func validateConfig(connInfo SConnectInfo) error {
 	errChan := make(chan error)
 	go func() {
@@ -162,6 +160,7 @@ func validateConfig(connInfo SConnectInfo) error {
 		if connInfo.Ssl {
 			dialer.SSL = true
 		} else {
+			dialer.SSL = false
 			// StartTLS process in dialer.Dial() will use TLSConfig
 			dialer.TLSConfig = &tls.Config{
 				InsecureSkipVerify: true,
@@ -176,7 +175,7 @@ func validateConfig(connInfo SConnectInfo) error {
 		errChan <- nil
 	}()
 
-	ticker := time.Tick(5 * time.Second)
+	ticker := time.Tick(30 * time.Second)
 	select {
 	case <-ticker:
 		return errors.Error("535 Error")
@@ -199,6 +198,7 @@ func (self *SEmailSender) initSender() error {
 		dialer.SSL = true
 		log.Infof("enable ssl")
 	} else {
+		dialer.SSL = false
 		// StartTLS process in dialer.Dial() will use TLSConfig
 		dialer.TLSConfig = &tls.Config{
 			InsecureSkipVerify: true,

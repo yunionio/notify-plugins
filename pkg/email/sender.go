@@ -118,19 +118,22 @@ func (self *SEmailSender) BatchSend(ctx context.Context, params *apis.BatchSendP
 }
 
 func NewSender(config common.IServiceOptions) common.ISender {
+	part := config.GetOthers().(SEmailConfigPart)
 	return &SEmailSender{
-		senders:    make([]sSender, config.GetSenderNum()),
-		senderNum:  config.GetSenderNum(),
-		chanelSize: config.GetOthers().(int),
-
+		senders:     make([]sSender, config.GetSenderNum()),
+		senderNum:   config.GetSenderNum(),
+		chanelSize:  part.ChannelSize,
 		configCache: common.NewConfigCache(),
 	}
 }
 
 func (self *SEmailSender) send(args *apis.SendParams) error {
 	gmsg := gomail.NewMessage()
-	username, _ := self.configCache.Get(USERNAME)
-	gmsg.SetHeader("From", username)
+	sendAddress, _ := self.configCache.Get(SENDERADDRESS)
+	if sendAddress == "" {
+		sendAddress, _ = self.configCache.Get(USERNAME)
+	}
+	gmsg.SetHeader("From", sendAddress)
 	gmsg.SetHeader("To", args.Contact)
 	gmsg.SetHeader("Subject", args.Topic)
 	gmsg.SetHeader("Subject", args.Title)

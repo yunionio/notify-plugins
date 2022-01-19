@@ -15,10 +15,11 @@
 package email
 
 const (
-	USERNAME  = "username"
-	PASSWORD  = "password"
-	HOSTNAME  = "hostname"
-	HOSTPORT  = "hostport"
-	GLOBALSSL = "ssl_global"
-	SSL       = "ssl"
+	SENDERADDRESS = "sender_address"
+	USERNAME      = "username"
+	PASSWORD      = "password"
+	HOSTNAME      = "hostname"
+	HOSTPORT      = "hostport"
+	GLOBALSSL     = "ssl_global"
+	SSL           = "ssl"
 )

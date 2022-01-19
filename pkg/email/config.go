@@ -19,10 +19,14 @@ import (
 )
 
 type SEmailConfig struct {
-	ChannelSize int `help:"size of channel" default:"100"`
+	SEmailConfigPart
 	common.SBaseOptions
 }
 
+type SEmailConfigPart struct {
+	ChannelSize int `help:"size of channel" default:"100"`
+}
+
 func (ec SEmailConfig) GetOthers() interface{} {
-	return ec.ChannelSize
+	return ec.SEmailConfigPart
 }

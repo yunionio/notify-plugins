@@ -97,6 +97,7 @@ func ValidateConfig(ctx context.Context, configs map[string]string) (isValid boo
 	default:
 		msg = err.Error()
 	}
+	err = nil
 	return
 }
 
@@ -157,14 +158,14 @@ func (self *SEmailSender) restartSender() error {
 }
 
 func validateConfig(connInfo SConnectInfo) error {
-	errChan := make(chan error)
+	errChan := make(chan error, 1)
 	go func() {
 		dialer := gomail.NewDialer(connInfo.Hostname, connInfo.Hostport, connInfo.Username, connInfo.Password)
 		if connInfo.Ssl {
 			dialer.SSL = true
 		} else {
 			dialer.SSL = false
-			// StartTLS process in dialer.Dial() will use TLSConfig
+			// StartLSConfig
 			dialer.TLSConfig = &tls.Config{
 				InsecureSkipVerify: true,
 			}
@@ -178,10 +179,10 @@ func validateConfig(connInfo SConnectInfo) error {
 		errChan <- nil
 	}()
 
-	ticker := time.Tick(30 * time.Second)
+	ticker := time.Tick(10 * time.Second)
 	select {
 	case <-ticker:
-		return errors.Error("535 Error")
+		return errors.Error("timeout")
 	case err := <-errChan:
 		return err
 	}

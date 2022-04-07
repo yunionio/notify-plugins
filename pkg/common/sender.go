@@ -18,7 +18,7 @@ import (
 	"context"
 	"sync"
 
-	"yunion.io/x/notify-plugin/pkg/apis"
+	"yunion.io/x/notify-plugins/pkg/apis"
 	"yunion.io/x/pkg/errors"
 )
 

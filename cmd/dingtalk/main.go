@@ -14,7 +14,7 @@
 
 package main
 
-import "yunion.io/x/notify-plugin/pkg/dingtalk"
+import "yunion.io/x/notify-plugins/pkg/dingtalk"
 
 func main() {
 	dingtalk.StartService()

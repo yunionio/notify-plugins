@@ -14,7 +14,7 @@
 
 package main
 
-import "yunion.io/x/notify-plugin/pkg/websocket"
+import "yunion.io/x/notify-plugins/pkg/websocket"
 
 func main() {
 	websocket.StartService()

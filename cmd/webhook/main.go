@@ -14,7 +14,7 @@
 
 package main
 
-import "yunion.io/x/notify-plugin/pkg/webhook"
+import "yunion.io/x/notify-plugins/pkg/webhook"
 
 func main() {
 	webhook.StartService()

@@ -14,7 +14,7 @@
 
 package workwx
 
-import "yunion.io/x/notify-plugin/pkg/common"
+import "yunion.io/x/notify-plugins/pkg/common"
 
 func StartService() {
 	var config common.SBaseOptions

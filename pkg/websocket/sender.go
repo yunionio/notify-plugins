@@ -26,7 +26,7 @@ import (
 	"yunion.io/x/onecloud/pkg/mcclient/modules"
 	"yunion.io/x/pkg/errors"
 
-	"yunion.io/x/notify-plugin/pkg/common"
+	"yunion.io/x/notify-plugins/pkg/common"
 )
 
 type SWebsocketSender struct {

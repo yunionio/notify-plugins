@@ -26,7 +26,7 @@ import (
 	"yunion.io/x/log"
 	"yunion.io/x/pkg/errors"
 
-	"yunion.io/x/notify-plugin/pkg/apis"
+	"yunion.io/x/notify-plugins/pkg/apis"
 )
 
 var (

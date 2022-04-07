@@ -24,7 +24,7 @@ all:
 fmt:
 
 cmd/%: fmt
-	go build $(GO_BUILD_FLAGS) -o $(BIN_DIR)/$(shell basename $@) yunion.io/x/notify-plugin/$@
+	go build $(GO_BUILD_FLAGS) -o $(BIN_DIR)/$(shell basename $@) yunion.io/x/notify-plugins/$@
 
 image:
 	REGISTRY=${REGISTRY} TAG=${VERSION} ARCH=${ARCH} ${ROOT_DIR}/scripts/docker_push.sh

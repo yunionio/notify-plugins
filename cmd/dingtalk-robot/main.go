@@ -14,7 +14,7 @@
 
 package main
 
-import "yunion.io/x/notify-plugin/pkg/dingtalk-robot"
+import "yunion.io/x/notify-plugins/pkg/dingtalk-robot"
 
 func main() {
 	dingtalk_rebot.StartService()

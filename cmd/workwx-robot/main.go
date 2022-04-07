@@ -14,7 +14,7 @@
 
 package main
 
-import workwx_robot "yunion.io/x/notify-plugin/pkg/workwx-robot"
+import workwx_robot "yunion.io/x/notify-plugins/pkg/workwx-robot"
 
 func main() {
 	workwx_robot.StartService()

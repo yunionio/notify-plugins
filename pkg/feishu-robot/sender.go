@@ -22,8 +22,8 @@ import (
 	"yunion.io/x/onecloud/pkg/monitor/notifydrivers/feishu"
 	"yunion.io/x/pkg/errors"
 
-	"yunion.io/x/notify-plugin/pkg/common"
-	"yunion.io/x/notify-plugin/pkg/robot"
+	"yunion.io/x/notify-plugins/pkg/common"
+	"yunion.io/x/notify-plugins/pkg/robot"
 )
 
 const (

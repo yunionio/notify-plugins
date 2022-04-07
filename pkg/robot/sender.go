@@ -20,7 +20,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"yunion.io/x/pkg/errors"
 
-	"yunion.io/x/notify-plugin/pkg/common"
+	"yunion.io/x/notify-plugins/pkg/common"
 )
 
 const WEBHOOK = "webhook"

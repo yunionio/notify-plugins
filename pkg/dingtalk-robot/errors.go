@@ -19,7 +19,7 @@ import (
 
 	"yunion.io/x/pkg/errors"
 
-	"yunion.io/x/notify-plugin/pkg/common"
+	"yunion.io/x/notify-plugins/pkg/common"
 )
 
 var (

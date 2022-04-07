@@ -18,7 +18,7 @@ import (
 	"errors"
 
 	"google.golang.org/grpc/codes"
-	"yunion.io/x/notify-plugin/pkg/common"
+	"yunion.io/x/notify-plugins/pkg/common"
 )
 
 const (

@@ -1,4 +1,4 @@
-module yunion.io/x/notify-plugin
+module yunion.io/x/notify-plugins
 
 go 1.13
 

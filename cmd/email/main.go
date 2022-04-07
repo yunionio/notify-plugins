@@ -14,7 +14,7 @@
 
 package main
 
-import "yunion.io/x/notify-plugin/pkg/email"
+import "yunion.io/x/notify-plugins/pkg/email"
 
 func main() {
 	email.StartService()

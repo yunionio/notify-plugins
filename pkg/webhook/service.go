@@ -14,7 +14,7 @@
 
 package webhook
 
-import "yunion.io/x/notify-plugin/pkg/common"
+import "yunion.io/x/notify-plugins/pkg/common"
 
 type SOptions struct {
 	common.SBaseOptions

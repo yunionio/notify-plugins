@@ -14,7 +14,7 @@
 
 package main
 
-import "yunion.io/x/notify-plugin/pkg/smsaliyun"
+import "yunion.io/x/notify-plugins/pkg/smsaliyun"
 
 func main() {
 	smsaliyun.StartService()

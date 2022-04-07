@@ -25,7 +25,7 @@ import (
 	"yunion.io/x/onecloud/pkg/monitor/notifydrivers/feishu"
 	"yunion.io/x/pkg/errors"
 
-	"yunion.io/x/notify-plugin/pkg/common"
+	"yunion.io/x/notify-plugins/pkg/common"
 )
 
 type SConnInfo struct {

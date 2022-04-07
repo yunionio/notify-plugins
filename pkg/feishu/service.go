@@ -15,7 +15,7 @@
 package feishu
 
 import (
-	"yunion.io/x/notify-plugin/pkg/common"
+	"yunion.io/x/notify-plugins/pkg/common"
 )
 
 var sendManager *SFeishuSender

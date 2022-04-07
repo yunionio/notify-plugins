@@ -14,7 +14,7 @@
 
 package main
 
-import "yunion.io/x/notify-plugin/pkg/feishu-robot"
+import "yunion.io/x/notify-plugins/pkg/feishu-robot"
 
 
 func main() {

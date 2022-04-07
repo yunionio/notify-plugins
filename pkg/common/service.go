@@ -26,7 +26,7 @@ import (
 
 	"yunion.io/x/log"
 
-	"yunion.io/x/notify-plugin/pkg/apis"
+	"yunion.io/x/notify-plugins/pkg/apis"
 )
 
 func StartService(opt IServiceOptions, generator func(IServiceOptions) ISender, validateConfig ValidateConfig, service string, configFile string) {

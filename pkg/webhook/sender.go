@@ -24,8 +24,8 @@ import (
 	"yunion.io/x/log"
 	"yunion.io/x/onecloud/pkg/util/httputils"
 
-	"yunion.io/x/notify-plugin/pkg/common"
-	"yunion.io/x/notify-plugin/pkg/robot"
+	"yunion.io/x/notify-plugins/pkg/common"
+	"yunion.io/x/notify-plugins/pkg/robot"
 )
 
 func NewSender(configs common.IServiceOptions) common.ISender {

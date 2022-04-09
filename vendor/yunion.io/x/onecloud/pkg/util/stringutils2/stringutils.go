@@ -18,7 +18,9 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"fmt"
+	"math/rand"
 	"strings"
+	"time"
 )
 
 func GetMD5Hash(text string) string {
@@ -119,4 +121,69 @@ func SplitByQuotation(line string) ([]string, error) {
 		}
 	}
 	return segs, nil
+}
+
+func GetCharTypeCount(str string) int {
+	digitIdx := 0
+	lowerIdx := 1
+	upperIdx := 2
+	otherIdx := 3
+	complexity := make([]int, 4)
+	for _, b := range []byte(str) {
+		if b >= '0' && b <= '9' {
+			complexity[digitIdx] += 1
+		} else if b >= 'a' && b <= 'z' {
+			complexity[lowerIdx] += 1
+		} else if b >= 'A' && b <= 'Z' {
+			complexity[upperIdx] += 1
+		} else {
+			complexity[otherIdx] += 1
+		}
+	}
+	ret := 0
+	for i := range complexity {
+		if complexity[i] > 0 {
+			ret += 1
+		}
+	}
+	return ret
+}
+
+// Qcloud: 1-128个英文字母、数字和+=,.@_-
+// Aws: 请使用字母数字和‘+=,.@-_’字符。 最长 64 个字符
+// Common: 1-64个字符, 数字字母或 +=,.@-_
+func GenerateRoleName(roleName string) string {
+	ret := ""
+	for _, s := range roleName {
+		if (s >= '0' && s <= '9') || (s >= 'a' && s <= 'z') || (s >= 'A' && s <= 'Z') || strings.Contains("+=,.@-_", string(s)) {
+			ret += string(s)
+		}
+	}
+
+	if len(ret) == 0 {
+		return func(length int) string {
+			bytes := []byte("23456789abcdefghijkmnpqrstuvwxyz")
+			result := []byte{}
+			r := rand.New(rand.NewSource(time.Now().UnixNano()))
+			for i := 0; i < length; i++ {
+				result = append(result, bytes[r.Intn(len(bytes))])
+			}
+			return "role-" + string(result)
+		}(12)
+	}
+
+	if len(ret) > 64 {
+		return ret[:64]
+	}
+	return ret
+}
+
+func FilterEmpty(input []string) []string {
+	ret := make([]string, 0)
+	for i := range input {
+		if len(input[i]) > 0 {
+			ret = append(ret, input[i])
+		}
+	}
+	return ret
 }

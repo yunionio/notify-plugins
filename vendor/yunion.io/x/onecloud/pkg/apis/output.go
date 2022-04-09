@@ -16,6 +16,13 @@ package apis
 
 import (
 	"time"
+
+	"yunion.io/x/onecloud/pkg/httperrors"
+)
+
+const (
+	EXTERNAL_RESOURCE_SOURCE_LOCAL = "local"
+	EXTERNAL_RESOURCE_SOURCE_CLOUD = "cloud"
 )
 
 type ModelBaseDetails struct {
@@ -26,14 +33,14 @@ type ModelBaseDetails struct {
 	CanDelete bool `json:"can_delete"`
 
 	// 资源不能删除的原因
-	DeleteFailReason string `json:"delete_fail_reason"`
+	DeleteFailReason httperrors.Error `json:"delete_fail_reason"`
 
 	// 资源是否可以更新, 若为false,update_fail_reason会返回资源不能删除的原因
 	// example: true
 	CanUpdate bool `json:"can_update"`
 
 	// 资源不能更新的原因
-	UpdateFailReason string `json:"update_fail_reason"`
+	UpdateFailReason httperrors.Error `json:"update_fail_reason"`
 }
 
 type ModelBaseShortDescDetail struct {
@@ -69,10 +76,15 @@ type AdminSharableVirtualResourceDetails struct {
 	SharableVirtualResourceDetails
 }
 
-type StandaloneResourceShortDescDetail struct {
+type StandaloneAnonResourceShortDescDetail struct {
 	ModelBaseShortDescDetail
 
-	Id   string `json:"id"`
+	Id string `json:"id"`
+}
+
+type StandaloneResourceShortDescDetail struct {
+	StandaloneAnonResourceShortDescDetail
+
 	Name string `json:"name"`
 }
 
@@ -135,10 +147,14 @@ type UserResourceDetails struct {
 	OwnerName string `json:"owner_name"`
 }
 
-type StandaloneResourceDetails struct {
+type StandaloneAnonResourceDetails struct {
 	ResourceBaseDetails
 
 	MetadataResourceInfo
+}
+
+type StandaloneResourceDetails struct {
+	StandaloneAnonResourceDetails
 }
 
 type DomainizedResourceInfo struct {
@@ -155,11 +171,11 @@ type ProjectizedResourceInfo struct {
 
 	// 资源归属项目的ID(向后兼容别名）
 	// Deprecated
-	TenantId string `json:"project_id" "yunion:deprecated-by":"tenant"`
+	TenantId string `json:"project_id" yunion-deprecated-by:"tenant_id"`
 
 	// 资源归属项目的名称（向后兼容别名）
 	// Deprecated
-	Tenant string `json:"project" "yunion:deprecated-by":"tenant"`
+	Tenant string `json:"project" yunion-deprecated-by:"tenant"`
 }
 
 type ScopedResourceBaseInfo struct {
@@ -213,4 +229,18 @@ type OpsLogDetails struct {
 
 	OwnerDomain  string `json:"owner_domain"`
 	OwnerProject string `json:"owner_tenant"`
+}
+
+type StatusStatistic struct {
+	// 资源总数
+	TotalCount int64 `json:"total_count"`
+	// 回收站数量
+	// 需要指定pending_delete=all
+	PendingDeletedCount int64 `json:"pending_deleted_count"`
+}
+
+type ProjectStatistic struct {
+	Count int
+	Id    string
+	Name  string
 }

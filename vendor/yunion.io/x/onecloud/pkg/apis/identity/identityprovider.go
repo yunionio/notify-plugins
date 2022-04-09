@@ -59,6 +59,9 @@ type IdpResourceInfo struct {
 
 	// 认证源类型, 例如sql, cas, ldap等
 	IdpDriver string `json:"idp_driver"`
+
+	// 认证源模板
+	Template string `json:"template"`
 }
 
 type IdentityProviderCreateInput struct {
@@ -77,7 +80,7 @@ type IdentityProviderCreateInput struct {
 	TargetDomainId string `json:"target_domain_id"`
 	// swagger:ignore
 	// Deprecated
-	TargetDomain string `json:"target_domain" "yunion:deprecated-by":"target_domain_id"`
+	TargetDomain string `json:"target_domain" yunion-deprecated-by:"target_domain_id"`
 
 	// 新建域的时候是否自动新建第一个项目
 	AutoCreateProject *bool `json:"auto_create_project"`
@@ -116,6 +119,22 @@ type GetIdpSsoRedirectUriInput struct {
 type GetIdpSsoRedirectUriOutput struct {
 	// SSO跳转URI
 	Uri string `json:"uri"`
+	// Driver
+	Driver string `json:"driver"`
+}
+
+type PerformDefaultSsoInput struct {
+	Enable *bool `json:"enable" help:"enable default sso" negative:"disable"`
+}
+
+type GetIdpSsoCallbackUriInput struct {
+	// SSO回调地址
+	RedirectUri string `json:"redirect_uri"`
+}
+
+type GetIdpSsoCallbackUriOutput struct {
+	// SSO回调地址
+	RedirectUri string `json:"redirect_uri"`
 	// Driver
 	Driver string `json:"driver"`
 }

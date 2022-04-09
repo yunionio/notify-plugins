@@ -202,6 +202,14 @@ func (token *TokenCredentialV3) GetRoles() []string {
 	return roles
 }
 
+func (token *TokenCredentialV3) GetRoleIds() []string {
+	roles := make([]string, 0)
+	for i := 0; i < len(token.Token.Roles); i++ {
+		roles = append(roles, token.Token.Roles[i].Id)
+	}
+	return roles
+}
+
 func (this *TokenCredentialV3) GetExpires() time.Time {
 	return this.Token.ExpiresAt
 }
@@ -227,7 +235,15 @@ func (this *TokenCredentialV3) HasSystemAdminPrivilege() bool {
 	return this.IsAdmin() && this.GetTenantName() == "system"
 }
 
-func (this *TokenCredentialV3) IsAllow(scope rbacutils.TRbacScope, service string, resource string, action string, extra ...string) bool {
+func (this *TokenCredentialV3) IsAllow(scope rbacutils.TRbacScope, service string, resource string, action string, extra ...string) rbacutils.SPolicyResult {
+	if this.isAllow(scope, service, resource, action, extra...) {
+		return rbacutils.PolicyAllow
+	} else {
+		return rbacutils.PolicyDeny
+	}
+}
+
+func (this *TokenCredentialV3) isAllow(scope rbacutils.TRbacScope, service string, resource string, action string, extra ...string) bool {
 	if scope == rbacutils.ScopeSystem || scope == rbacutils.ScopeDomain {
 		return this.HasSystemAdminPrivilege()
 	} else {
@@ -308,8 +324,11 @@ func (catalog KeystoneServiceCatalogV3) GetServicesByInterface(region string, in
 			if catalog[i].Endpoints[j].RegionId == region &&
 				catalog[i].Endpoints[j].Interface == infType &&
 				len(catalog[i].Endpoints[j].Name) > 0 {
-				srv := ExternalService{Name: catalog[i].Endpoints[j].Name,
-					Url: catalog[i].Endpoints[j].Url}
+				srv := ExternalService{
+					Name:    catalog[i].Endpoints[j].Name,
+					Url:     catalog[i].Endpoints[j].Url,
+					Service: catalog[i].Type,
+				}
 				services = append(services, srv)
 			}
 		}

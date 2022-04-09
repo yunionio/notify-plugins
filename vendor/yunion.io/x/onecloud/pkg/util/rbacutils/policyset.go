@@ -14,30 +14,17 @@
 
 package rbacutils
 
-type SPolicyInfo struct {
-	Id     string
-	Name   string
-	Policy *SRbacPolicy
-}
+import (
+	"yunion.io/x/jsonutils"
+	"yunion.io/x/pkg/errors"
 
-type TPolicySet []*SRbacPolicy
+	"yunion.io/x/onecloud/pkg/httperrors"
+)
 
-func GetMatchedPolicies(policies []SPolicyInfo, userCred IRbacIdentity) (TPolicySet, []string) {
-	matchedPolicies := make([]*SRbacPolicy, 0)
-	matchedNames := make([]string, 0)
-	for i := range policies {
-		isMatched, _ := policies[i].Policy.Match(userCred)
-		if !isMatched {
-			continue
-		}
-		matchedPolicies = append(matchedPolicies, policies[i].Policy)
-		matchedNames = append(matchedNames, policies[i].Name)
-	}
-	return matchedPolicies, matchedNames
-}
+type TPolicySet []SPolicy
 
-func (policies TPolicySet) GetMatchRules(service string, resource string, action string, extra ...string) []SRbacRule {
-	matchRules := make([]SRbacRule, 0)
+func (policies TPolicySet) GetMatchRules(service string, resource string, action string, extra ...string) []SPolicyMatch {
+	matchRules := make([]SPolicyMatch, 0)
 	for i := range policies {
 		rule := policies[i].GetMatchRule(service, resource, action, extra...)
 		if rule != nil {
@@ -47,11 +34,53 @@ func (policies TPolicySet) GetMatchRules(service string, resource string, action
 	return matchRules
 }
 
+func DecodePolicySet(jsonObj jsonutils.JSONObject) (TPolicySet, error) {
+	jsonArr, err := jsonObj.GetArray()
+	if err != nil {
+		return nil, errors.Wrap(httperrors.ErrInvalidFormat, "invalid json: not an array")
+	}
+	set := TPolicySet{}
+	for i := range jsonArr {
+		policy, err := DecodePolicy(jsonArr[i])
+		if err != nil {
+			return nil, errors.Wrapf(err, "decode %d", i)
+		}
+		set = append(set, *policy)
+	}
+	return set, nil
+}
+
+func (policies TPolicySet) Encode() jsonutils.JSONObject {
+	obj := make([]jsonutils.JSONObject, len(policies))
+	for i := range policies {
+		obj[i] = policies[i].Encode()
+	}
+	return jsonutils.NewArray(obj...)
+}
+
+// Contains of TPolicySet
+//    TPolicySet ps1 contains ps2 means any member of ps2 is contained by one of the members of ps1
+func (policies1 TPolicySet) Contains(policies2 TPolicySet) bool {
+	for _, ps2 := range policies2 {
+		contained := false
+		for _, ps1 := range policies1 {
+			if ps1.Contains(ps2) {
+				contained = true
+				break
+			}
+		}
+		if !contained {
+			return false
+		}
+	}
+	return true
+}
+
 // ViolatedBy: policies中deny的权限，但是assign中却是allow
 // if any assign allow, but policies deny
 // OR
 // assign allow, if any policies deny
-func (policies TPolicySet) ViolatedBy(assign TPolicySet) bool {
+/* func (policies TPolicySet) ViolatedBy(assign TPolicySet) bool {
 	if policies.violatedBySet(assign, Allow) {
 		return true
 	}
@@ -70,13 +99,16 @@ func (policies TPolicySet) violatedBySet(assign TPolicySet, expect TRbacResult) 
 	return false
 }
 
-func (policies TPolicySet) violatedByPolicy(policy *SRbacPolicy, expect TRbacResult) bool {
+func (policies TPolicySet) violatedByPolicy(policy SPolicy, expect TRbacResult) bool {
 	for i := range policy.Rules {
 		rule := policy.Rules[i]
 		if rule.Result != expect {
 			continue
 		}
 		matchRules := policies.GetMatchRules(rule.Service, rule.Resource, rule.Action, rule.Extra...)
+		for i := range matchRules {
+
+		}
 		matchRule := GetMatchRule(matchRules, rule.Service, rule.Resource, rule.Action, rule.Extra...)
 		if expect == Allow && (matchRule == nil || matchRule.Result == Deny) {
 			return true
@@ -86,3 +118,4 @@ func (policies TPolicySet) violatedByPolicy(policy *SRbacPolicy, expect TRbacRes
 	}
 	return false
 }
+*/

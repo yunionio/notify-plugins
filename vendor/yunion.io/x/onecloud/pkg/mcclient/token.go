@@ -26,6 +26,8 @@ import (
 type ExternalService struct {
 	Name string
 	Url  string
+
+	Service string
 }
 
 type Endpoint struct {
@@ -74,13 +76,14 @@ type TokenCredential interface {
 
 	GetTokenString() string
 	GetRoles() []string
+	GetRoleIds() []string
 	GetExpires() time.Time
 	IsValid() bool
 	ValidDuration() time.Duration
 	// IsAdmin() bool
 	HasSystemAdminPrivilege() bool
 
-	IsAllow(scope rbacutils.TRbacScope, service string, resource string, action string, extra ...string) bool
+	IsAllow(scope rbacutils.TRbacScope, service string, resource string, action string, extra ...string) rbacutils.SPolicyResult
 
 	GetRegions() []string
 

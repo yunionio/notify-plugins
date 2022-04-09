@@ -14,6 +14,8 @@
 
 package identity
 
+import "yunion.io/x/onecloud/pkg/util/rbacutils"
+
 type SIdentityObject struct {
 	Id   string `json:"id"`
 	Name string `json:"name"`
@@ -24,6 +26,11 @@ type SDomainObject struct {
 	Domain SIdentityObject `json:"domain"`
 }
 
+type SDomainObjectWithMetadata struct {
+	SDomainObject
+	Metadata map[string]string `json:"metadata"`
+}
+
 type SFetchDomainObject struct {
 	SIdentityObject
 	Domain   string `json:"domain"`
@@ -32,8 +39,8 @@ type SFetchDomainObject struct {
 
 type SRoleAssignment struct {
 	Scope struct {
-		Domain  SIdentityObject `json:"domain"`
-		Project SDomainObject   `json:"project"`
+		Domain  SIdentityObject           `json:"domain"`
+		Project SDomainObjectWithMetadata `json:"project"`
 	} `json:"scope"`
 	User  SDomainObject `json:"user"`
 	Group SDomainObject `json:"group"`
@@ -47,16 +54,13 @@ type SRoleAssignment struct {
 }
 
 // rbacutils.IRbacIdentity interfaces
-func (ra *SRoleAssignment) GetProjectDomainId() string {
-	return ra.Scope.Project.Domain.Id
+
+func (ra *SRoleAssignment) GetProjectId() string {
+	return ra.Scope.Project.Id
 }
 
-func (ra *SRoleAssignment) GetProjectName() string {
-	return ra.Scope.Project.Name
-}
-
-func (ra *SRoleAssignment) GetRoles() []string {
-	return []string{ra.Role.Name}
+func (ra *SRoleAssignment) GetRoleIds() []string {
+	return []string{ra.Role.Id}
 }
 
 func (ra *SRoleAssignment) GetLoginIp() string {
@@ -64,5 +68,46 @@ func (ra *SRoleAssignment) GetLoginIp() string {
 }
 
 func (ra *SRoleAssignment) GetTokenString() string {
-	return "faketoken"
+	return rbacutils.FAKE_TOKEN
+}
+
+type RAInputObject struct {
+	Id string `json:"id"`
+}
+
+type RoleAssignmentsInput struct {
+	User  RAInputObject `json:"user"`
+	Group RAInputObject `json:"group"`
+	Role  RAInputObject `json:"role"`
+
+	Scope struct {
+		Project RAInputObject `json:"project"`
+		Domain  RAInputObject `json:"domain"`
+	} `json:"scope"`
+
+	Users    []string `json:"users"`
+	Groups   []string `json:"groups"`
+	Roles    []string `json:"roles"`
+	Projects []string `json:"projects"`
+	Domains  []string `json:"domains"`
+
+	ProjectDomainId string   `json:"project_domain_id"`
+	ProjectDomains  []string `json:"project_domains"`
+
+	IncludeNames    *bool `json:"include_names"`
+	Effective       *bool `json:"effective"`
+	IncludeSubtree  *bool `json:"include_subtree"`
+	IncludeSystem   *bool `json:"include_system"`
+	IncludePolicies *bool `json:"include_policies"`
+
+	Limit  *int `json:"limit"`
+	Offset *int `json:"offset"`
+}
+
+type RoleAssignmentsOutput struct {
+	RoleAssignments []SRoleAssignment `json:"role_assignments,allowempty"`
+
+	Total  int64 `json:"total"`
+	Limit  int   `json:"limit"`
+	Offset int   `json:"offset"`
 }

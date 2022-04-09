@@ -5,12 +5,20 @@ const (
 	ErrClient       = Error("ClientError")
 	ErrUnclassified = Error("UnclassifiedError")
 
-	ErrNotFound       = Error("NotFoundError")
-	ErrDuplicateId    = Error("DuplicateIdError")
-	ErrInvalidStatus  = Error("InvalidStatusError")
+	// network error
+	ErrDNS            = Error("DNSError")
+	ErrEOF            = Error("EOFError")
+	ErrNetwork        = Error("NetworkError")
+	ErrConnectRefused = Error("ConnectRefusedError")
+	ErrConnectReset   = Error("ConnectResetError")
 	ErrTimeout        = Error("TimeoutError")
-	ErrNotImplemented = Error("NotImplementedError")
-	ErrNotSupported   = Error("NotSupportedError")
+
+	ErrNotFound        = Error("NotFoundError")
+	ErrDuplicateId     = Error("DuplicateIdError")
+	ErrInvalidStatus   = Error("InvalidStatusError")
+	ErrNotImplemented  = Error("NotImplementedError")
+	ErrNotSupported    = Error("NotSupportedError")
+	ErrAccountReadOnly = Error("AccountReadOnlyError")
 
 	ErrAggregate = Error("AggregateError")
 )

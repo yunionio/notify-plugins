@@ -30,10 +30,11 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/fatih/color"
-	"github.com/moul/http2curl"
+	"moul.io/http2curl/v2"
 
 	"yunion.io/x/jsonutils"
 	"yunion.io/x/pkg/errors"
@@ -70,22 +71,26 @@ var (
 )
 
 type Error struct {
-	Id     string   `json:"id"`
-	Fields []string `json:"fields"`
+	Id     string        `json:"id,omitempty"`
+	Fields []interface{} `json:"fields,omitempty"`
 }
 
 type JSONClientError struct {
 	Request struct {
-		Method  string               `json:"method"`
-		Url     string               `json:"url"`
-		Body    jsonutils.JSONObject `json:"body"`
-		Headers map[string]string    `json:"headers"`
-	} `json:"request"`
+		Method  string               `json:"method,omitempty"`
+		Url     string               `json:"url,omitempty"`
+		Body    jsonutils.JSONObject `json:"body,omitempty"`
+		Headers map[string]string    `json:"headers,omitempty"`
+	} `json:"request,omitempty"`
 
-	Code    int    `json:"code"`
-	Class   string `json:"class"`
-	Details string `json:"details"`
-	Data    Error  `json:"data"`
+	Code    int    `json:"code,omitzero"`
+	Class   string `json:"class,omitempty"`
+	Details string `json:"details,omitempty"`
+	Data    Error  `json:"data,omitempty"`
+}
+
+type sClient interface {
+	Do(req *http.Request) (*http.Response, error)
 }
 
 // body might have been consumed, so body is provided separately
@@ -99,16 +104,25 @@ func newJsonClientErrorFromRequest2(method string, urlStr string, hdrs http.Head
 	jce.Request.Method = strings.ToUpper(method)
 	jce.Request.Url = urlStr
 	jce.Request.Headers = make(map[string]string)
-	excludeHdrs := []string{}
+	excludeHdrs := []string{
+		"Accept",
+		"Accept-Encoding",
+	}
 	authHdrs := []string{
 		http.CanonicalHeaderKey("authorization"),
 		http.CanonicalHeaderKey("x-auth-token"),
 		http.CanonicalHeaderKey("x-subject-token"),
 	}
+	const (
+		MAX_BODY   = 128
+		FIRST_PART = 100
+	)
 	switch jce.Request.Method {
 	case "PUT", "POST", "PATCH":
 		contType := hdrs.Get(http.CanonicalHeaderKey("content-type"))
-		if strings.Contains(contType, "json") {
+		if len(body) > MAX_BODY {
+			jce.Request.Body = jsonutils.NewString(body[:FIRST_PART] + "..." + body[len(body)-MAX_BODY+FIRST_PART+3:])
+		} else if strings.Contains(contType, "json") {
 			jce.Request.Body, _ = jsonutils.ParseString(body)
 		} else if strings.Contains(contType, "xml") ||
 			strings.Contains(contType, "x-www-form-urlencoded") {
@@ -137,7 +151,7 @@ type JSONClientErrorMsg struct {
 }
 
 type JsonClient struct {
-	client *http.Client
+	client sClient
 }
 
 type JsonRequest interface {
@@ -215,7 +229,7 @@ func (ce *JSONClientError) ParseErrorFromJsonResponse(statusCode int, body jsonu
 	return ce
 }
 
-func NewJsonClient(client *http.Client) *JsonClient {
+func NewJsonClient(client sClient) *JsonClient {
 	return &JsonClient{client: client}
 }
 
@@ -286,6 +300,10 @@ func GetAddrPort(urlStr string) (string, int, error) {
 
 func GetTransport(insecure bool) *http.Transport {
 	return getTransport(insecure, false)
+}
+
+func GetAdaptiveTransport(insecure bool) *http.Transport {
+	return getTransport(insecure, true)
 }
 
 func adptiveDial(ctx context.Context, network, addr string) (net.Conn, error) {
@@ -411,14 +429,36 @@ func GetAdaptiveTimeoutClient() *http.Client {
 var defaultHttpClient *http.Client
 
 func init() {
-	defaultHttpClient = GetClient(true, time.Second*15)
+	defaultHttpClient = GetDefaultClient()
 }
 
 func GetDefaultClient() *http.Client {
-	return defaultHttpClient
+	return GetClient(true, time.Second*15)
 }
 
-func Request(client *http.Client, ctx context.Context, method THttpMethod, urlStr string, header http.Header, body io.Reader, debug bool) (*http.Response, error) {
+func getClientErrorClass(err error) error {
+	cause := errors.Cause(err)
+	if urlErr, ok := cause.(*url.Error); ok {
+		if netErr, ok := urlErr.Err.(*net.OpError); ok {
+			switch t := netErr.Err.(type) {
+			case *net.DNSError:
+				return errors.ErrDNS
+			case *os.SyscallError:
+				if errno, ok := t.Err.(syscall.Errno); ok {
+					switch errno {
+					case syscall.ECONNREFUSED:
+						return errors.ErrConnectRefused
+					case syscall.ETIMEDOUT:
+						return errors.ErrTimeout
+					}
+				}
+			}
+		}
+	}
+	return errors.ErrClient
+}
+
+func Request(client sClient, ctx context.Context, method THttpMethod, urlStr string, header http.Header, body io.Reader, debug bool) (*http.Response, error) {
 	req, resp, err := requestInternal(client, ctx, method, urlStr, header, body, debug)
 	if err != nil {
 		var reqBody string
@@ -431,13 +471,13 @@ func Request(client *http.Client, ctx context.Context, method THttpMethod, urlSt
 		}
 		if req == nil {
 			ce := newJsonClientErrorFromRequest2(string(method), urlStr, header, reqBody)
-			ce.Class = string(errors.ErrClient)
+			ce.Class = getClientErrorClass(err).Error()
 			ce.Details = err.Error()
 			ce.Code = 499
 			return nil, ce
 		}
 		ce := newJsonClientErrorFromRequest(req, reqBody)
-		ce.Class = string(errors.ErrClient)
+		ce.Class = getClientErrorClass(err).Error()
 		ce.Details = err.Error()
 		ce.Code = 499
 		return nil, ce
@@ -445,7 +485,7 @@ func Request(client *http.Client, ctx context.Context, method THttpMethod, urlSt
 	return resp, nil
 }
 
-func requestInternal(client *http.Client, ctx context.Context, method THttpMethod, urlStr string, header http.Header, body io.Reader, debug bool) (*http.Request, *http.Response, error) {
+func requestInternal(client sClient, ctx context.Context, method THttpMethod, urlStr string, header http.Header, body io.Reader, debug bool) (*http.Request, *http.Response, error) {
 	if client == nil {
 		client = defaultHttpClient
 	}
@@ -454,14 +494,18 @@ func requestInternal(client *http.Client, ctx context.Context, method THttpMetho
 	}
 	ctxData := appctx.FetchAppContextData(ctx)
 	var clientTrace *trace.STrace
-	if !ctxData.Trace.IsZero() {
+	if len(ctxData.ServiceName) > 0 {
+		if !ctxData.Trace.IsZero() {
+			clientTrace = &ctxData.Trace
+		}
 		addr, port, err := GetAddrPort(urlStr)
 		if err != nil {
 			return nil, nil, err
 		}
-		clientTrace = trace.StartClientTrace(&ctxData.Trace, addr, port, ctxData.ServiceName)
+		clientTrace = trace.StartClientTrace(clientTrace, addr, port, ctxData.ServiceName)
 		clientTrace.AddClientRequestHeader(header)
 	}
+
 	if len(ctxData.RequestId) > 0 {
 		header.Set("X-Request-Id", ctxData.RequestId)
 	}
@@ -786,6 +830,12 @@ func ParseJSONResponse(reqBody string, resp *http.Response, err error, debug boo
 	}
 }
 
-func JoinPath(ep string, path string) string {
-	return strings.TrimRight(ep, "/") + "/" + strings.TrimLeft(path, "/")
+func JoinPath(ep string, paths ...string) string {
+	buf := strings.Builder{}
+	buf.WriteString(strings.TrimRight(ep, "/"))
+	for _, path := range paths {
+		buf.WriteByte('/')
+		buf.WriteString(strings.Trim(path, "/"))
+	}
+	return buf.String()
 }

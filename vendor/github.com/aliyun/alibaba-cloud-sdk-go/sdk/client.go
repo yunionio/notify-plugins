@@ -22,6 +22,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"regexp"
 	"runtime"
 	"strconv"
 	"strings"
@@ -73,6 +74,8 @@ type Client struct {
 	EndpointMap    map[string]string
 	EndpointType   string
 	Network        string
+	Domain         string
+	isOpenAsync    bool
 
 	debug     bool
 	isRunning bool
@@ -122,6 +125,13 @@ func (client *Client) GetNoProxy() string {
 	return client.noProxy
 }
 
+func (client *Client) SetTransport(transport http.RoundTripper) {
+	if client.httpClient == nil {
+		client.httpClient = &http.Client{}
+	}
+	client.httpClient.Transport = transport
+}
+
 // InitWithProviderChain will get credential from the providerChain,
 // the RsaKeyPairCredential Only applicable to regionID `ap-northeast-1`,
 // if your providerChain may return a credential type with RsaKeyPairCredential,
@@ -136,13 +146,22 @@ func (client *Client) InitWithProviderChain(regionId string, provider provider.P
 }
 
 func (client *Client) InitWithOptions(regionId string, config *Config, credential auth.Credential) (err error) {
+	if regionId != "" {
+		match, _ := regexp.MatchString("^[a-zA-Z0-9_-]+$", regionId)
+		if !match {
+			return fmt.Errorf("regionId contains invalid characters")
+		}
+	}
+
 	client.isRunning = true
 	client.asyncChanLock = new(sync.RWMutex)
 	client.regionId = regionId
 	client.config = config
 	client.httpClient = &http.Client{}
 
-	if config.HttpTransport != nil {
+	if config.Transport != nil {
+		client.httpClient.Transport = config.Transport
+	} else if config.HttpTransport != nil {
 		client.httpClient.Transport = config.HttpTransport
 	}
 
@@ -212,10 +231,26 @@ func (client *Client) getNoProxy(scheme string) []string {
 
 // EnableAsync enable the async task queue
 func (client *Client) EnableAsync(routinePoolSize, maxTaskQueueSize int) {
-	client.asyncTaskQueue = make(chan func(), maxTaskQueueSize)
+	if client.isOpenAsync {
+		fmt.Println("warning: Please not call EnableAsync repeatedly")
+		return
+	}
+	if client.asyncChanLock == nil {
+		client.asyncChanLock = new(sync.RWMutex)
+	}
+	client.asyncChanLock.Lock()
+	defer client.asyncChanLock.Unlock()
+	client.isRunning = true
+	client.isOpenAsync = true
+	if client.asyncTaskQueue == nil {
+		client.asyncTaskQueue = make(chan func(), maxTaskQueueSize)
+	}
 	for i := 0; i < routinePoolSize; i++ {
 		go func() {
-			for client.isRunning {
+			client.asyncChanLock.RLock()
+			ok := client.isRunning
+			client.asyncChanLock.RUnlock()
+			for ok {
 				select {
 				case task, notClosed := <-client.asyncTaskQueue:
 					if notClosed {
@@ -307,8 +342,12 @@ func (client *Client) DoAction(request requests.AcsRequest, response responses.A
 	return client.DoActionWithSigner(request, response, nil)
 }
 
-func (client *Client) GetEndpointRules(regionId string, product string) (endpointRaw string) {
+func (client *Client) GetEndpointRules(regionId string, product string) (endpointRaw string, err error) {
 	if client.EndpointType == "regional" {
+		if regionId == "" {
+			err = fmt.Errorf("RegionId is empty, please set a valid RegionId.")
+			return "", err
+		}
 		endpointRaw = strings.Replace("<product><network>.<region_id>.aliyuncs.com", "<region_id>", regionId, 1)
 	} else {
 		endpointRaw = "<product><network>.aliyuncs.com"
@@ -319,7 +358,7 @@ func (client *Client) GetEndpointRules(regionId string, product string) (endpoin
 	} else {
 		endpointRaw = strings.Replace(endpointRaw, "<network>", "-"+client.Network, 1)
 	}
-	return endpointRaw
+	return endpointRaw, nil
 }
 
 func (client *Client) buildRequestWithSigner(request requests.AcsRequest, signer auth.Signer) (httpRequest *http.Request, err error) {
@@ -333,13 +372,26 @@ func (client *Client) buildRequestWithSigner(request requests.AcsRequest, signer
 
 	// resolve endpoint
 	endpoint := request.GetDomain()
-	if endpoint == "" && client.EndpointType != "" && request.GetProduct() != "Sts" {
+
+	if endpoint == "" && client.Domain != "" {
+		endpoint = client.Domain
+	}
+
+	if endpoint == "" {
+		endpoint = endpoints.GetEndpointFromMap(regionId, request.GetProduct())
+	}
+
+	if endpoint == "" && client.EndpointType != "" &&
+		(request.GetProduct() != "Sts" || len(request.GetQueryParams()) == 0) {
 		if client.EndpointMap != nil && client.Network == "" || client.Network == "public" {
 			endpoint = client.EndpointMap[regionId]
 		}
 
 		if endpoint == "" {
-			endpoint = client.GetEndpointRules(regionId, request.GetProduct())
+			endpoint, err = client.GetEndpointRules(regionId, request.GetProduct())
+			if err != nil {
+				return
+			}
 		}
 	}
 
@@ -469,7 +521,7 @@ func (client *Client) setTimeout(request requests.AcsRequest) {
 	if trans, ok := client.httpClient.Transport.(*http.Transport); ok && trans != nil {
 		trans.DialContext = Timeout(connectTimeout)
 		client.httpClient.Transport = trans
-	} else {
+	} else if client.httpClient.Transport == nil {
 		client.httpClient.Transport = &http.Transport{
 			DialContext: Timeout(connectTimeout),
 		}
@@ -486,7 +538,12 @@ func (client *Client) getHTTPSInsecure(request requests.AcsRequest) (insecure bo
 }
 
 func (client *Client) DoActionWithSigner(request requests.AcsRequest, response responses.AcsResponse, signer auth.Signer) (err error) {
-
+	if client.Network != "" {
+		match, _ := regexp.MatchString("^[a-zA-Z0-9_-]+$", client.Network)
+		if !match {
+			return fmt.Errorf("netWork contains invalid characters")
+		}
+	}
 	fieldMap := make(map[string]string)
 	initLogMsg(fieldMap)
 	defer func() {
@@ -507,7 +564,14 @@ func (client *Client) DoActionWithSigner(request requests.AcsRequest, response r
 
 	var flag bool
 	for _, value := range noProxy {
-		if value == httpRequest.Host {
+		if strings.HasPrefix(value, "*") {
+			value = fmt.Sprintf(".%s", value)
+		}
+		noProxyReg, err := regexp.Compile(value)
+		if err != nil {
+			return err
+		}
+		if noProxyReg.MatchString(httpRequest.Host) {
 			flag = true
 			break
 		}
@@ -516,8 +580,12 @@ func (client *Client) DoActionWithSigner(request requests.AcsRequest, response r
 	// Set whether to ignore certificate validation.
 	// Default InsecureSkipVerify is false.
 	if trans, ok := client.httpClient.Transport.(*http.Transport); ok && trans != nil {
-		trans.TLSClientConfig = &tls.Config{
-			InsecureSkipVerify: client.getHTTPSInsecure(request),
+		if trans.TLSClientConfig != nil {
+			trans.TLSClientConfig.InsecureSkipVerify = client.getHTTPSInsecure(request)
+		} else {
+			trans.TLSClientConfig = &tls.Config{
+				InsecureSkipVerify: client.getHTTPSInsecure(request),
+			}
 		}
 		if proxy != nil && !flag {
 			trans.Proxy = http.ProxyURL(proxy)
@@ -576,6 +644,10 @@ func (client *Client) DoActionWithSigner(request requests.AcsRequest, response r
 				return
 			}
 		}
+		if isCertificateError(err) {
+			return
+		}
+
 		//  if status code >= 500 or timeout, will trigger retry
 		if client.config.AutoRetry && (err != nil || isServerError(httpResponse)) {
 			client.setTimeout(request)
@@ -600,6 +672,13 @@ func (client *Client) DoActionWithSigner(request requests.AcsRequest, response r
 		err = errors.WrapServerError(serverErr, wrapInfo)
 	}
 	return
+}
+
+func isCertificateError(err error) bool {
+	if err != nil && strings.Contains(err.Error(), "x509: certificate signed by unknown authority") {
+		return true
+	}
+	return false
 }
 
 func putMsgToMap(fieldMap map[string]string, request *http.Request) {
@@ -660,6 +739,14 @@ func (client *Client) AddAsyncTask(task func()) (err error) {
 
 func (client *Client) GetConfig() *Config {
 	return client.config
+}
+
+func (client *Client) GetSigner() auth.Signer {
+	return client.signer
+}
+
+func (client *Client) SetSigner(signer auth.Signer) {
+	client.signer = signer
 }
 
 func NewClient() (client *Client, err error) {
@@ -753,6 +840,7 @@ func (client *Client) Shutdown() {
 		close(client.asyncTaskQueue)
 	}
 	client.isRunning = false
+	client.isOpenAsync = false
 }
 
 // Deprecated: Use NewClientWithRamRoleArn in this package instead.

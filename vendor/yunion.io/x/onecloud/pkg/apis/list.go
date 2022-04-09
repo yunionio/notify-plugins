@@ -14,6 +14,12 @@
 
 package apis
 
+import (
+	"time"
+
+	"yunion.io/x/onecloud/pkg/util/tagutils"
+)
+
 type ScopedResourceInput struct {
 	// 指定查询的权限范围，可能值为project, domain or system
 	Scope string `json:"scope"`
@@ -33,11 +39,20 @@ type DomainizedResourceListInput struct {
 	ProjectDomainIds []string `json:"project_domain_ids"`
 	// Deprecated
 	// swagger:ignore
-	ProjectDomains []string `json:"project_domains" "yunion:deprecated-by":"project_domain_ids"`
+	ProjectDomains []string `json:"project_domains" yunion-deprecated-by:"project_domain_ids"`
 
 	// 按domain名称排序，可能值为asc|desc
 	// pattern: asc|desc
 	OrderByDomain string `json:"order_by_domain"`
+
+	// filter by domain tags
+	DomainTags tagutils.TTagSetList `json:"domain_tags"`
+	// filter by domain tags
+	NoDomainTags tagutils.TTagSetList `json:"no_domain_tags"`
+
+	// ignore
+	// domain tags filters imposed by policy
+	PolicyDomainTags tagutils.TTagSetList `json:"policy_domain_tags"`
 }
 
 type ProjectizedResourceListInput struct {
@@ -49,14 +64,23 @@ type ProjectizedResourceListInput struct {
 	ProjectIds []string `json:"project_ids"`
 	// Deprecated
 	// swagger:ignore
-	Projects []string `json:"projects" "yunion:deprecated-by":"project_ids"`
+	Projects []string `json:"projects" yunion-deprecated-by:"project_ids"`
 
 	// 按project名称排序，可能值为asc|desc
 	// pattern: asc|desc
 	OrderByProject string `json:"order_by_project"`
 	// swagger:ignore
 	// Deprecated
-	OrderByTenant string `json:"order_by_tenant" "yunion:deprecated-by":"order_by_project"`
+	OrderByTenant string `json:"order_by_tenant" yunion-deprecated-by:"order_by_project"`
+
+	// filter by project tags
+	ProjectTags tagutils.TTagSetList `json:"project_tags"`
+	// filter by no project tags
+	NoProjectTags tagutils.TTagSetList `json:"no_project_tags"`
+
+	// ignore
+	// project tag fitlers imposed by policy
+	PolicyProjectTags tagutils.TTagSetList `json:"policy_project_tags"`
 }
 
 type StatusDomainLevelUserResourceListInput struct {
@@ -67,7 +91,7 @@ type StatusDomainLevelUserResourceListInput struct {
 	// swagger:ignore
 	// Deprecated
 	// Filter by userId
-	User string `json:"user" "yunion:deprecated-by":"user_id"`
+	User string `json:"user" yunion-deprecated-by:"user_id"`
 }
 
 type UserResourceListInput struct {
@@ -84,7 +108,7 @@ type UserResourceListInput struct {
 	// swagger:ignore
 	// Deprecated
 	// Filter by userId
-	User string `json:"user" "yunion:deprecated-by":"user_id"`
+	User string `json:"user" yunion-deprecated-by:"user_id"`
 }
 
 type ModelBaseListInput struct {
@@ -143,9 +167,13 @@ type ModelBaseListInput struct {
 	// 返回结果只包含指定的字段
 	Field []string `json:"field"`
 	// 用于数据导出，指定导出的数据字段
-	ExportKeys string `json:"export_keys"`
+	ExportKeys string `json:"export_keys" help:"Export field keys"`
 	// 返回结果携带delete_fail_reason和update_fail_reason字段
 	ShowFailReason *bool `json:"show_fail_reason"`
+}
+
+func (o ModelBaseListInput) GetExportKeys() string {
+	return o.ExportKeys
 }
 
 type IncrementalListInput struct {
@@ -181,27 +209,44 @@ type AdminSharableVirtualResourceListInput struct {
 	SharableVirtualResourceListInput
 }
 
-type STag struct {
-	// 标签key
-	Key string
-	// 标签Value
-	Value string
-}
-
 type MetadataResourceListInput struct {
-	// 通过标签过滤
-	Tags []STag `json:"tags"`
+	// 通过标签过滤（包含这些标签）
+	Tags tagutils.TTagSet `json:"tags"`
 
-	// 通过标签过滤
+	// 通过一组标签过滤（还包含这些标签，OR的关系）
+	ObjTags tagutils.TTagSetList `json:"obj_tags"`
+
+	// 通过标签过滤（不包含这些标签）
+	NoTags tagutils.TTagSet `json:"no_tags"`
+
+	// 通过一组标签过滤（还不包含这些标签，AND的关系）
+	NoObjTags tagutils.TTagSetList `json:"no_obj_tags"`
+
+	// ignore
+	// 策略规定的标签过滤器
+	PolicyObjectTags tagutils.TTagSetList `json:"policy_object_tags"`
+
+	// 通过标签排序
 	OrderByTag string `json:"order_by_tag"`
 
-	// 返回资源的标签不包含特定的用户标签
-	WithoutUserMeta bool `json:"without_user_meta"`
+	// deprecated
+	// 返回资源的标签不包含用户标签
+	WithoutUserMeta *bool `json:"without_user_meta"`
+
+	// 返回包含用户标签的资源
+	WithUserMeta *bool `json:"with_user_meta"`
+
+	// 返回包含外部标签的资源
+	WithCloudMeta *bool `json:"with_cloud_meta"`
+
+	// 返回包含任意标签的资源
+	WithAnyMeta *bool `json:"with_any_meta"`
+
 	// 返回列表数据中包含资源的标签数据（Metadata）
 	WithMeta *bool `json:"with_meta"`
 }
 
-type StandaloneResourceListInput struct {
+type StandaloneAnonResourceListInput struct {
 	ResourceBaseListInput
 
 	MetadataResourceListInput
@@ -209,10 +254,15 @@ type StandaloneResourceListInput struct {
 	// 显示所有的资源，包括模拟的资源
 	ShowEmulated *bool `json:"show_emulated" help:"show emulated resources" negative:"do not show emulated resources"`
 
-	// 以资源名称过滤列表
-	Names []string `json:"name" help:"filter by names"`
 	// 以资源ID过滤列表
 	Ids []string `json:"id" help:"filter by ids"`
+}
+
+type StandaloneResourceListInput struct {
+	StandaloneAnonResourceListInput
+
+	// 以资源名称过滤列表
+	Names []string `json:"name" help:"filter by names"`
 }
 
 type StatusResourceBaseListInput struct {
@@ -294,4 +344,36 @@ type StatusInfrasResourceBaseListInput struct {
 type EnabledStatusInfrasResourceBaseListInput struct {
 	StatusInfrasResourceBaseListInput
 	EnabledResourceBaseListInput
+}
+
+type MultiArchResourceBaseListInput struct {
+	OsArch string `json:"os_arch"`
+}
+
+type AutoDeleteResourceBaseListInput struct {
+	AutoDelete *bool
+}
+
+type OpsLogListInput struct {
+	OwnerProjectIds []string `json:"owner_project_ids"`
+	OwnerDomainIds  []string `json:"owner_domain_ids"`
+
+	// filter by obj type
+	ObjTypes []string `json:"obj_type"`
+
+	// filter by obj name or obj id
+	Objs []string `json:"obj"`
+
+	// filter by obj ids
+	ObjIds []string `json:"obj_id"`
+
+	// filter by obj name
+	ObjNames []string `json:"obj_name"`
+
+	// filter by action
+	Actions []string `json:"action"`
+
+	Since time.Time `json:"since"`
+
+	Until time.Time `json:"until"`
 }

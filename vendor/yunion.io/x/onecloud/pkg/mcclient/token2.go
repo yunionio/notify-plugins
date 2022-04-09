@@ -51,6 +51,8 @@ type KeystoneServiceV2 struct {
 type KeystoneRoleV2 struct {
 	// 角色名称
 	Name string `json:"name"`
+	// 角色ID
+	Id string `json:"id"`
 }
 
 type KeystoneUserV2 struct {
@@ -168,6 +170,14 @@ func (token *TokenCredentialV2) GetRoles() []string {
 	return roles
 }
 
+func (token *TokenCredentialV2) GetRoleIds() []string {
+	roles := make([]string, 0)
+	for i := 0; i < len(token.User.Roles); i++ {
+		roles = append(roles, token.User.Roles[i].Id)
+	}
+	return roles
+}
+
 func (this *TokenCredentialV2) GetExpires() time.Time {
 	return this.Token.Expires
 }
@@ -197,7 +207,15 @@ func (this *TokenCredentialV2) HasSystemAdminPrivilege() bool {
 	return this.IsAdmin() && this.GetTenantName() == "system"
 }
 
-func (this *TokenCredentialV2) IsAllow(scope rbacutils.TRbacScope, service string, resource string, action string, extra ...string) bool {
+func (this *TokenCredentialV2) IsAllow(scope rbacutils.TRbacScope, service string, resource string, action string, extra ...string) rbacutils.SPolicyResult {
+	if this.isAllow(scope, service, resource, action, extra...) {
+		return rbacutils.PolicyAllow
+	} else {
+		return rbacutils.PolicyDeny
+	}
+}
+
+func (this *TokenCredentialV2) isAllow(scope rbacutils.TRbacScope, service string, resource string, action string, extra ...string) bool {
 	if scope == rbacutils.ScopeSystem || scope == rbacutils.ScopeDomain {
 		return this.HasSystemAdminPrivilege()
 	} else {

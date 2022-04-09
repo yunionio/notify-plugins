@@ -35,11 +35,22 @@ type SOIDCDexConfigOptions struct {
 	ClientId     string `json:"client_id"`
 	ClientSecret string `json:"client_secret"`
 	Endpoint     string `json:"endpoint"`
+
+	SIdpAttributeOptions
 }
 
 type SOIDCGithubConfigOptions struct {
 	ClientId     string `json:"client_id"`
 	ClientSecret string `json:"client_secret"`
+
+	SIdpAttributeOptions
+}
+
+type SOIDCGoogleConfigOptions struct {
+	ClientId     string `json:"client_id"`
+	ClientSecret string `json:"client_secret"`
+
+	SIdpAttributeOptions
 }
 
 const (
@@ -52,4 +63,6 @@ type SOIDCAzureConfigOptions struct {
 	ClientSecret string `json:"client_secret"`
 	TenantId     string `json:"tenant_id"`
 	CloudEnv     string `json:"cloud_env"`
+
+	SIdpAttributeOptions
 }

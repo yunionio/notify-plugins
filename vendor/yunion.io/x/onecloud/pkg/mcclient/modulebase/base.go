@@ -22,7 +22,9 @@ import (
 	"strings"
 
 	"yunion.io/x/jsonutils"
+	"yunion.io/x/pkg/errors"
 
+	"yunion.io/x/onecloud/pkg/httperrors"
 	"yunion.io/x/onecloud/pkg/mcclient"
 	"yunion.io/x/onecloud/pkg/util/httputils"
 )
@@ -84,9 +86,25 @@ func (this *BaseManager) versionedURL(path string) string {
 func (this *BaseManager) jsonRequest(session *mcclient.ClientSession,
 	method httputils.THttpMethod, path string,
 	header http.Header, body jsonutils.JSONObject) (http.Header, jsonutils.JSONObject, error) {
-	return session.JSONVersionRequest(this.serviceType, this.endpointType,
+	hdr, resp, err := session.JSONVersionRequest(this.serviceType, this.endpointType,
 		method, this.versionedURL(path),
 		header, body, this.GetApiVersion())
+	if err != nil {
+		if e, ok := err.(*httputils.JSONClientError); ok {
+			switch e.Class {
+			case errors.ErrConnectRefused.Error():
+				return nil, nil, httperrors.NewServiceAbnormalError("%s service is abnormal, please check service status", this.serviceType)
+			case errors.ErrNetwork.Error():
+				return nil, nil, httperrors.NewServiceAbnormalError("%s service is abnormal or network error, please try again", this.serviceType)
+			case errors.ErrDNS.Error():
+				return nil, nil, httperrors.NewServiceAbnormalError("%s service dns resolve error, please check dns setting", this.serviceType)
+			case errors.ErrTimeout.Error():
+				return nil, nil, httperrors.NewServiceAbnormalError("%s service request timeout, please try again later", this.serviceType)
+			}
+		}
+		return nil, nil, err
+	}
+	return hdr, resp, nil
 }
 
 func (this *BaseManager) rawRequest(session *mcclient.ClientSession,
@@ -112,7 +130,7 @@ func (this *BaseManager) rawBaseUrlRequest(s *mcclient.ClientSession,
 }
 
 type ListResult struct {
-	Data   []jsonutils.JSONObject
+	Data   []jsonutils.JSONObject `json:"data,allowempty"`
 	Total  int
 	Limit  int
 	Offset int
@@ -133,7 +151,7 @@ func ListResult2JSONWithKey(result *ListResult, key string) jsonutils.JSONObject
 	if result.Offset > 0 {
 		obj.Add(jsonutils.NewInt(int64(result.Offset)), "offset")
 	}
-	if len(result.NextMarker) > 0 {
+	if len(result.NextMarker) > 0 || len(result.MarkerField) > 0 {
 		obj.Add(jsonutils.NewString(result.NextMarker), "next_marker")
 	}
 	if len(result.MarkerField) > 0 {
@@ -173,7 +191,6 @@ func JSON2ListResult(result jsonutils.JSONObject) *ListResult {
 
 func (this *BaseManager) _list(session *mcclient.ClientSession, path, responseKey string) (*ListResult, error) {
 	_, body, err := this.jsonRequest(session, "GET", path, nil, nil)
-	// log.Debugf("%#v %#v %#v", body, err, responseKey)
 	if err != nil {
 		return nil, err
 	}
@@ -300,6 +317,20 @@ func BatchDo(ids []string, do func(id string) (jsonutils.JSONObject, error)) []S
 			r, e := do(id)
 			addResult(results, id, r, e)
 		}(ids[i])
+	}
+	return waitResults(results, len(ids))
+}
+
+func BatchParamsDo(
+	ids []string, params []jsonutils.JSONObject,
+	do func(id string, param jsonutils.JSONObject) (jsonutils.JSONObject, error),
+) []SubmitResult {
+	results := make(chan SubmitResult, len(ids))
+	for i := 0; i < len(ids); i++ {
+		go func(id string, param jsonutils.JSONObject) {
+			r, e := do(id, param)
+			addResult(results, id, r, e)
+		}(ids[i], params[i])
 	}
 	return waitResults(results, len(ids))
 }

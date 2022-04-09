@@ -43,11 +43,13 @@ func NewActionManager(keyword, keywordPlural string, columns, adminColumns []str
 		Keyword:     keyword, KeywordPlural: keywordPlural}
 }
 
+/*
 func NewServiceTreeManager(keyword, keywordPlural string, columns, adminColumns []string) modulebase.ResourceManager {
 	return modulebase.ResourceManager{
 		BaseManager: *modulebase.NewBaseManager(apis.SERVICE_TYPE_SERVICETREE, "", "v1", columns, adminColumns),
 		Keyword:     keyword, KeywordPlural: keywordPlural}
 }
+*/
 
 func NewMonitorV2Manager(keyword, keywordPlural string, columns, adminColumns []string) modulebase.ResourceManager {
 	return modulebase.ResourceManager{
@@ -62,16 +64,26 @@ func NewJointMonitorV2Manager(keyword, keywordPlural string, columns, adminColum
 		Slave:           slave}
 }
 
+/*
 func NewCloudwatcherManager(keyword, keywordPlural string, columns, adminColumns []string) modulebase.ResourceManager {
 	return modulebase.ResourceManager{
 		BaseManager: *modulebase.NewBaseManager(apis.SERVICE_TYPE_CLOUDWATCHER, "", "v1", columns, adminColumns),
 		Keyword:     keyword, KeywordPlural: keywordPlural}
 }
+*/
 
 func NewNotifyManager(keyword, keywordPlural string, columns, adminColumns []string) modulebase.ResourceManager {
 	return modulebase.ResourceManager{
 		BaseManager: *modulebase.NewBaseManager(apis.SERVICE_TYPE_NOTIFY, "", "v1", columns, adminColumns),
 		Keyword:     keyword, KeywordPlural: keywordPlural}
+}
+
+func NewNotifyv2Manager(keyword, keywordPlural string, columns, adminColumns []string) modulebase.ResourceManager {
+	return modulebase.ResourceManager{
+		BaseManager:   *modulebase.NewBaseManager(apis.SERVICE_TYPE_NOTIFY, "", "v2", columns, adminColumns),
+		Keyword:       keyword,
+		KeywordPlural: keywordPlural,
+	}
 }
 
 func NewJointComputeManager(keyword, keywordPlural string, columns, adminColumns []string, master, slave modulebase.Manager) modulebase.JointResourceManager {
@@ -88,12 +100,14 @@ func NewJointCloudIdManager(keyword, keywordPlural string, columns, adminColumns
 		Slave:           slave}
 }
 
-func NewJointMonitorManager(keyword, keywordPlural string, columns, adminColumns []string, master, slave modulebase.Manager) modulebase.JointResourceManager {
+/*
+func NewJointServiceTreeManager(keyword, keywordPlural string, columns, adminColumns []string, master, slave modulebase.Manager) modulebase.JointResourceManager {
 	return modulebase.JointResourceManager{
 		ResourceManager: NewServiceTreeManager(keyword, keywordPlural, columns, adminColumns),
 		Master:          master,
 		Slave:           slave}
 }
+*/
 
 func NewIdentityManager(keyword, keywordPlural string, columns, adminColumns []string) modulebase.ResourceManager {
 	return modulebase.ResourceManager{
@@ -118,52 +132,15 @@ func NewVNCProxyManager() modulebase.ResourceManager {
 		Keyword: "vncproxy", KeywordPlural: "vncproxy"}
 }
 
-func NewITSMManager(keyword, keywordPlural string, columns, adminColumns []string) modulebase.ResourceManager {
-	return modulebase.ResourceManager{
-		BaseManager: *modulebase.NewBaseManager(apis.SERVICE_TYPE_ITSM, "", "", columns, adminColumns),
-		Keyword:     keyword, KeywordPlural: keywordPlural}
-}
-
 func NewSchedulerManager(keyword, keywordPlural string, columns, adminColumns []string) modulebase.ResourceManager {
 	return modulebase.ResourceManager{
 		BaseManager: *modulebase.NewBaseManager(apis.SERVICE_TYPE_SCHEDULER, "", "", columns, adminColumns),
 		Keyword:     keyword, KeywordPlural: keywordPlural}
 }
 
-func NewMeterManager(keyword, keywordPlural string, columns, adminColumns []string) modulebase.ResourceManager {
-	return modulebase.ResourceManager{
-		BaseManager: *modulebase.NewBaseManager(apis.SERVICE_TYPE_METER, "", "", columns, adminColumns),
-		Keyword:     keyword, KeywordPlural: keywordPlural}
-}
-
-func NewYunionAgentManager(keyword, keywordPlural string, columns, adminColumns []string) modulebase.ResourceManager {
-	return modulebase.ResourceManager{
-		BaseManager: *modulebase.NewBaseManager(apis.SERVICE_TYPE_YUNIONAGENT, "", "", columns, adminColumns),
-		Keyword:     keyword, KeywordPlural: keywordPlural}
-}
-
 func NewYunionConfManager(keyword, keywordPlural string, columns, adminColumns []string) modulebase.ResourceManager {
 	return modulebase.ResourceManager{
 		BaseManager: *modulebase.NewBaseManager(apis.SERVICE_TYPE_YUNIONCONF, "", "", columns, adminColumns),
-		Keyword:     keyword, KeywordPlural: keywordPlural}
-}
-
-func NewAutoUpdateManager(keyword, keywordPlural string, columns, adminColumns []string) modulebase.ResourceManager {
-	return modulebase.ResourceManager{
-		BaseManager: *modulebase.NewBaseManager(apis.SERVICE_TYPE_AUTOUPDATE, "", "", columns, adminColumns),
-		Keyword:     keyword, KeywordPlural: keywordPlural}
-}
-
-func NewWebsocketManager(keyword, keywordPlural string, columns, adminColumns []string) modulebase.ResourceManager {
-	return modulebase.ResourceManager{
-		BaseManager: *modulebase.NewBaseManager(apis.SERVICE_TYPE_WEBSOCKET, "", "", columns, adminColumns),
-		Keyword:     keyword, KeywordPlural: keywordPlural}
-}
-
-// deprecate
-func NewCloudmetaManager(keyword, keywordPlural string, columns, adminColumns []string) modulebase.ResourceManager {
-	return modulebase.ResourceManager{
-		BaseManager: *modulebase.NewBaseManager(apis.SERVICE_TYPE_CLOUDMETA, "", "", columns, adminColumns),
 		Keyword:     keyword, KeywordPlural: keywordPlural}
 }
 
@@ -194,5 +171,11 @@ func NewCloudeventManager(keyword, keywordPlural string, columns, adminColumns [
 func NewCloudIdManager(keyword, keywordPlural string, columns, adminColumns []string) modulebase.ResourceManager {
 	return modulebase.ResourceManager{
 		BaseManager: *modulebase.NewBaseManager(apis.SERVICE_TYPE_CLOUDID, "", "", columns, adminColumns),
+		Keyword:     keyword, KeywordPlural: keywordPlural}
+}
+
+func NewScheduledtaskManager(keyword, keywordPlural string, columns, adminColumns []string) modulebase.ResourceManager {
+	return modulebase.ResourceManager{
+		BaseManager: *modulebase.NewBaseManager(apis.SERVICE_TYPE_SCHEDULEDTASK, "", "", columns, adminColumns),
 		Keyword:     keyword, KeywordPlural: keywordPlural}
 }

@@ -14,6 +14,10 @@
 
 package apis
 
+const (
+	IS_SYSTEM = "IsSystem"
+)
+
 type MetadataListInput struct {
 	ModelBaseListInput
 
@@ -23,9 +27,13 @@ type MetadataListInput struct {
 
 	ProjectizedResourceInput
 
+	MetadataBaseFilterInput
+
 	// 按关联资源类型过滤
 	Resources []string `json:"resources"`
+}
 
+type MetadataBaseFilterInput struct {
 	// 仅显示系统标签
 	SysMeta *bool `json:"sys_meta"`
 
@@ -49,4 +57,11 @@ type MetadataListInput struct {
 
 	// 按Value过滤
 	Value []string `json:"value"`
+}
+
+type MetaGetPropertyTagValuePairsInput struct {
+	MetadataListInput
+
+	// 只输入Key
+	KeyOnly *bool `json:"key_only"`
 }

@@ -64,9 +64,14 @@ func IsTcpPortUsed(addr string, port int) bool {
 	return false
 }
 
-// MyIP returns source ip used to communicate with udp:114.114.114.114:53
+// MyIP returns source ip used to communicate with udp:114.114.114.114
 func MyIP() (ip string, err error) {
-	conn, err := net.Dial("udp4", "114.114.114.114:53")
+	return MyIPTo("114.114.114.114")
+}
+
+// MyIPTo returns source ip used to communicate with udp:dstIP
+func MyIPTo(dstIP string) (ip string, err error) {
+	conn, err := net.Dial("udp4", dstIP+":53")
 	if err != nil {
 		return
 	}
@@ -229,7 +234,7 @@ func AddNicRoutes(routes *[][]string, nicDesc *types.SServerNic, mainIp string, 
 	}
 	if len(nicDesc.Routes) > 0 {
 		extendRoutes(routes, nicDesc.Routes)
-	} else if len(nicDesc.Gateway) > 0 && isExitAddress(nicDesc.Ip) &&
+	} else if len(nicDesc.Gateway) > 0 && !isExitAddress(nicDesc.Ip) &&
 		nicCnt == 2 && nicDesc.Ip != mainIp && isExitAddress(mainIp) {
 		for _, pref := range GetPrivatePrefixes(privatePrefixes) {
 			addRoute(routes, pref, nicDesc.Gateway)
@@ -341,12 +346,20 @@ func (n *SNetInterface) fetchConfig(expectIp string) {
 
 }
 
-func (n *SNetInterface) DisableGso() {
+// https://kris.io/2015/10/01/kvm-network-performance-tso-and-gso-turn-it-off/
+// General speaking, it is recommended to turn of GSO
+// however, this will degrade host network performance
+func (n *SNetInterface) SetupGso(on bool) {
+	onoff := "off"
+	if on {
+		onoff = "on"
+	}
 	procutils.NewCommand(
 		"ethtool", "-K", n.name,
-		"tso", "off", "gso", "off",
-		"gro", "off", "tx", "off",
-		"rx", "off", "sg", "off").Run()
+		"tso", onoff, "gso", onoff,
+		"ufo", onoff, "lro", onoff,
+		"gro", onoff, "tx", onoff,
+		"rx", onoff, "sg", onoff).Run()
 }
 
 func (n *SNetInterface) IsSecretInterface() bool {

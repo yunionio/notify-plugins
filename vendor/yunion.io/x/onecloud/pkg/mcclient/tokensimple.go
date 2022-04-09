@@ -40,6 +40,7 @@ type SSimpleToken struct {
 	ProjectDomainId string
 
 	Roles   string
+	RoleIds string
 	Expires time.Time
 
 	Context SAuthContext
@@ -99,6 +100,10 @@ func (self *SSimpleToken) GetRoles() []string {
 	return strings.Split(self.Roles, ",")
 }
 
+func (self *SSimpleToken) GetRoleIds() []string {
+	return strings.Split(self.RoleIds, ",")
+}
+
 func (self *SSimpleToken) GetExpires() time.Time {
 	return self.Expires
 }
@@ -125,7 +130,15 @@ func (self *SSimpleToken) HasSystemAdminPrivilege() bool {
 	return self.IsAdmin() && self.Project == "system"
 }
 
-func (this *SSimpleToken) IsAllow(scope rbacutils.TRbacScope, service string, resource string, action string, extra ...string) bool {
+func (this *SSimpleToken) IsAllow(scope rbacutils.TRbacScope, service string, resource string, action string, extra ...string) rbacutils.SPolicyResult {
+	if this.isAllow(scope, service, resource, action, extra...) {
+		return rbacutils.PolicyAllow
+	} else {
+		return rbacutils.PolicyDeny
+	}
+}
+
+func (this *SSimpleToken) isAllow(scope rbacutils.TRbacScope, service string, resource string, action string, extra ...string) bool {
 	if scope == rbacutils.ScopeSystem || scope == rbacutils.ScopeDomain {
 		return this.HasSystemAdminPrivilege()
 	} else {
@@ -194,6 +207,7 @@ func SimplifyToken(token TokenCredential) TokenCredential {
 		ProjectDomainId: token.GetProjectDomainId(),
 
 		Roles:   strings.Join(token.GetRoles(), ","),
+		RoleIds: strings.Join(token.GetRoleIds(), ","),
 		Expires: token.GetExpires(),
 		Context: SAuthContext{
 			Source: token.GetLoginSource(),

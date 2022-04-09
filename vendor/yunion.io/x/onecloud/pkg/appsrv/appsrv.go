@@ -38,6 +38,7 @@ import (
 
 	"yunion.io/x/onecloud/pkg/appctx"
 	"yunion.io/x/onecloud/pkg/httperrors"
+	"yunion.io/x/onecloud/pkg/i18n"
 	"yunion.io/x/onecloud/pkg/proxy"
 	"yunion.io/x/onecloud/pkg/util/httputils"
 )
@@ -63,6 +64,8 @@ type Application struct {
 
 	isExiting       bool
 	idleConnsClosed chan struct{}
+	httpServer      *http.Server
+	slaveHttpServer *http.Server
 }
 
 const (
@@ -143,8 +146,8 @@ func (app *Application) getRoot(method string) *RadixNode {
 	return v
 }
 
-func (app *Application) AddReverseProxyHandler(prefix string, ef *proxy.SEndpointFactory) {
-	handler := proxy.NewHTTPReverseProxy(ef).ServeHTTP
+func (app *Application) AddReverseProxyHandler(prefix string, ef *proxy.SEndpointFactory, m proxy.RequestManipulator) {
+	handler := proxy.NewHTTPReverseProxy(ef, m).ServeHTTP
 	for _, method := range []string{"GET", "HEAD", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"} {
 		app.AddHandler(method, prefix, handler)
 	}
@@ -233,7 +236,14 @@ func (app *Application) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		skipLog = true
 	}
 	if !skipLog {
-		log.Infof("%s %d %s %s %s (%s) %.2fms", app.hostId, lrw.status, rid, r.Method, r.URL, r.RemoteAddr, duration)
+		peerServiceName := r.Header.Get("X-Yunion-Peer-Service-Name")
+		var remote string
+		if len(peerServiceName) > 0 {
+			remote = fmt.Sprintf("%s:%s", r.RemoteAddr, peerServiceName)
+		} else {
+			remote = r.RemoteAddr
+		}
+		log.Infof("%s %d %s %s %s (%s) %.2fms", app.hostId, lrw.status, rid, r.Method, r.URL, remote, duration)
 	}
 }
 
@@ -250,6 +260,49 @@ func (app *Application) handleCORS(w http.ResponseWriter, r *http.Request) bool 
 	}
 }
 
+type appTask struct {
+	ctx       context.Context
+	hand      *SHandlerInfo
+	rid       string
+	params    map[string]string
+	appParams *SAppParams
+	app       *Application
+	fw        responseWriterChannel
+	r         *http.Request
+	segs      []string
+	to        time.Duration
+	cancel    context.CancelFunc
+}
+
+func (t *appTask) Run() {
+	if t.ctx.Err() == nil {
+		t.ctx = context.WithValue(t.ctx, appctx.APP_CONTEXT_KEY_REQUEST_ID, t.rid)
+		t.ctx = context.WithValue(t.ctx, appctx.APP_CONTEXT_KEY_CUR_ROOT, t.hand.path)
+		t.ctx = context.WithValue(t.ctx, appctx.APP_CONTEXT_KEY_CUR_PATH, t.segs[len(t.hand.path):])
+		t.ctx = context.WithValue(t.ctx, appctx.APP_CONTEXT_KEY_PARAMS, t.params)
+		t.ctx = context.WithValue(t.ctx, appctx.APP_CONTEXT_KEY_START_TIME, time.Now().UTC())
+		if t.hand.metadata != nil {
+			t.ctx = context.WithValue(t.ctx, appctx.APP_CONTEXT_KEY_METADATA, t.hand.metadata)
+		}
+		t.ctx = context.WithValue(t.ctx, APP_CONTEXT_KEY_APP_PARAMS, t.appParams)
+		func() {
+			span := trace.StartServerTrace(&t.fw, t.r, t.appParams.Name, t.app.GetName(), t.hand.GetTags())
+			defer func() {
+				if !t.appParams.SkipTrace {
+					span.EndTrace()
+				}
+			}()
+			t.ctx = context.WithValue(t.ctx, appctx.APP_CONTEXT_KEY_TRACE, span)
+			t.hand.handler(t.ctx, &t.fw, t.r)
+		}()
+	} // otherwise, the task has been timeout
+	t.fw.closeChannels()
+}
+
+func (t *appTask) Dump() string {
+	return fmt.Sprintf("%s %s", t.r.Method, t.r.URL.String())
+}
+
 func (app *Application) defaultHandle(w http.ResponseWriter, r *http.Request, rid string) (*SHandlerInfo, *SAppParams) {
 	segs := SplitPath(r.URL.EscapedPath())
 	for i := range segs {
@@ -260,29 +313,37 @@ func (app *Application) defaultHandle(w http.ResponseWriter, r *http.Request, ri
 	params := make(map[string]string)
 	w.Header().Set("Server", "Yunion AppServer/Go/2018.4")
 	w.Header().Set("X-Frame-Options", "SAMEORIGIN")
+	w.Header().Set("X-XSS-Protection", "1; mode=block")
 	isCors := app.handleCORS(w, r)
 	handler := app.getRoot(r.Method).Match(segs, params)
 	if handler != nil {
 		// log.Print("Found handler", params)
 		hand, ok := handler.(*SHandlerInfo)
 		if ok {
-			fw := newResponseWriterChannel(w)
-			currentWorker := make(chan *SWorker, 1) // make it a buffered channel
-			to := hand.FetchProcessTimeout(r)
-			if to == 0 {
-				to = app.processTimeout
+			task := &appTask{
+				ctx:    app.context,
+				hand:   hand,
+				rid:    rid,
+				params: params,
+				app:    app,
+				fw:     newResponseWriterChannel(w),
+				r:      r,
+				segs:   segs,
+				to:     hand.FetchProcessTimeout(r),
+				cancel: nil,
 			}
-			var (
-				ctx = app.context
 
-				cancel context.CancelFunc = nil
-			)
-			if to > 0 {
-				ctx, cancel = context.WithTimeout(app.context, to)
+			currentWorker := make(chan *SWorker, 1) // make it a buffered channel
+			if task.to == 0 {
+				task.to = app.processTimeout
 			}
-			if cancel != nil {
-				defer cancel()
+			if task.to > 0 {
+				task.ctx, task.cancel = context.WithTimeout(task.ctx, task.to)
 			}
+			if task.cancel != nil {
+				defer task.cancel()
+			}
+			task.ctx = i18n.WithRequestLang(task.ctx, r)
 			session := hand.workerMan
 			if session == nil {
 				if r.Method == "GET" || r.Method == "HEAD" {
@@ -291,59 +352,36 @@ func (app *Application) defaultHandle(w http.ResponseWriter, r *http.Request, ri
 					session = app.session
 				}
 			}
-			appParams := hand.GetAppParams(params, segs)
-			appParams.Request = r
-			appParams.Response = w
+			task.appParams = hand.GetAppParams(params, segs)
+			task.appParams.Request = r
+			task.appParams.Response = w
 			session.Run(
-				func() {
-					if ctx.Err() == nil {
-						ctx = context.WithValue(ctx, appctx.APP_CONTEXT_KEY_REQUEST_ID, rid)
-						ctx = context.WithValue(ctx, appctx.APP_CONTEXT_KEY_CUR_ROOT, hand.path)
-						ctx = context.WithValue(ctx, appctx.APP_CONTEXT_KEY_CUR_PATH, segs[len(hand.path):])
-						ctx = context.WithValue(ctx, appctx.APP_CONTEXT_KEY_PARAMS, params)
-						ctx = context.WithValue(ctx, appctx.APP_CONTEXT_KEY_START_TIME, time.Now().UTC())
-						if hand.metadata != nil {
-							ctx = context.WithValue(ctx, appctx.APP_CONTEXT_KEY_METADATA, hand.metadata)
-						}
-						ctx = context.WithValue(ctx, APP_CONTEXT_KEY_APP_PARAMS, appParams)
-						func() {
-							span := trace.StartServerTrace(&fw, r, appParams.Name, app.GetName(), hand.GetTags())
-							defer func() {
-								if !appParams.SkipTrace {
-									span.EndTrace()
-								}
-							}()
-							ctx = context.WithValue(ctx, appctx.APP_CONTEXT_KEY_TRACE, span)
-							hand.handler(ctx, &fw, r)
-						}()
-					} // otherwise, the task has been timeout
-					fw.closeChannels()
-				},
+				task,
 				currentWorker,
 				func(err error) {
-					httperrors.InternalServerError(&fw, "Internal server error: %s", err)
-					fw.closeChannels()
+					httperrors.InternalServerError(task.ctx, &task.fw, "Internal server error: %s", err)
+					task.fw.closeChannels()
 				},
 			)
-			runErr := fw.wait(ctx, currentWorker)
+			runErr := task.fw.wait(task.ctx, currentWorker)
 			if runErr != nil {
 				switch runErr.(type) {
 				case *httputils.JSONClientError:
 					je := runErr.(*httputils.JSONClientError)
-					httperrors.GeneralServerError(w, je)
+					httperrors.GeneralServerError(task.ctx, w, je)
 				default:
-					httperrors.InternalServerError(w, "Internal server error")
+					httperrors.InternalServerError(task.ctx, w, "Internal server error")
 				}
 			}
-			fw.closeChannels()
-			return hand, appParams
+			task.fw.closeChannels()
+			return hand, task.appParams
 		} else {
-			log.Errorf("Invalid handler for %s", r.URL)
-			httperrors.InternalServerError(w, "Invalid handler %s", r.URL)
+			ctx := i18n.WithRequestLang(context.TODO(), r)
+			httperrors.InternalServerError(ctx, w, "Invalid handler %s", r.URL)
 		}
 	} else if !isCors {
-		log.Errorf("Handler not found")
-		httperrors.NotFoundError(w, "Handler not found")
+		ctx := i18n.WithRequestLang(context.TODO(), r)
+		httperrors.NotFoundError(ctx, w, "Handler not found")
 	}
 	return nil, nil
 }
@@ -461,18 +499,26 @@ func (app *Application) ListenAndServeWithoutCleanup(addr, certFile, keyFile str
 }
 
 func (app *Application) ListenAndServeTLSWithCleanup2(addr string, certFile, keyFile string, onStop func(), isMaster bool) {
+	httpSrv := app.initServer(addr)
 	if isMaster {
 		app.addDefaultHandlers()
 		AddPProfHandler(app)
+		app.httpServer = httpSrv
+		app.registerCleanShutdown(app.httpServer, onStop)
+	} else {
+		app.slaveHttpServer = httpSrv
 	}
-	s := app.initServer(addr)
-	if isMaster {
-		app.registerCleanShutdown(s, onStop)
-	}
-	app.listenAndServeInternal(s, certFile, keyFile)
+	app.listenAndServeInternal(httpSrv, certFile, keyFile)
 	if isMaster {
 		app.waitCleanShutdown()
 	}
+}
+
+func (app *Application) Stop(ctx context.Context) error {
+	if app.httpServer != nil {
+		return app.httpServer.Shutdown(ctx)
+	}
+	return nil
 }
 
 func (app *Application) listenAndServeInternal(s *http.Server, certFile, keyFile string) {
@@ -495,18 +541,71 @@ func isJsonContentType(r *http.Request) bool {
 	return false
 }
 
+func isFormContentType(r *http.Request) bool {
+	contType := strings.ToLower(r.Header.Get("Content-Type"))
+	if strings.HasPrefix(contType, "application/json") {
+		return true
+	}
+	return false
+}
+
+type TContentType string
+
+const (
+	ContentTypeJson    = TContentType("Json")
+	ContentTypeForm    = TContentType("Form")
+	ContentTypeUnknown = TContentType("Unknown")
+)
+
+func getContentType(r *http.Request) TContentType {
+	contType := func() string {
+		for _, k := range []string{"Content-Type", "content-type"} {
+			contentType := r.Header.Get(k)
+			if len(contentType) > 0 {
+				return strings.ToLower(contentType)
+			}
+		}
+		return ""
+	}()
+	for k, v := range map[string]TContentType{
+		"application/json":                  ContentTypeJson,
+		"application/x-www-form-urlencoded": ContentTypeForm,
+	} {
+		if strings.HasPrefix(contType, k) {
+			return v
+		}
+	}
+	return ContentTypeUnknown
+}
+
 func FetchEnv(ctx context.Context, w http.ResponseWriter, r *http.Request) (params map[string]string, query jsonutils.JSONObject, body jsonutils.JSONObject) {
 	var err error
 	params = appctx.AppContextParams(ctx)
 	query, err = jsonutils.ParseQueryString(r.URL.RawQuery)
 	if err != nil {
-		log.Errorf("Parse query string %s failed: %s", r.URL.RawQuery, err)
+		log.Errorf("Parse query string %s failed: %v", r.URL.RawQuery, err)
 	}
 	//var body jsonutils.JSONObject = nil
-	if (r.Method == "PUT" || r.Method == "POST" || r.Method == "DELETE" || r.Method == "PATCH") && r.ContentLength > 0 && isJsonContentType(r) {
-		body, err = FetchJSON(r)
-		if err != nil {
-			log.Errorf("Fail to decode JSON request body: %s", err)
+	if r.Method == "PUT" || r.Method == "POST" || r.Method == "DELETE" || r.Method == "PATCH" {
+		switch getContentType(r) {
+		case ContentTypeJson:
+			if r.ContentLength > 0 {
+				body, err = FetchJSON(r)
+				if err != nil {
+					log.Warningf("Fail to decode JSON request body: %v", err)
+				}
+			}
+		case ContentTypeForm:
+			err := r.ParseForm()
+			if err != nil {
+				log.Warningf("ParseForm %s error: %v", r.URL.String(), err)
+			}
+			query, err = jsonutils.ParseQueryString(r.PostForm.Encode())
+			if err != nil {
+				log.Warningf("Parse query string %s failed: %v", r.PostForm.Encode(), err)
+			}
+		default:
+			log.Warningf("%s invalid contentType with header %v", r.URL.String(), r.Header)
 		}
 	}
 	return params, query, body

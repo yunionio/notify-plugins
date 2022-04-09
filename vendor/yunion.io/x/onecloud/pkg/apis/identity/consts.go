@@ -99,12 +99,22 @@ var (
 
 	CommonWhitelistOptionMap = map[string][]string{
 		"default": []string{
+			"enable_quota_check",
 			"default_quota_value",
 			"enable_rbac",
 			"non_default_domain_projects",
 			"time_zone",
 			"domainized_namespace",
 			"api_server",
+			"customized_private_prefixes",
+			"global_http_proxy",
+			"global_https_proxy",
+			"ignore_nonrunning_guests",
+			"platform_name",
+			"platform_names",
+			"is_forget_login_user",
+			"enable_organization",
+			"enable_tls_migration",
 		},
 	}
 
@@ -147,6 +157,11 @@ var (
 			// db blacklist options
 			// ############################
 			"sql_connection",
+			"clickhouse",
+			"ops_log_with_clickhouse",
+			"db_checksum_skip_init",
+			"db_checksum_tables",
+			"enable_db_checksum_tables",
 			"auto_sync_table",
 			"exit_after_db_init",
 			"global_virtual_resource_namespace",
@@ -162,6 +177,8 @@ var (
 			"etcd_cacert",
 			"etcd_cert",
 			"etcd_key",
+			"splitable_max_duration_hours",
+			"splitable_max_keep_segments",
 
 			// ############################
 			// keystone blacklist options
@@ -199,6 +216,26 @@ var (
 			// "status_probe_interval_seconds",
 			// "log_fetch_interval_seconds",
 			// "send_metrics_interval_seconds",
+			// ############################
+			// glance blacklist options
+			// ############################
+			"deploy_server_socket_path",
 		},
 	}
 )
+
+func mergeConfigOptionsFrom(opt1, opt2 map[string][]string) map[string][]string {
+	for opt, values := range opt2 {
+		ovalues, _ := opt1[opt]
+		opt1[opt] = append(ovalues, values...)
+	}
+	return opt1
+}
+
+func MergeServiceConfigOptions(opts ...map[string][]string) map[string][]string {
+	ret := make(map[string][]string)
+	for i := range opts {
+		ret = mergeConfigOptionsFrom(ret, opts[i])
+	}
+	return ret
+}

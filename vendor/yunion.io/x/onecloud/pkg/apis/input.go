@@ -14,6 +14,8 @@
 
 package apis
 
+import "time"
+
 type DomainizedResourceInput struct {
 	// 指定项目归属域名称或ID
 	// required: false
@@ -21,15 +23,15 @@ type DomainizedResourceInput struct {
 
 	// swagger:ignore
 	// Deprecated
-	Domain string `json:"domain" "yunion:deprecated-by":"project_domain_id"`
+	Domain string `json:"domain" yunion-deprecated-by:"project_domain_id"`
 	// swagger:ignore
 	// Deprecated
 	// Project domain Id filter, alias for project_domain
-	ProjectDomain string `json:"project_domain" "yunion:deprecated-by":"project_domain_id"`
+	ProjectDomain string `json:"project_domain" yunion-deprecated-by:"project_domain_id"`
 	// swagger:ignore
 	// Deprecated
 	// Domain Id filter, alias for project_domain
-	DomainId string `json:"domain_id" "yunion:deprecated-by":"project_domain_id"`
+	DomainId string `json:"domain_id" yunion-deprecated-by:"project_domain_id"`
 }
 
 type ProjectizedResourceInput struct {
@@ -39,15 +41,15 @@ type ProjectizedResourceInput struct {
 	// swagger:ignore
 	// Deprecated
 	// Filter by project_id, alias for project
-	Project string `json:"project" "yunion:deprecated-by":"project_id"`
+	Project string `json:"project" yunion-deprecated-by:"project_id"`
 	// swagger:ignore
 	// Deprecated
 	// Filter by tenant ID or Name, alias for project
-	Tenant string `json:"tenant" "yunion:deprecated-by":"project_id"`
+	Tenant string `json:"tenant" yunion-deprecated-by:"project_id"`
 	// swagger:ignore
 	// Deprecated
 	// Filter by tenant_id, alias for project
-	TenantId string `json:"tenant_id" "yunion:deprecated-by":"project_id"`
+	TenantId string `json:"tenant_id" yunion-deprecated-by:"project_id"`
 }
 
 type DomainizedResourceCreateInput struct {
@@ -73,6 +75,13 @@ type SharableVirtualResourceCreateInput struct {
 	VirtualResourceCreateInput
 
 	SharableResourceBaseCreateInput
+}
+
+type AdminSharableVirtualResourceBaseCreateInput struct {
+	SharableVirtualResourceCreateInput
+
+	// 记录
+	Records string `json:"records"`
 }
 
 type StatusDomainLevelUserResourceCreateInput struct {
@@ -106,6 +115,18 @@ type EnabledBaseResourceCreateInput struct {
 	// 该资源是否被管理员*人为*禁用, 和enabled互斥
 	// required: false
 	Disabled *bool `json:"disabled" help:"turn off enabled flag"`
+}
+
+func (self *EnabledBaseResourceCreateInput) SetEnabled() {
+	enabled := true
+	self.Enabled = &enabled
+	self.Disabled = nil
+}
+
+func (self *EnabledBaseResourceCreateInput) SetDisabled() {
+	disabled := true
+	self.Disabled = &disabled
+	self.Enabled = nil
 }
 
 func (input *EnabledBaseResourceCreateInput) AfterUnmarshal() {
@@ -146,22 +167,8 @@ type StatusStandaloneResourceCreateInput struct {
 	StatusBaseResourceCreateInput
 }
 
-type StandaloneResourceCreateInput struct {
+type StandaloneAnonResourceCreateInput struct {
 	ResourceBaseCreateInput
-
-	// 资源名称，如果generate_name为空，则为必填项
-	// description: resource name, required if generated_name is not given
-	// unique: true
-	// required: true
-	// example: test-network
-	Name string `json:"name" help:"name of newly created resource" positional:"true" required:"true"`
-
-	// 生成资源名称的模板，如果name为空，则为必填项
-	// description: generated resource name, given a pattern to generate name, required if name is not given
-	// unique: false
-	// required: false
-	// example: test###
-	GenerateName string `json:"generate_name" help:"pattern for generating name if no name is given"`
 
 	// 资源描述
 	// required: false
@@ -176,6 +183,28 @@ type StandaloneResourceCreateInput struct {
 	// 标签列表,最多支持20个
 	// example: { "user:rd": "op" }
 	Metadata map[string]string `json:"__meta__" token:"tag" help:"tags in the form of key=value"`
+
+	// 预检验参数,若为true则仅检查参数,并不真正创建变更
+	// default: false
+	DryRun bool `json:"dry_run"`
+}
+
+type StandaloneResourceCreateInput struct {
+	StandaloneAnonResourceCreateInput
+
+	// 资源名称，如果generate_name为空，则为必填项
+	// description: resource name, required if generated_name is not given
+	// unique: true
+	// required: true
+	// example: test-network
+	Name string `json:"name" help:"name of newly created resource" positional:"true" required:"true"`
+
+	// 生成资源名称的模板，如果name为空，则为必填项
+	// description: generated resource name, given a pattern to generate name, required if name is not given
+	// unique: false
+	// required: false
+	// example: test###
+	GenerateName string `json:"generate_name" help:"pattern for generating name if no name is given"`
 }
 
 type JoinResourceBaseCreateInput struct {
@@ -194,6 +223,8 @@ type PerformStatusInput struct {
 	// 更改的目标状态值
 	// required:true
 	Status string `json:"status"`
+	// swagger:ignore
+	BlockJobsCount int `json:"block_jobs_count"`
 
 	// 更改状态的原因描述
 	// required:false
@@ -214,7 +245,7 @@ type PerformPublicDomainInput struct {
 	SharedDomainIds []string `json:"shared_domain_ids"`
 	// Deprecated
 	// swagger:ignore
-	SharedDomains []string `json:"shared_domains" "yunion:deprecated-by":"shared_domain_ids"`
+	SharedDomains []string `json:"shared_domains" yunion-deprecated-by:"shared_domain_ids"`
 }
 
 type PerformPublicProjectInput struct {
@@ -224,7 +255,7 @@ type PerformPublicProjectInput struct {
 	SharedProjectIds []string `json:"shared_project_ids"`
 	// Deprecated
 	// swagger:ignore
-	SharedProjects []string `json:"shared_projects" "yunion:deprecated-by":"shared_project_ids"`
+	SharedProjects []string `json:"shared_projects" yunion-deprecated-by:"shared_project_ids"`
 }
 
 type PerformPrivateInput struct {
@@ -232,6 +263,12 @@ type PerformPrivateInput struct {
 
 type PerformChangeProjectOwnerInput struct {
 	ProjectizedResourceInput
+}
+
+type PerformFreezeInput struct {
+}
+
+type PerformUnfreezeInput struct {
 }
 
 type PerformChangeDomainOwnerInput struct {
@@ -249,7 +286,7 @@ type StorageForceDetachHostInput struct {
 	HostId string `json:"host_id"`
 	// Deprecated
 	// swagger:ignore
-	Host string `json:"host" "yunion:deprecated-by":"host_id"`
+	Host string `json:"host" yunion-deprecated-by:"host_id"`
 }
 
 type InfrasResourceBaseCreateInput struct {
@@ -307,6 +344,12 @@ type PerformUserMetadataInput map[string]string
 // 全量替换资源的用户标签（元数据）输入
 type PerformSetUserMetadataInput map[string]string
 
+type PerformClassMetadataInput map[string]string
+
+type PerformSetClassMetadataInput map[string]string
+
+type GetClassMetadataOutput map[string]string
+
 // 获取资源的元数据输入
 type GetMetadataInput struct {
 	// 指定需要获取的所有标签的KEY列表，如果列表为空，则获取全部标签
@@ -319,7 +362,40 @@ type GetMetadataInput struct {
 	// | 外部标签 | key以ext:为前缀，为从其他平台同步过来的标签 |
 	//
 	Field []string `json:"field"`
+
+	// 按标签前缀过滤
+	Prefix string `json:"prefix"`
 }
 
 // 获取资源标签（元数据）输出
 type GetMetadataOutput map[string]string
+
+type DistinctFieldInput struct {
+	Field      []string
+	ExtraField []string
+}
+
+type PostpaidExpireInput struct {
+	Duration   string    `json:"duration"`
+	ExpireTime time.Time `json:"expire_time"`
+}
+
+type AutoRenewInput struct {
+	// 是否自动续费
+	AutoRenew bool `json:"auto_renew"`
+}
+
+type RenewInput struct {
+	Duration string `json:"duration"`
+}
+
+type SyncstatusInput struct {
+}
+
+type PurgeSplitTableInput struct {
+	Tables []string `json:"tables"`
+}
+
+type SplitTableExportInput struct {
+	Table string `json:"table"`
+}

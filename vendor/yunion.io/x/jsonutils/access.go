@@ -53,8 +53,17 @@ func NewInt(val int64) *JSONInt {
 	return &JSONInt{data: val}
 }
 
+//deprecated
 func NewFloat(val float64) *JSONFloat {
-	return &JSONFloat{data: val}
+	return &JSONFloat{data: val, bit: 64}
+}
+
+func NewFloat64(val float64) *JSONFloat {
+	return &JSONFloat{data: val, bit: 64}
+}
+
+func NewFloat32(val float32) *JSONFloat {
+	return &JSONFloat{data: float64(val), bit: 32}
 }
 
 func NewBool(val bool) *JSONBool {
@@ -103,7 +112,7 @@ func (this *JSONDict) Add(o JSONObject, keys ...string) error {
 			obj.Set(keys[i], o)
 		} else {
 			o, ok := obj.data.Get(keys[i])
-			if !ok {
+			if !ok || o == JSONNull {
 				obj.Set(keys[i], NewDict())
 				o, ok = obj.data.Get(keys[i])
 			}

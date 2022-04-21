@@ -20,4 +20,5 @@ require (
 replace (
 	github.com/hugozhu/godingtalk v0.0.0-20190801052409-282448228972 => github.com/rainzm/godingtalk v0.0.0-20200814070325-9ef7f16afffc
 	github.com/xen0n/go-workwx v0.1.1 => github.com/rainzm/go-workwx v0.1.2-0.20200810035240-4b03e1755988
+	google.golang.org/grpc => google.golang.org/grpc v1.27.1
 )

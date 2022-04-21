@@ -15,17 +15,6 @@ github.com/cenkalti/backoff/v4
 github.com/fatih/color
 # github.com/ghodss/yaml v1.0.0
 github.com/ghodss/yaml
-# github.com/golang-plus/errors v1.0.0
-github.com/golang-plus/errors
-# github.com/golang-plus/uuid v1.0.0
-github.com/golang-plus/uuid
-github.com/golang-plus/uuid/internal
-github.com/golang-plus/uuid/internal/dcesecurity
-github.com/golang-plus/uuid/internal/namebased
-github.com/golang-plus/uuid/internal/namebased/md5
-github.com/golang-plus/uuid/internal/namebased/sha1
-github.com/golang-plus/uuid/internal/random
-github.com/golang-plus/uuid/internal/timebased
 # github.com/golang/protobuf v1.5.2
 github.com/golang/protobuf/proto
 github.com/golang/protobuf/ptypes
@@ -56,17 +45,6 @@ github.com/pkg/errors
 github.com/sirupsen/logrus
 # github.com/texttheater/golang-levenshtein v0.0.0-20180516184445-d188e65d659e
 github.com/texttheater/golang-levenshtein/levenshtein
-# github.com/tjfoc/gmsm v1.4.1
-github.com/tjfoc/gmsm/sm4
-# github.com/tredoe/osutil v0.0.0-20161130133508-7d3ee1afa71c
-github.com/tredoe/osutil/user/crypt
-github.com/tredoe/osutil/user/crypt/common
-github.com/tredoe/osutil/user/crypt/sha512_crypt
-# github.com/vishvananda/netlink v1.0.0
-github.com/vishvananda/netlink
-github.com/vishvananda/netlink/nl
-# github.com/vishvananda/netns v0.0.0-20191106174202-0a2b9b5464df
-github.com/vishvananda/netns
 # github.com/xen0n/go-workwx v0.1.1 => github.com/rainzm/go-workwx v0.1.2-0.20200810035240-4b03e1755988
 github.com/xen0n/go-workwx
 github.com/xen0n/go-workwx/errcodes
@@ -76,17 +54,6 @@ github.com/xen0n/go-workwx/internal/lowlevel/httpapi
 github.com/xen0n/go-workwx/internal/lowlevel/pkcs7
 github.com/xen0n/go-workwx/internal/lowlevel/signature
 # golang.org/x/crypto v0.0.0-20210817164053-32db794688a5
-golang.org/x/crypto/bcrypt
-golang.org/x/crypto/blowfish
-golang.org/x/crypto/chacha20
-golang.org/x/crypto/curve25519
-golang.org/x/crypto/curve25519/internal/field
-golang.org/x/crypto/ed25519
-golang.org/x/crypto/ed25519/internal/edwards25519
-golang.org/x/crypto/internal/subtle
-golang.org/x/crypto/poly1305
-golang.org/x/crypto/ssh
-golang.org/x/crypto/ssh/internal/bcrypt_pbkdf
 golang.org/x/crypto/ssh/terminal
 # golang.org/x/net v0.0.0-20210405180319-a5a99cb37ef4
 golang.org/x/net/http/httpguts
@@ -96,7 +63,6 @@ golang.org/x/net/idna
 golang.org/x/net/internal/timeseries
 golang.org/x/net/trace
 # golang.org/x/sys v0.0.0-20220319134239-a9b59b0215f8
-golang.org/x/sys/cpu
 golang.org/x/sys/internal/unsafeheader
 golang.org/x/sys/plan9
 golang.org/x/sys/unix
@@ -122,18 +88,18 @@ golang.org/x/text/unicode/bidi
 golang.org/x/text/unicode/norm
 # google.golang.org/genproto v0.0.0-20210602131652-f16073e35f0c
 google.golang.org/genproto/googleapis/rpc/status
-# google.golang.org/grpc v1.38.0
+# google.golang.org/grpc v1.38.0 => google.golang.org/grpc v1.27.1
 google.golang.org/grpc
 google.golang.org/grpc/attributes
 google.golang.org/grpc/backoff
 google.golang.org/grpc/balancer
 google.golang.org/grpc/balancer/base
-google.golang.org/grpc/balancer/grpclb/state
 google.golang.org/grpc/balancer/roundrobin
 google.golang.org/grpc/binarylog/grpc_binarylog_v1
 google.golang.org/grpc/codes
 google.golang.org/grpc/connectivity
 google.golang.org/grpc/credentials
+google.golang.org/grpc/credentials/internal
 google.golang.org/grpc/encoding
 google.golang.org/grpc/encoding/proto
 google.golang.org/grpc/grpclog
@@ -143,24 +109,16 @@ google.golang.org/grpc/internal/balancerload
 google.golang.org/grpc/internal/binarylog
 google.golang.org/grpc/internal/buffer
 google.golang.org/grpc/internal/channelz
-google.golang.org/grpc/internal/credentials
 google.golang.org/grpc/internal/envconfig
-google.golang.org/grpc/internal/grpclog
 google.golang.org/grpc/internal/grpcrand
 google.golang.org/grpc/internal/grpcsync
-google.golang.org/grpc/internal/grpcutil
-google.golang.org/grpc/internal/metadata
-google.golang.org/grpc/internal/resolver
 google.golang.org/grpc/internal/resolver/dns
 google.golang.org/grpc/internal/resolver/passthrough
-google.golang.org/grpc/internal/resolver/unix
-google.golang.org/grpc/internal/serviceconfig
-google.golang.org/grpc/internal/status
 google.golang.org/grpc/internal/syscall
 google.golang.org/grpc/internal/transport
-google.golang.org/grpc/internal/transport/networktype
 google.golang.org/grpc/keepalive
 google.golang.org/grpc/metadata
+google.golang.org/grpc/naming
 google.golang.org/grpc/peer
 google.golang.org/grpc/resolver
 google.golang.org/grpc/serviceconfig
@@ -208,9 +166,6 @@ gopkg.in/ini.v1
 gopkg.in/yaml.v2
 # moul.io/http2curl/v2 v2.3.0
 moul.io/http2curl/v2
-# yunion.io/x/executor v0.0.0-20211018100936-39a2cd966656
-yunion.io/x/executor/apis
-yunion.io/x/executor/client
 # yunion.io/x/jsonutils v0.0.0-20220106020632-953b71a4c3a8
 yunion.io/x/jsonutils
 # yunion.io/x/log v0.0.0-20201210064738-43181789dc74
@@ -218,47 +173,19 @@ yunion.io/x/log
 yunion.io/x/log/hooks
 # yunion.io/x/onecloud v0.0.0-20220409063207-d4ac70645a5d
 yunion.io/x/onecloud/locales
-yunion.io/x/onecloud/pkg/apis
-yunion.io/x/onecloud/pkg/apis/identity
 yunion.io/x/onecloud/pkg/appctx
-yunion.io/x/onecloud/pkg/appsrv
-yunion.io/x/onecloud/pkg/cloudcommon/syncman
-yunion.io/x/onecloud/pkg/cloudcommon/types
-yunion.io/x/onecloud/pkg/httperrors
 yunion.io/x/onecloud/pkg/i18n
-yunion.io/x/onecloud/pkg/mcclient
-yunion.io/x/onecloud/pkg/mcclient/auth
-yunion.io/x/onecloud/pkg/mcclient/modulebase
-yunion.io/x/onecloud/pkg/mcclient/modules
 yunion.io/x/onecloud/pkg/monitor/notifydrivers/feishu
-yunion.io/x/onecloud/pkg/proxy
-yunion.io/x/onecloud/pkg/util/hashcache
 yunion.io/x/onecloud/pkg/util/httputils
-yunion.io/x/onecloud/pkg/util/iproute2
-yunion.io/x/onecloud/pkg/util/netutils2
-yunion.io/x/onecloud/pkg/util/procutils
-yunion.io/x/onecloud/pkg/util/rbacutils
-yunion.io/x/onecloud/pkg/util/s3auth
-yunion.io/x/onecloud/pkg/util/seclib2
-yunion.io/x/onecloud/pkg/util/streamutils
-yunion.io/x/onecloud/pkg/util/stringutils2
-yunion.io/x/onecloud/pkg/util/tagutils
 # yunion.io/x/pkg v0.0.0-20220406030238-39fbc60d5d4e
 yunion.io/x/pkg/errors
 yunion.io/x/pkg/gotypes
 yunion.io/x/pkg/sortedmap
 yunion.io/x/pkg/trace
 yunion.io/x/pkg/tristate
-yunion.io/x/pkg/util/cache
-yunion.io/x/pkg/util/clock
-yunion.io/x/pkg/util/netutils
 yunion.io/x/pkg/util/reflectutils
 yunion.io/x/pkg/util/regutils
-yunion.io/x/pkg/util/seclib
-yunion.io/x/pkg/util/sets
-yunion.io/x/pkg/util/signalutils
 yunion.io/x/pkg/util/timeutils
-yunion.io/x/pkg/util/version
 yunion.io/x/pkg/utils
 # yunion.io/x/structarg v0.0.0-20220312084958-9c6c79c7d1c6
 yunion.io/x/structarg

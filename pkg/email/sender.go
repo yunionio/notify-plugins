@@ -22,7 +22,7 @@ import (
 	"strings"
 	"time"
 
-	"gopkg.in/gomail.v2"
+	gomail "github.com/yunionio/mail"
 
 	"yunion.io/x/log"
 	"yunion.io/x/pkg/errors"

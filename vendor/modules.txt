@@ -1,4 +1,5 @@
 # github.com/aliyun/alibaba-cloud-sdk-go v1.61.684
+## explicit
 github.com/aliyun/alibaba-cloud-sdk-go/sdk
 github.com/aliyun/alibaba-cloud-sdk-go/sdk/auth
 github.com/aliyun/alibaba-cloud-sdk-go/sdk/auth/credentials
@@ -16,12 +17,14 @@ github.com/fatih/color
 # github.com/ghodss/yaml v1.0.0
 github.com/ghodss/yaml
 # github.com/golang/protobuf v1.5.2
+## explicit
 github.com/golang/protobuf/proto
 github.com/golang/protobuf/ptypes
 github.com/golang/protobuf/ptypes/any
 github.com/golang/protobuf/ptypes/duration
 github.com/golang/protobuf/ptypes/timestamp
 # github.com/hugozhu/godingtalk v0.0.0-20190801052409-282448228972 => github.com/rainzm/godingtalk v0.0.0-20200814070325-9ef7f16afffc
+## explicit
 github.com/hugozhu/godingtalk
 # github.com/jmespath/go-jmespath v0.4.0
 github.com/jmespath/go-jmespath
@@ -46,6 +49,7 @@ github.com/sirupsen/logrus
 # github.com/texttheater/golang-levenshtein v0.0.0-20180516184445-d188e65d659e
 github.com/texttheater/golang-levenshtein/levenshtein
 # github.com/xen0n/go-workwx v0.1.1 => github.com/rainzm/go-workwx v0.1.2-0.20200810035240-4b03e1755988
+## explicit
 github.com/xen0n/go-workwx
 github.com/xen0n/go-workwx/errcodes
 github.com/xen0n/go-workwx/internal/lowlevel/encryptor
@@ -53,6 +57,9 @@ github.com/xen0n/go-workwx/internal/lowlevel/envelope
 github.com/xen0n/go-workwx/internal/lowlevel/httpapi
 github.com/xen0n/go-workwx/internal/lowlevel/pkcs7
 github.com/xen0n/go-workwx/internal/lowlevel/signature
+# github.com/yunionio/mail v2.3.1+incompatible
+## explicit
+github.com/yunionio/mail
 # golang.org/x/crypto v0.0.0-20210817164053-32db794688a5
 golang.org/x/crypto/ssh/terminal
 # golang.org/x/net v0.0.0-20210405180319-a5a99cb37ef4
@@ -89,6 +96,7 @@ golang.org/x/text/unicode/norm
 # google.golang.org/genproto v0.0.0-20210602131652-f16073e35f0c
 google.golang.org/genproto/googleapis/rpc/status
 # google.golang.org/grpc v1.38.0 => google.golang.org/grpc v1.27.1
+## explicit
 google.golang.org/grpc
 google.golang.org/grpc/attributes
 google.golang.org/grpc/backoff
@@ -157,27 +165,32 @@ google.golang.org/protobuf/types/known/anypb
 google.golang.org/protobuf/types/known/durationpb
 google.golang.org/protobuf/types/known/timestamppb
 # gopkg.in/alexcesaro/quotedprintable.v3 v3.0.0-20150716171945-2caba252f4dc
+## explicit
 gopkg.in/alexcesaro/quotedprintable.v3
-# gopkg.in/gomail.v2 v2.0.0-20160411212932-81ebce5c23df
-gopkg.in/gomail.v2
 # gopkg.in/ini.v1 v1.44.0
 gopkg.in/ini.v1
+# gopkg.in/mail.v2 v2.3.1
+## explicit
 # gopkg.in/yaml.v2 v2.4.0
 gopkg.in/yaml.v2
 # moul.io/http2curl/v2 v2.3.0
 moul.io/http2curl/v2
 # yunion.io/x/jsonutils v0.0.0-20220106020632-953b71a4c3a8
+## explicit
 yunion.io/x/jsonutils
 # yunion.io/x/log v0.0.0-20201210064738-43181789dc74
+## explicit
 yunion.io/x/log
 yunion.io/x/log/hooks
-# yunion.io/x/onecloud v0.0.0-20220409063207-d4ac70645a5d
+# yunion.io/x/onecloud v0.0.0-20220409063159-d700f8987773
+## explicit
 yunion.io/x/onecloud/locales
 yunion.io/x/onecloud/pkg/appctx
 yunion.io/x/onecloud/pkg/i18n
 yunion.io/x/onecloud/pkg/monitor/notifydrivers/feishu
 yunion.io/x/onecloud/pkg/util/httputils
 # yunion.io/x/pkg v0.0.0-20220406030238-39fbc60d5d4e
+## explicit
 yunion.io/x/pkg/errors
 yunion.io/x/pkg/gotypes
 yunion.io/x/pkg/sortedmap
@@ -188,4 +201,6 @@ yunion.io/x/pkg/util/regutils
 yunion.io/x/pkg/util/timeutils
 yunion.io/x/pkg/utils
 # yunion.io/x/structarg v0.0.0-20220312084958-9c6c79c7d1c6
+## explicit
 yunion.io/x/structarg
+# google.golang.org/grpc => google.golang.org/grpc v1.27.1

@@ -57,9 +57,6 @@ github.com/xen0n/go-workwx/internal/lowlevel/envelope
 github.com/xen0n/go-workwx/internal/lowlevel/httpapi
 github.com/xen0n/go-workwx/internal/lowlevel/pkcs7
 github.com/xen0n/go-workwx/internal/lowlevel/signature
-# github.com/yunionio/mail v2.3.1+incompatible
-## explicit
-github.com/yunionio/mail
 # golang.org/x/crypto v0.0.0-20210817164053-32db794688a5
 golang.org/x/crypto/ssh/terminal
 # golang.org/x/net v0.0.0-20210405180319-a5a99cb37ef4
@@ -169,8 +166,9 @@ google.golang.org/protobuf/types/known/timestamppb
 gopkg.in/alexcesaro/quotedprintable.v3
 # gopkg.in/ini.v1 v1.44.0
 gopkg.in/ini.v1
-# gopkg.in/mail.v2 v2.3.1
+# gopkg.in/mail.v2 v2.3.2 => github.com/yunionio/mail v0.2.0
 ## explicit
+gopkg.in/mail.v2
 # gopkg.in/yaml.v2 v2.4.0
 gopkg.in/yaml.v2
 # moul.io/http2curl/v2 v2.3.0
@@ -204,3 +202,4 @@ yunion.io/x/pkg/utils
 ## explicit
 yunion.io/x/structarg
 # google.golang.org/grpc => google.golang.org/grpc v1.27.1
+# gopkg.in/mail.v2 => github.com/yunionio/mail v0.2.0

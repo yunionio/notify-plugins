@@ -5,7 +5,7 @@ FROM registry.cn-beijing.aliyuncs.com/yunionio/onecloud-base:v0.2
 
 MAINTAINER "Zexi Li <lizexi@yunionyun.com>"
 
-ENV TZ Asia/Shanghai
+ENV TZ UTC
 
 ENV PATH="/opt/yunion/bin:${PATH}"
 

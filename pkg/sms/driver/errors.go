@@ -12,13 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package smsaliyun
+package driver
 
-import (
-	"yunion.io/x/notify-plugins/pkg/common"
+import "yunion.io/x/pkg/errors"
+
+var (
+	ErrAccessKeyIdNotFound   = errors.Error("AccessKeyId not found")
+	ErrSignatureDoesNotMatch = errors.Error("AccessKeySecret does not match with the accessKeyId")
+	ErrSignnameInvalid       = errors.Error("Invalid signature (does not exist or is blackened)")
+	ErrDriverNotFound        = errors.Error("Driver not found")
 )
-
-func StartService() {
-	var config common.SBaseOptions
-	common.StartService(&config, NewSender, ValidateConfig, "mobile", "smsaliyun.conf")
-}

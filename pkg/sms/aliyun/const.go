@@ -12,12 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package smsaliyun
+package aliyun
 
-import "yunion.io/x/pkg/errors"
+const (
+	ACCESS_KEY_ID     = "access_key_id"
+	ACCESS_KEY_SECRET = "access_key_secret"
 
-var (
-	ErrAccessKeyIdNotFound = errors.Error("AccessKeyId not found")
-	ErrSignatureDoesNotMatch = errors.Error("AccessKeySecret does not match with the accessKeyId")
-	ErrSignnameInvalid = errors.Error("Invalid signature (does not exist or is blackened)")
+	ACESS_KEY_ID_BP     = "accessKeyId"
+	ACESS_KEY_SECRET_BP = "accessKeySecret"
+	SIGNATURE           = "signature"
+
+	NEED_REMOTE_TEMPLATE = "remote template is needed in aliyun sms"
+
+	ACCESSKEYID_NOTFOUND = "InvalidAccessKeyId.NotFound"
+	SIGN_DOESNOTMATCH    = "SignatureDoesNotMatch"
+	SIGHNTURE_ILLEGAL    = "isv.SMS_SIGNATURE_ILLEGAL"
+	TEMPLATE_ILLGAL      = "isv.SMS_TEMPLATE_ILLEGAL"
 )

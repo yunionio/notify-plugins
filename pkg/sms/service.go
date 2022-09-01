@@ -12,10 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package sms
 
-import "yunion.io/x/notify-plugins/pkg/sms"
+import (
+	"yunion.io/x/notify-plugins/pkg/common"
+	_ "yunion.io/x/notify-plugins/pkg/sms/aliyun"
+	_ "yunion.io/x/notify-plugins/pkg/sms/huawei"
+)
 
-func main() {
-	sms.StartService()
+func StartService() {
+	var config common.SBaseOptions
+	common.StartService(&config, NewSender, ValidateConfig, "mobile", "smsaliyun.conf")
 }

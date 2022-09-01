@@ -12,10 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package sms
 
-import "yunion.io/x/notify-plugins/pkg/sms"
+const (
+	// obsolete
+	ACESS_KEY_ID_BP     = "accessKeyId"
+	ACESS_KEY_SECRET_BP = "accessKeySecret"
 
-func main() {
-	sms.StartService()
-}
+	NEED_REMOTE_TEMPLATE = "remote template is needed in aliyun sms"
+
+	ACCESSKEYID_NOTFOUND = "InvalidAccessKeyId.NotFound"
+	SIGN_DOESNOTMATCH    = "SignatureDoesNotMatch"
+	SIGHNTURE_ILLEGAL    = "isv.SMS_SIGNATURE_ILLEGAL"
+)

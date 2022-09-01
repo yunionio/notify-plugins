@@ -74,3 +74,7 @@ func (cc *SConfigCache) BatchGet(keys ...string) (vals []string, allOk bool, noK
 	allOk = true
 	return
 }
+
+func (cc *SConfigCache) Map() map[string]string {
+	return cc.configs
+}

@@ -29,3 +29,6 @@ make cmd/dingtalk
 make cmd/websocket
 ```
 
+#### 注意
+
+采用原生 gopkg.io/mail.v2 出现无法认证通过某些采用plain text认证的mail server，修改为 github.com/yunionio/mail 后，可以通过。但是又出现无法认证通过原来可以认证通过mail server的情况，因此暂时改回使用原声 gopkg.io/mail.v2

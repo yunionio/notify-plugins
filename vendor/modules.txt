@@ -1,5 +1,5 @@
 # github.com/aliyun/alibaba-cloud-sdk-go v1.61.684
-## explicit
+## explicit; go 1.13
 github.com/aliyun/alibaba-cloud-sdk-go/sdk
 github.com/aliyun/alibaba-cloud-sdk-go/sdk/auth
 github.com/aliyun/alibaba-cloud-sdk-go/sdk/auth/credentials
@@ -11,45 +11,56 @@ github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests
 github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses
 github.com/aliyun/alibaba-cloud-sdk-go/sdk/utils
 # github.com/cenkalti/backoff/v4 v4.0.0
+## explicit; go 1.12
 github.com/cenkalti/backoff/v4
 # github.com/fatih/color v1.10.0
+## explicit; go 1.13
 github.com/fatih/color
 # github.com/ghodss/yaml v1.0.0
+## explicit
 github.com/ghodss/yaml
 # github.com/golang/protobuf v1.5.2
-## explicit
+## explicit; go 1.9
 github.com/golang/protobuf/proto
 github.com/golang/protobuf/ptypes
 github.com/golang/protobuf/ptypes/any
 github.com/golang/protobuf/ptypes/duration
 github.com/golang/protobuf/ptypes/timestamp
 # github.com/hugozhu/godingtalk v0.0.0-20190801052409-282448228972 => github.com/rainzm/godingtalk v0.0.0-20200814070325-9ef7f16afffc
-## explicit
+## explicit; go 1.13
 github.com/hugozhu/godingtalk
 # github.com/jmespath/go-jmespath v0.4.0
+## explicit; go 1.14
 github.com/jmespath/go-jmespath
-# github.com/json-iterator/go v1.1.11
+# github.com/json-iterator/go v1.1.12
+## explicit; go 1.12
 github.com/json-iterator/go
-# github.com/konsorten/go-windows-terminal-sequences v1.0.3
-github.com/konsorten/go-windows-terminal-sequences
 # github.com/mattn/go-colorable v0.1.8
+## explicit; go 1.13
 github.com/mattn/go-colorable
 # github.com/mattn/go-isatty v0.0.14
+## explicit; go 1.12
 github.com/mattn/go-isatty
 # github.com/mgutz/ansi v0.0.0-20170206155736-9520e82c474b
+## explicit
 github.com/mgutz/ansi
 # github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd
+## explicit
 github.com/modern-go/concurrent
-# github.com/modern-go/reflect2 v1.0.1
+# github.com/modern-go/reflect2 v1.0.2
+## explicit; go 1.12
 github.com/modern-go/reflect2
 # github.com/pkg/errors v0.9.1
+## explicit
 github.com/pkg/errors
-# github.com/sirupsen/logrus v1.6.0
+# github.com/sirupsen/logrus v1.9.0
+## explicit; go 1.13
 github.com/sirupsen/logrus
 # github.com/texttheater/golang-levenshtein v0.0.0-20180516184445-d188e65d659e
+## explicit
 github.com/texttheater/golang-levenshtein/levenshtein
 # github.com/xen0n/go-workwx v0.1.1 => github.com/rainzm/go-workwx v0.1.2-0.20200810035240-4b03e1755988
-## explicit
+## explicit; go 1.12
 github.com/xen0n/go-workwx
 github.com/xen0n/go-workwx/errcodes
 github.com/xen0n/go-workwx/internal/lowlevel/encryptor
@@ -58,22 +69,27 @@ github.com/xen0n/go-workwx/internal/lowlevel/httpapi
 github.com/xen0n/go-workwx/internal/lowlevel/pkcs7
 github.com/xen0n/go-workwx/internal/lowlevel/signature
 # golang.org/x/crypto v0.0.0-20210817164053-32db794688a5
+## explicit; go 1.17
 golang.org/x/crypto/ssh/terminal
-# golang.org/x/net v0.0.0-20210405180319-a5a99cb37ef4
+# golang.org/x/net v0.0.0-20210525063256-abc453219eb5
+## explicit; go 1.17
 golang.org/x/net/http/httpguts
 golang.org/x/net/http2
 golang.org/x/net/http2/hpack
 golang.org/x/net/idna
 golang.org/x/net/internal/timeseries
 golang.org/x/net/trace
-# golang.org/x/sys v0.0.0-20220319134239-a9b59b0215f8
+# golang.org/x/sys v0.0.0-20220829200755-d48e67d00261
+## explicit; go 1.17
 golang.org/x/sys/internal/unsafeheader
 golang.org/x/sys/plan9
 golang.org/x/sys/unix
 golang.org/x/sys/windows
 # golang.org/x/term v0.0.0-20210615171337-6886f2dfbf5b
+## explicit; go 1.17
 golang.org/x/term
-# golang.org/x/text v0.3.5
+# golang.org/x/text v0.3.7
+## explicit; go 1.17
 golang.org/x/text/feature/plural
 golang.org/x/text/internal
 golang.org/x/text/internal/catmsg
@@ -91,9 +107,10 @@ golang.org/x/text/transform
 golang.org/x/text/unicode/bidi
 golang.org/x/text/unicode/norm
 # google.golang.org/genproto v0.0.0-20210602131652-f16073e35f0c
+## explicit; go 1.11
 google.golang.org/genproto/googleapis/rpc/status
 # google.golang.org/grpc v1.38.0 => google.golang.org/grpc v1.27.1
-## explicit
+## explicit; go 1.11
 google.golang.org/grpc
 google.golang.org/grpc/attributes
 google.golang.org/grpc/backoff
@@ -130,7 +147,8 @@ google.golang.org/grpc/serviceconfig
 google.golang.org/grpc/stats
 google.golang.org/grpc/status
 google.golang.org/grpc/tap
-# google.golang.org/protobuf v1.26.0
+# google.golang.org/protobuf v1.27.1
+## explicit; go 1.9
 google.golang.org/protobuf/encoding/prototext
 google.golang.org/protobuf/encoding/protowire
 google.golang.org/protobuf/internal/descfmt
@@ -165,30 +183,33 @@ google.golang.org/protobuf/types/known/timestamppb
 ## explicit
 gopkg.in/alexcesaro/quotedprintable.v3
 # gopkg.in/ini.v1 v1.44.0
+## explicit
 gopkg.in/ini.v1
-# gopkg.in/mail.v2 v2.3.2 => github.com/yunionio/mail v0.2.0
+# gopkg.in/mail.v2 v2.3.1
 ## explicit
 gopkg.in/mail.v2
 # gopkg.in/yaml.v2 v2.4.0
+## explicit; go 1.15
 gopkg.in/yaml.v2
 # moul.io/http2curl/v2 v2.3.0
+## explicit; go 1.13
 moul.io/http2curl/v2
-# yunion.io/x/jsonutils v0.0.0-20220106020632-953b71a4c3a8
-## explicit
+# yunion.io/x/jsonutils v1.0.1-0.20220819091305-3bab322ab4fd
+## explicit; go 1.12
 yunion.io/x/jsonutils
-# yunion.io/x/log v0.0.0-20201210064738-43181789dc74
-## explicit
+# yunion.io/x/log v1.0.0
+## explicit; go 1.12
 yunion.io/x/log
 yunion.io/x/log/hooks
-# yunion.io/x/onecloud v0.0.0-20220409063159-d700f8987773
-## explicit
+# yunion.io/x/onecloud v0.0.0-20220908060533-5a113a407830
+## explicit; go 1.18
 yunion.io/x/onecloud/locales
 yunion.io/x/onecloud/pkg/appctx
 yunion.io/x/onecloud/pkg/i18n
 yunion.io/x/onecloud/pkg/monitor/notifydrivers/feishu
 yunion.io/x/onecloud/pkg/util/httputils
-# yunion.io/x/pkg v0.0.0-20220406030238-39fbc60d5d4e
-## explicit
+# yunion.io/x/pkg v1.0.1-0.20220819080140-55b265a8658e
+## explicit; go 1.18
 yunion.io/x/pkg/errors
 yunion.io/x/pkg/gotypes
 yunion.io/x/pkg/sortedmap
@@ -199,7 +220,7 @@ yunion.io/x/pkg/util/regutils
 yunion.io/x/pkg/util/timeutils
 yunion.io/x/pkg/utils
 # yunion.io/x/structarg v0.0.0-20220312084958-9c6c79c7d1c6
-## explicit
+## explicit; go 1.12
 yunion.io/x/structarg
+# github.com/jaypipes/ghw => github.com/zexi/ghw v0.9.1
 # google.golang.org/grpc => google.golang.org/grpc v1.27.1
-# gopkg.in/mail.v2 => github.com/yunionio/mail v0.2.0

@@ -1,3 +1,5 @@
 .idea
 
 _output
+pkg/sms/aliyun/aliyun_test.go
+pkg/sms/huawei/huawei_test.go

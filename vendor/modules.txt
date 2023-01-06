@@ -13,7 +13,7 @@ github.com/aliyun/alibaba-cloud-sdk-go/sdk/utils
 # github.com/cenkalti/backoff/v4 v4.0.0
 ## explicit; go 1.12
 github.com/cenkalti/backoff/v4
-# github.com/fatih/color v1.10.0
+# github.com/fatih/color v1.13.0
 ## explicit; go 1.13
 github.com/fatih/color
 # github.com/ghodss/yaml v1.0.0
@@ -35,7 +35,7 @@ github.com/jmespath/go-jmespath
 # github.com/json-iterator/go v1.1.12
 ## explicit; go 1.12
 github.com/json-iterator/go
-# github.com/mattn/go-colorable v0.1.8
+# github.com/mattn/go-colorable v0.1.9
 ## explicit; go 1.13
 github.com/mattn/go-colorable
 # github.com/mattn/go-isatty v0.0.14
@@ -68,10 +68,10 @@ github.com/xen0n/go-workwx/internal/lowlevel/envelope
 github.com/xen0n/go-workwx/internal/lowlevel/httpapi
 github.com/xen0n/go-workwx/internal/lowlevel/pkcs7
 github.com/xen0n/go-workwx/internal/lowlevel/signature
-# golang.org/x/crypto v0.0.0-20210817164053-32db794688a5
+# golang.org/x/crypto v0.1.0
 ## explicit; go 1.17
 golang.org/x/crypto/ssh/terminal
-# golang.org/x/net v0.0.0-20210525063256-abc453219eb5
+# golang.org/x/net v0.1.0
 ## explicit; go 1.17
 golang.org/x/net/http/httpguts
 golang.org/x/net/http2
@@ -79,29 +79,21 @@ golang.org/x/net/http2/hpack
 golang.org/x/net/idna
 golang.org/x/net/internal/timeseries
 golang.org/x/net/trace
-# golang.org/x/sys v0.0.0-20220829200755-d48e67d00261
+# golang.org/x/sys v0.1.0
 ## explicit; go 1.17
 golang.org/x/sys/internal/unsafeheader
 golang.org/x/sys/plan9
 golang.org/x/sys/unix
 golang.org/x/sys/windows
-# golang.org/x/term v0.0.0-20210615171337-6886f2dfbf5b
+# golang.org/x/term v0.1.0
 ## explicit; go 1.17
 golang.org/x/term
-# golang.org/x/text v0.3.7
+# golang.org/x/text v0.4.0
 ## explicit; go 1.17
-golang.org/x/text/feature/plural
-golang.org/x/text/internal
-golang.org/x/text/internal/catmsg
-golang.org/x/text/internal/format
 golang.org/x/text/internal/language
 golang.org/x/text/internal/language/compact
-golang.org/x/text/internal/number
-golang.org/x/text/internal/stringset
 golang.org/x/text/internal/tag
 golang.org/x/text/language
-golang.org/x/text/message
-golang.org/x/text/message/catalog
 golang.org/x/text/secure/bidirule
 golang.org/x/text/transform
 golang.org/x/text/unicode/bidi
@@ -182,7 +174,7 @@ google.golang.org/protobuf/types/known/timestamppb
 # gopkg.in/alexcesaro/quotedprintable.v3 v3.0.0-20150716171945-2caba252f4dc
 ## explicit
 gopkg.in/alexcesaro/quotedprintable.v3
-# gopkg.in/ini.v1 v1.44.0
+# gopkg.in/ini.v1 v1.62.0
 ## explicit
 gopkg.in/ini.v1
 # gopkg.in/mail.v2 v2.3.1
@@ -201,20 +193,18 @@ yunion.io/x/jsonutils
 ## explicit; go 1.12
 yunion.io/x/log
 yunion.io/x/log/hooks
-# yunion.io/x/onecloud v0.0.0-20220908060538-5b8d97c8f3cd
+# yunion.io/x/onecloud v0.3.10-0-alpha2.0.20230105193353-edd4695dbdd5
 ## explicit; go 1.18
-yunion.io/x/onecloud/locales
-yunion.io/x/onecloud/pkg/appctx
-yunion.io/x/onecloud/pkg/i18n
 yunion.io/x/onecloud/pkg/monitor/notifydrivers/feishu
-yunion.io/x/onecloud/pkg/util/httputils
-# yunion.io/x/pkg v1.0.1-0.20220819080140-55b265a8658e
+# yunion.io/x/pkg v1.0.1-0.20230102060551-df05ccecb71c
 ## explicit; go 1.18
+yunion.io/x/pkg/appctx
 yunion.io/x/pkg/errors
 yunion.io/x/pkg/gotypes
 yunion.io/x/pkg/sortedmap
 yunion.io/x/pkg/trace
 yunion.io/x/pkg/tristate
+yunion.io/x/pkg/util/httputils
 yunion.io/x/pkg/util/reflectutils
 yunion.io/x/pkg/util/regutils
 yunion.io/x/pkg/util/timeutils

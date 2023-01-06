@@ -21,7 +21,7 @@ import (
 	"strings"
 
 	"yunion.io/x/jsonutils"
-	"yunion.io/x/onecloud/pkg/util/httputils"
+	"yunion.io/x/pkg/util/httputils"
 	"yunion.io/x/pkg/errors"
 
 	"yunion.io/x/notify-plugins/pkg/common"

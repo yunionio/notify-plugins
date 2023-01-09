@@ -11,7 +11,7 @@ require (
 	gopkg.in/mail.v2 v2.3.1
 	yunion.io/x/jsonutils v1.0.1-0.20220819091305-3bab322ab4fd
 	yunion.io/x/log v1.0.0
-	yunion.io/x/onecloud v0.3.10-0-alpha2.0.20230105193353-edd4695dbdd5
+	yunion.io/x/onecloud v0.0.0-20230109063135-d1246adcf9dd
 	yunion.io/x/pkg v1.0.1-0.20230102060551-df05ccecb71c
 	yunion.io/x/structarg v0.0.0-20220312084958-9c6c79c7d1c6
 )

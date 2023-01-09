@@ -193,7 +193,7 @@ yunion.io/x/jsonutils
 ## explicit; go 1.12
 yunion.io/x/log
 yunion.io/x/log/hooks
-# yunion.io/x/onecloud v0.3.10-0-alpha2.0.20230105193353-edd4695dbdd5
+# yunion.io/x/onecloud v0.0.0-20230109063135-d1246adcf9dd
 ## explicit; go 1.18
 yunion.io/x/onecloud/pkg/monitor/notifydrivers/feishu
 # yunion.io/x/pkg v1.0.1-0.20230102060551-df05ccecb71c

@@ -41,7 +41,7 @@ rpm:
 rpmclean:
 	rm -fr $(BUILD_DIR)/rpms
 
-ONECLOUD_RELEASE_BRANCH:=release/3.10
+ONECLOUD_RELEASE_BRANCH:=master
 GOPROXY ?= direct
 
 mod:

@@ -10,7 +10,7 @@ VERSION ?= $(shell git describe --exact-match 2> /dev/null || \
 ifneq ($(DLV),)
 	GO_BUILD_FLAGS += -gcflags "all=-N -l"
 endif
-GO_BUILD_FLAGS+=-mod vendor
+GO_BUILD_FLAGS+=-mod vendor -buildvcs=false
 
 export GO111MODULE=on
 

@@ -105,9 +105,9 @@ build_process_with_buildx() {
     local img_name=$(get_image_name $image_keyword $arch $is_all_arch)
 
     build_env="GOARCH=$arch "
-    if [[ $arch == arm64 ]]; then
-        build_env="$build_env CGO_ENABLED=1 CC=aarch64-linux-musl-gcc"
-    fi
+#    if [[ $arch == arm64 ]]; then
+#        build_env="$build_env CGO_ENABLED=1 CC=aarch64-linux-musl-gcc"
+#    fi
 	build_bin $build_env
 	buildx_and_push $img_name $DOCKER_DIR/Dockerfile $SRC_DIR $arch
 }

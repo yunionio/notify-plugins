@@ -45,7 +45,7 @@ ONECLOUD_RELEASE_BRANCH:=release/3.9
 GOPROXY ?= direct
 
 mod:
-	GOPROXY=$(GOPROXY) go get yunion.io/x/onecloud@$(ONECLOUD_RELEASE_BRANCH)
-	GOPROXY=$(GOPROXY) go get -d $(patsubst %,%@master,$(shell GO111MODULE=on go mod edit -print  | sed -n -e 's|.*\(yunion.io/x/[a-z].*\) v.*|\1|p' | grep -v '/onecloud$$'))
+	GOPROXY=$(GOPROXY) GOSUMDB=off go get yunion.io/x/onecloud@$(ONECLOUD_RELEASE_BRANCH)
+	GOPROXY=$(GOPROXY) GOSUMDB=off go get -d $(patsubst %,%@master,$(shell GO111MODULE=on go mod edit -print  | sed -n -e 's|.*\(yunion.io/x/[a-z].*\) v.*|\1|p' | grep -v '/onecloud$$'))
 	go mod tidy -v
 	go mod vendor -v

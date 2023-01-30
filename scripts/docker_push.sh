@@ -69,6 +69,10 @@ buildx_and_push() {
     local path=$3
     local arch=$4
     local push=()
+    if [[ "$DRY_RUN" == "true" ]]; then
+        echo "[$(readlink -f ${BASH_SOURCE}):${LINENO} ${FUNCNAME[0]}] return for DRY_RUN"
+        return
+    fi
     docker buildx build -t "$tag" --platform "linux/$arch" -f "$2" "$3" --push
     docker pull "$tag"
 }
@@ -92,6 +96,10 @@ get_image_name() {
 
 build_process() {
     build_bin
+    if [[ "$DRY_RUN" == "true" ]]; then
+        echo "[$(readlink -f ${BASH_SOURCE}):${LINENO} ${FUNCNAME[0]}] return for DRY_RUN"
+        return
+    fi
     img_name="$REGISTRY/$image_keyword:$TAG"
     build_image $img_name $DOCKER_DIR/Dockerfile $SRC_DIR
     if [[ "$PUSH" == "true" ]]; then
@@ -115,6 +123,10 @@ build_process_with_buildx() {
 make_manifest_image() {
     local component=$1
     local img_name=$(get_image_name $component "" "false")
+    if [[ "$DRY_RUN" == "true" ]]; then
+        echo "[$(readlink -f ${BASH_SOURCE}):${LINENO} ${FUNCNAME[0]}] return for DRY_RUN"
+        return
+    fi
     docker manifest create --amend $img_name \
         $img_name-amd64 \
         $img_name-arm64
